@@ -1,5 +1,8 @@
 <?php
 declare(strict_types=1);
+// Warnings and deprecation notices go to the PHP error log, never into a page or a JSON response.
+ini_set('display_errors','0');
+ini_set('log_errors','1');
 
 // Upload the contents of this folder into your document root (htdocs on InfinityFree).
 // The private folder (database + encryption key) is created automatically on first visit:
