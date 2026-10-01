@@ -50,6 +50,13 @@ CREATE INDEX IF NOT EXISTS transactions_subscription ON transactions(subscriptio
 PRAGMA user_version=2;
 SQL);
     }
+    if ((int)$db->query('PRAGMA user_version')->fetchColumn() < 3) {
+        // Pull sync position in Paddle's event stream (paddleSync in paddle.php).
+        $db->exec(<<<SQL
+CREATE TABLE IF NOT EXISTS paddle_sync(id INTEGER PRIMARY KEY CHECK(id=1),cursor TEXT,failed_event TEXT,failures INTEGER NOT NULL DEFAULT 0,locked_until INTEGER NOT NULL DEFAULT 0,last_run INTEGER NOT NULL DEFAULT 0);
+PRAGMA user_version=3;
+SQL);
+    }
     return $db;
 }
 function privateDir(): string {
@@ -290,6 +297,8 @@ function applicationDTO(array $r,bool $admin=false): array {
 }
 function api(string $method,string $path,array|false $session,array|false $user): never {
     if ($method==='GET'&&$path==='/api/session') {
+        // Every page load calls this: keep the Paddle mirror current without cron or inbound webhooks.
+        paddleSyncAfterResponse(300);
         if (!$session) rateLimit('guest-session',200,3600);
         sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session)]);
     }
@@ -299,7 +308,7 @@ function api(string $method,string $path,array|false $session,array|false $user)
         sendJson(200,['ok'=>$sqlite&&$database,'php'=>PHP_VERSION,'sqlite'=>$sqlite,'database'=>$database]);
     }
     if ($method==='GET'&&$path==='/api/setup') sendJson(200,['available'=>!one('SELECT 1 FROM users WHERE is_admin=1 LIMIT 1')]);
-    if ($method==='GET'&&$path==='/api/billing') { requireUser($user);sendJson(200,billingSummary($user)); }
+    if ($method==='GET'&&$path==='/api/billing') { requireUser($user);paddleSync(15);sendJson(200,billingSummary($user)); }
     if (!in_array($method,['GET','HEAD'],true)) csrfAndOrigin($session);
     if ($method==='POST'&&$path==='/api/billing/portal') {
         // The customer is resolved from the signed-in session user only; nothing from the request body is used.

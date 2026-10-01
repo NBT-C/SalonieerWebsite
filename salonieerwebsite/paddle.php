@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
-// Paddle Billing: webhook fulfillment, subscription mirror, access checks and the customer portal.
+// Paddle Billing: event fulfillment, subscription mirror, access checks and the customer portal.
+// Events reach the same handlers two ways: pushed to the signed webhook, or pulled from Paddle's event stream by paddleSync().
+// Hosts that block inbound server-to-server requests (InfinityFree's browser check) can only use the pull.
 // Loaded by index.php only. Needs the vendor/ folder (Paddle PHP SDK, committed) uploaded with the site.
 // Secrets come from environment variables, or from a .env file in the private folder (see .env.example).
 if (!defined('SALONIEER')) { http_response_code(404); exit; }
@@ -19,6 +21,9 @@ use Paddle\SDK\Notifications\Secret;
 use Paddle\SDK\Notifications\Verifier;
 use Paddle\SDK\Options;
 use Paddle\SDK\Resources\CustomerPortalSessions\Operations\CreateCustomerPortalSession;
+use Paddle\SDK\Entities\Event\EventTypeName;
+use Paddle\SDK\Resources\Events\Operations\ListEvents;
+use Paddle\SDK\Resources\Shared\Operations\List\Pager;
 
 // Statuses that grant paid access. A scheduled_change (cancel/pause at period end) never revokes access by itself:
 // access ends only when Paddle actually moves the subscription to canceled or paused.
@@ -104,6 +109,53 @@ function paddleDispatch(Event $event): void {
         $event instanceof Events\TransactionCompleted => onPaddleTransaction($event->data),
         default => null,
     };
+}
+
+// ---- Pull sync ------------------------------------------------------------------
+// Reads new events from GET /events (oldest first, resuming after the last processed event ID) over an authenticated
+// HTTPS call to api.paddle.com, so no signature is involved. Runs at most once per $minSeconds across all visitors.
+const PADDLE_SYNC_MAX_EVENTS = 200;
+const PADDLE_SYNC_MAX_SECONDS = 8;
+const PADDLE_SYNC_SKIP_AFTER = 5; // an event that fails this many runs in a row is logged and skipped so it can't block the stream
+function paddleSync(int $minSeconds): void {
+    if (!paddleEnv('PADDLE_API_KEY')) return;
+    $now=nowMs();
+    try {
+        runSql('INSERT OR IGNORE INTO paddle_sync(id) VALUES(1)');
+        // Atomic claim: only one request syncs at a time, and only when the interval has passed.
+        if (!runSql('UPDATE paddle_sync SET locked_until=?,last_run=? WHERE id=1 AND locked_until<? AND last_run<=?',[$now+60000,$now,$now,$now-$minSeconds*1000])) return;
+    } catch (Throwable $e) { error_log('Salonieer Paddle sync lock: '.$e->getMessage()); return; }
+    $done=0;$more=false;$started=microtime(true);
+    try {
+        $client=paddle(); // also loads the SDK
+        $state=one('SELECT cursor,failed_event,failures FROM paddle_sync WHERE id=1');
+        $types=array_map(static fn($t)=>EventTypeName::from($t),PADDLE_HANDLED_EVENTS);
+        foreach ($client->events->list(new ListEvents(new Pager(after:$state['cursor'],perPage:50),$types)) as $event) {
+            try {
+                paddleDispatch($event);
+            } catch (Throwable $e) {
+                $failures=$state['failed_event']===$event->eventId?(int)$state['failures']+1:1;
+                error_log('Salonieer Paddle sync '.$event->eventType->getValue().' '.$event->eventId.' failed ('.$failures.'): '.$e->getMessage());
+                if ($failures<PADDLE_SYNC_SKIP_AFTER) { runSql('UPDATE paddle_sync SET failed_event=?,failures=? WHERE id=1',[$event->eventId,$failures]); break; }
+                error_log('Salonieer Paddle sync skipped event '.$event->eventId.' after '.$failures.' failures.');
+            }
+            runSql('UPDATE paddle_sync SET cursor=?,failed_event=NULL,failures=0 WHERE id=1',[$event->eventId]);
+            $state['failed_event']=null;
+            if (++$done>=PADDLE_SYNC_MAX_EVENTS || microtime(true)-$started>PADDLE_SYNC_MAX_SECONDS) { $more=true; break; }
+        }
+    } catch (Throwable $e) {
+        error_log('Salonieer Paddle sync failed: '.$e->getMessage());
+    }
+    // Out of budget with more possibly waiting: let the next request continue straight away.
+    try { runSql('UPDATE paddle_sync SET locked_until=0'.($more?',last_run=0':'').' WHERE id=1'); }
+    catch (Throwable $e) { error_log('Salonieer Paddle sync unlock: '.$e->getMessage()); }
+}
+// Background sync after the response has been sent, where the server supports it (PHP-FPM); otherwise it runs inline.
+function paddleSyncAfterResponse(int $minSeconds): void {
+    register_shutdown_function(static function() use ($minSeconds): void {
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        paddleSync($minSeconds);
+    });
 }
 
 // ---- Mirror (idempotent, order-safe upserts keyed on Paddle IDs) -----------------
