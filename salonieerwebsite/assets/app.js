@@ -14,7 +14,7 @@ const CURRENCIES = ['USD','ILS'];
 const SYMBOLS = { USD:'$', ILS:'₪' };
 let storedCurrency;
 try { storedCurrency = localStorage.getItem('salonieer_currency'); } catch {}
-const state = { currency: CURRENCIES.includes(storedCurrency) ? storedCurrency : 'USD', user: null, csrf: '', catalog: null, applications: [], logo: '', logoName: '', submissionKey: crypto.randomUUID(), receipt: null, filter: 'all', billing: null };
+const state = { currency: CURRENCIES.includes(storedCurrency) ? storedCurrency : 'USD', user: null, csrf: '', catalog: null, applications: [], logo: '', logoName: '', submissionKey: crypto.randomUUID(), receipt: null, filter: 'all', billing: null, checkout: null, paid: false };
 const drafts = {};
 const t = key => translate(key,lang);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -117,6 +117,44 @@ function plans() {
   const c = state.catalog;
   return `<div class="wrap">${titleBlock('plansEyebrow','plansTitle','plansLead',true,`<div class="pricing-controls"><span class="tag"><span class="small-mark" aria-hidden="true"></span>${pricingNote(c)}</span>${currencySwitch()}</div>`)}<section class="pricing-grid" aria-label="${t('plans')}">${c.plans.map((p,i)=>`<article class="plan-card${p.id==='pro'?' featured':''}">${p.id==='pro'?`<div class="popular">${t('popular')}</div>`:''}<div class="plan-icon" aria-hidden="true">${['I','II','III','IV'][i]}</div><h2>${esc(p.name)}</h2><p class="description">${t(p.id+'Desc')}</p><div class="plan-price">${priceHTML(priceOf(p.prices))}<div class="period">${priceOf(p.prices)===null?t('requestQuote'):t('monthly')}</div></div><ul class="plan-features">${p.features.map(f=>`<li><span class="check" aria-hidden="true">✓</span><span>${t(f)}</span></li>`).join('')}</ul><a class="btn ${p.id==='pro'?'primary':'outline'} full" href="/apply?plan=${p.id}" aria-label="${t(p.id==='enterprise'?'contactUs':'startNow')} · ${esc(p.name)}">${t(p.id==='enterprise'?'contactUs':'startNow')}</a></article>`).join('')}</section><section class="addons-section"><div class="addons-title"><h2>${t('optionalAddons')}</h2></div><div class="addons-grid">${[['loyalty','loyaltyText',priceOf(c.addons.loyalty),'◎'],['specialist','specialistText',priceOf(c.addons.specialist),'+1']].map(([name,description,price,symbol])=>`<article class="addon-card"><span class="addon-symbol" aria-hidden="true">${symbol}</span><div><h3>${t(name)}</h3><p>${t(description)}</p></div><div class="addon-price"><bdi>${money(price)}</bdi><small>${t('perMonth')}</small></div></article>`).join('')}</div></section><p class="payment-footnote">${c.source==='account'?'':t('locationPricingNote')+' '}${t('noCharge')} <a class="text-link" href="/terms">${t('termsTitle')}</a> · <a class="text-link" href="/refund">${t('refundTitle')}</a></p></div>`;
 }
+// ---- Paddle checkout ----------------------------------------------------------
+// Card applications for plans with a Paddle price pay the plan's first month in Paddle's overlay checkout.
+// custom_data carries the account ID; the server links the payment to this account only if the emails match.
+const checkoutPrice = plan => state.checkout?.prices?.[plan] || null;
+const canPayOnline = a => a.paymentMethod==='card' && !!checkoutPrice(a.plan) && a.status!=='declined' && !state.paid;
+let paddleLoading;
+function loadPaddle() {
+  if (paddleLoading) return paddleLoading;
+  paddleLoading = new Promise((resolve,reject)=>{
+    const script = document.createElement('script');
+    script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
+    script.onload = () => {
+      try {
+        if (state.checkout.environment==='sandbox') window.Paddle.Environment.set('sandbox');
+        window.Paddle.Initialize({ token: state.checkout.clientToken, eventCallback: event => {
+          // Paddle redirects to successUrl itself; this is only a fallback.
+          if (event.name==='checkout.completed') setTimeout(()=>location.assign('/account?checkout=complete'),4000);
+        }});
+        resolve(window.Paddle);
+      } catch { paddleLoading=null; reject({code:'checkoutUnavailable'}); }
+    };
+    script.onerror = () => { paddleLoading=null; script.remove(); reject({code:'checkoutUnavailable'}); };
+    document.head.appendChild(script);
+  });
+  return paddleLoading;
+}
+async function openCheckout(a) {
+  const priceId = checkoutPrice(a.plan);
+  if (!priceId || !state.user) throw {code:'checkoutUnavailable'};
+  const paddle = await loadPaddle();
+  paddle.Checkout.open({
+    items: [{ priceId, quantity: 1 }],
+    customer: { email: state.user.email },
+    customData: { salonieer_user_id: state.user.id, application_id: a.id },
+    settings: { displayMode:'overlay', theme:'dark', ...(['en','ar'].includes(lang)?{locale:lang}:{}), successUrl: location.origin+'/account?checkout=complete' }
+  });
+}
+const payButton = a => canPayOnline(a) ? `<button class="btn primary full" type="button" data-pay="${esc(a.id)}">${t('payByCard')}</button><p class="small-note" data-pay-feedback="${esc(a.id)}" role="status"></p>` : '';
 function apply() {
   if (state.receipt) return receipt();
   return `<div class="wrap">${titleBlock('selectedPlan','applyTitle','applyLead')}<div class="steps" aria-label="${t('applications')}"><div class="step"><span aria-hidden="true">✓</span>${t('stepPlan')}</div><div class="line"></div><div class="step active" aria-current="step"><span>2</span>${t('stepDetails')}</div><div class="line"></div><div class="step"><span>3</span>${t('stepReview')}</div></div><div class="application-layout"><form id="application-form" class="application-form">${formErrorBox()}<section class="form-panel"><h2>${t('stepDetails')}</h2><div class="form-grid">${field('identityNumber','identityNumber',{minlength:5,maxlength:30,autocomplete:'off',hint:'idHint',extra:'data-ltr spellcheck="false"'})}${field('salonName','salonName',{minlength:2,maxlength:100,autocomplete:'organization'})}</div><div class="field"><label for="logo">${t('logo')}</label><div class="upload"><span id="upload-symbol" class="upload-symbol" aria-hidden="true"${state.logo?' hidden':''}>＋</span><img id="logo-preview" class="logo-preview" alt="${t('logo')}"${state.logo?` src="${state.logo}"`:' hidden'}><div class="upload-text"><strong id="upload-title">${t(state.logo?'replaceLogo':'uploadTitle')}</strong><small>${t('uploadHint')}</small><small id="logo-filename" class="upload-filename">${esc(state.logoName)}</small></div><input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="logo-error"></div><small id="logo-error" class="field-error"></small></div></section><section class="form-panel"><div class="panel-head"><h2>${t('selectedPlan')}</h2>${currencySwitch()}</div><div class="field"><label for="plan">${t('plans')}</label><select id="plan" name="plan" required>${state.catalog.plans.map(p=>`<option value="${p.id}">${p.name} · ${money(priceOf(p.prices))}${priceOf(p.prices)===null?'':' '+t('perMonth')}</option>`).join('')}</select></div><p class="included-note" id="included-loyalty" hidden><span aria-hidden="true">✓</span>${t('loyaltyIncluded')}</p><div class="addon-control" id="loyalty-control"><input type="checkbox" id="loyalty" name="loyalty"><label for="loyalty">${t('loyalty')}</label><span class="amount"><bdi>${money(priceOf(state.catalog.addons.loyalty))}</bdi> <small>${t('perMonth')}</small></span></div><div class="quantity-field" id="specialist-control"><label for="extraSpecialists">${t('extraSpecialists')}<br><small class="muted"><bdi>${money(priceOf(state.catalog.addons.specialist))}</bdi> ${t('perMonth')}</small></label><input id="extraSpecialists" name="extraSpecialists" type="number" min="0" max="50" step="1" value="0" inputmode="numeric"></div><p class="included-note" id="unlimited-note" hidden><span aria-hidden="true">✓</span>${t('unlimitedSpecialists')}</p></section><section class="form-panel"><fieldset><legend>${t('payment')}</legend><div class="radio-options"><label class="radio-option"><input type="radio" name="paymentMethod" value="card" required><span>${t('card')}</span></label><label class="radio-option"><input type="radio" name="paymentMethod" value="bank_transfer" required><span>${t('bank_transfer')}</span></label></div><p class="payment-note" id="payment-note">${t('noCharge')}</p></fieldset></section><p class="privacy-note">${t('privacyNote')} <a href="/privacy" target="_blank" rel="noopener" class="text-link">${t('privacyPolicy')}</a>.</p><p class="privacy-note">${t('agreeNote')} <a href="/terms" target="_blank" rel="noopener" class="text-link">${t('termsTitle')}</a> · <a href="/refund" target="_blank" rel="noopener" class="text-link">${t('refundTitle')}</a>.</p><button class="btn primary full form-submit" type="submit">${t('submit')}</button></form><aside class="order-summary" id="order-summary" aria-live="polite"></aside></div></div>`;
@@ -144,16 +182,17 @@ function syncApplication() {
   document.getElementById('specialist-control').hidden = plan === 'enterprise';
   document.getElementById('unlimited-note').hidden = plan !== 'enterprise';
   const payment = form.elements.paymentMethod.value;
-  document.getElementById('payment-note').textContent = t(payment==='card'?'cardNote':payment==='bank_transfer'?'bankNote':'noCharge');
   const q = selectedQuote();
-  document.getElementById('order-summary').innerHTML = `<h2>${t('summary')}</h2><div class="summary-plan"><h3>${q.plan.name}</h3><a href="/plans" class="text-link">${t('backPlans')}</a></div><span class="tag">${t(state.catalog.region==='west_bank'?'westBankPricing':'standardPricing')}</span><div class="summary-row"><span>${q.plan.name}</span><span><bdi>${money(q.base)}</bdi></span></div>${q.loyalty?`<div class="summary-row"><span>${t('loyalty')}</span><span><bdi>${money(q.loyaltyPrice)}</bdi></span></div>`:''}${q.count?`<div class="summary-row"><span>${t('extraSpecialists')} × ${q.count}</span><span><bdi>${money(q.count*q.specialistPrice)}</bdi></span></div>`:''}<div class="summary-total"><span class="label">${q.total===null?t('requestQuote'):t('monthlyTotal')}</span>${priceHTML(q.total)}${q.total===null?'':`<p class="small-note">${t('perMonth')}</p>`}</div><p class="summary-contact">${t('contactDetails')}<br><strong class="ltr">${esc(state.user.email)}</strong><br><strong class="ltr">${esc(state.user.phone)}</strong></p><div class="section-divider"></div><p class="small-note">${t('noCharge')}</p>`;
+  const online = payment==='card' && !!checkoutPrice(q.plan.id);
+  document.getElementById('payment-note').textContent = t(payment==='card'?(online?'cardNote':'cardLaterNote'):payment==='bank_transfer'?'bankNote':'noCharge');
+  document.getElementById('order-summary').innerHTML = `<h2>${t('summary')}</h2><div class="summary-plan"><h3>${q.plan.name}</h3><a href="/plans" class="text-link">${t('backPlans')}</a></div><span class="tag">${t(state.catalog.region==='west_bank'?'westBankPricing':'standardPricing')}</span><div class="summary-row"><span>${q.plan.name}</span><span><bdi>${money(q.base)}</bdi></span></div>${q.loyalty?`<div class="summary-row"><span>${t('loyalty')}</span><span><bdi>${money(q.loyaltyPrice)}</bdi></span></div>`:''}${q.count?`<div class="summary-row"><span>${t('extraSpecialists')} × ${q.count}</span><span><bdi>${money(q.count*q.specialistPrice)}</bdi></span></div>`:''}<div class="summary-total"><span class="label">${q.total===null?t('requestQuote'):t('monthlyTotal')}</span>${priceHTML(q.total)}${q.total===null?'':`<p class="small-note">${t('perMonth')}</p>`}</div><p class="summary-contact">${t('contactDetails')}<br><strong class="ltr">${esc(state.user.email)}</strong><br><strong class="ltr">${esc(state.user.phone)}</strong></p><div class="section-divider"></div><p class="small-note">${online?t('checkoutPriceNote')+(q.loyalty||q.count?' '+t('addonsLaterNote'):''):t('noCharge')}</p>`;
 }
 function receipt() {
   const a = state.receipt;
-  return `<div class="wrap"><section class="receipt" tabindex="-1"><div class="receipt-check" aria-hidden="true">✓</div><h1>${t('receivedTitle')}</h1><p>${t('receivedLead')}</p><div class="reference-box"><span class="label">${t('reference')}</span><strong dir="ltr">${esc(a.id)}</strong></div><div class="summary-row"><span>${t('salonName')}</span><span>${esc(a.salonName)}</span></div><div class="summary-row"><span>${t('selectedPlan')}</span><span>${esc(a.plan[0].toUpperCase()+a.plan.slice(1))}</span></div><div class="summary-row"><span>${t('monthlyTotal')}</span><span><bdi>${money(a.quote.total,a.quote.currency||'ILS')}</bdi></span></div><div class="summary-row"><span>${t('payment')}</span><span>${t(a.paymentMethod)}</span></div><div class="summary-row"><span>${t('status')}</span><span>${t(a.status)}</span></div><p class="small-note">${t('noCharge')}</p><a class="btn primary full" href="/applications">${t('viewApplications')}</a></section></div>`;
+  return `<div class="wrap"><section class="receipt" tabindex="-1"><div class="receipt-check" aria-hidden="true">✓</div><h1>${t('receivedTitle')}</h1><p>${t('receivedLead')}</p><div class="reference-box"><span class="label">${t('reference')}</span><strong dir="ltr">${esc(a.id)}</strong></div><div class="summary-row"><span>${t('salonName')}</span><span>${esc(a.salonName)}</span></div><div class="summary-row"><span>${t('selectedPlan')}</span><span>${esc(a.plan[0].toUpperCase()+a.plan.slice(1))}</span></div><div class="summary-row"><span>${t('monthlyTotal')}</span><span><bdi>${money(a.quote.total,a.quote.currency||'ILS')}</bdi></span></div><div class="summary-row"><span>${t('payment')}</span><span>${t(a.paymentMethod)}</span></div><div class="summary-row"><span>${t('status')}</span><span>${t(a.status)}</span></div><p class="small-note">${t(canPayOnline(a)?'payNowNote':'noCharge')}</p>${payButton(a)}<a class="btn ${canPayOnline(a)?'':'primary '}full" href="/applications">${t('viewApplications')}</a></section></div>`;
 }
 function applicationCard(a,admin=false) {
-  return `<article class="application-card"><div class="application-card-top"><img src="${esc(a.logoUrl)}" alt="${t('logo')}: ${esc(a.salonName)}" class="logo-preview"><div><h2>${esc(a.salonName)}</h2><span class="ref"><bdi>${esc(a.id)}</bdi></span></div><span class="status ${esc(a.status)}">${t(a.status)}</span></div><dl class="application-meta"><div><dt>${t('selectedPlan')}</dt><dd>${esc(a.plan[0].toUpperCase()+a.plan.slice(1))}</dd></div><div><dt>${t('monthlyTotal')}</dt><dd class="price-value"><bdi>${money(a.quote.total,a.quote.currency||'ILS')}</bdi></dd></div><div><dt>${t('payment')}</dt><dd>${t(a.paymentMethod)}</dd></div><div><dt>${t('submittedOn')}</dt><dd>${date(a.createdAt)}</dd></div></dl>${a.quote.loyalty||a.quote.extraSpecialists?`<p class="small-note">${t('optionalAddons')}: ${[a.quote.loyalty?t('loyalty'):'',a.quote.extraSpecialists?`${t('extraSpecialists')} × ${a.quote.extraSpecialists}`:''].filter(Boolean).join(' · ')}</p>`:''}${a.status==='needs_info'?`<p class="note"><a class="text-link" href="mailto:salonieer1st@gmail.com?subject=${encodeURIComponent(a.id)}">${t('contactUs')}</a></p>`:''}${admin?`<div class="admin-details"><dl><div><dt>${t('fullName')}</dt><dd>${esc(a.fullName)}</dd></div><div><dt>${t('email')}</dt><dd><a class="text-link ltr" href="mailto:${esc(a.email)}">${esc(a.email)}</a></dd></div><div><dt>${t('phone')}</dt><dd><a class="text-link ltr" href="tel:${esc(a.phone)}">${esc(a.phone)}</a></dd></div><div><dt>${t('location')}</dt><dd>${esc(locationName(a))}</dd></div><div><dt>${t('identityNumber')}</dt><dd><bdi>${esc(a.identityNumber)}</bdi></dd></div><div><dt>${t('yourPricing')}</dt><dd>${t(a.quote.region==='west_bank'?'westBankPricing':'standardPricing')}</dd></div></dl><form class="status-form" data-id="${esc(a.id)}"><label for="status-${a.id}">${t('status')}</label><select class="status-select" name="status" id="status-${a.id}">${statusNames.map(s=>`<option value="${s}"${a.status===s?' selected':''}>${t(s)}</option>`).join('')}</select><button class="btn small outline" type="submit">${t('saveStatus')}</button><span class="status-feedback" role="status"></span></form></div>`:''}</article>`;
+  return `<article class="application-card"><div class="application-card-top"><img src="${esc(a.logoUrl)}" alt="${t('logo')}: ${esc(a.salonName)}" class="logo-preview"><div><h2>${esc(a.salonName)}</h2><span class="ref"><bdi>${esc(a.id)}</bdi></span></div><span class="status ${esc(a.status)}">${t(a.status)}</span></div><dl class="application-meta"><div><dt>${t('selectedPlan')}</dt><dd>${esc(a.plan[0].toUpperCase()+a.plan.slice(1))}</dd></div><div><dt>${t('monthlyTotal')}</dt><dd class="price-value"><bdi>${money(a.quote.total,a.quote.currency||'ILS')}</bdi></dd></div><div><dt>${t('payment')}</dt><dd>${t(a.paymentMethod)}</dd></div><div><dt>${t('submittedOn')}</dt><dd>${date(a.createdAt)}</dd></div></dl>${a.quote.loyalty||a.quote.extraSpecialists?`<p class="small-note">${t('optionalAddons')}: ${[a.quote.loyalty?t('loyalty'):'',a.quote.extraSpecialists?`${t('extraSpecialists')} × ${a.quote.extraSpecialists}`:''].filter(Boolean).join(' · ')}</p>`:''}${admin?'':payButton(a)}${a.status==='needs_info'?`<p class="note"><a class="text-link" href="mailto:salonieer1st@gmail.com?subject=${encodeURIComponent(a.id)}">${t('contactUs')}</a></p>`:''}${admin?`<div class="admin-details"><dl><div><dt>${t('fullName')}</dt><dd>${esc(a.fullName)}</dd></div><div><dt>${t('email')}</dt><dd><a class="text-link ltr" href="mailto:${esc(a.email)}">${esc(a.email)}</a></dd></div><div><dt>${t('phone')}</dt><dd><a class="text-link ltr" href="tel:${esc(a.phone)}">${esc(a.phone)}</a></dd></div><div><dt>${t('location')}</dt><dd>${esc(locationName(a))}</dd></div><div><dt>${t('identityNumber')}</dt><dd><bdi>${esc(a.identityNumber)}</bdi></dd></div><div><dt>${t('yourPricing')}</dt><dd>${t(a.quote.region==='west_bank'?'westBankPricing':'standardPricing')}</dd></div></dl><form class="status-form" data-id="${esc(a.id)}"><label for="status-${a.id}">${t('status')}</label><select class="status-select" name="status" id="status-${a.id}">${statusNames.map(s=>`<option value="${s}"${a.status===s?' selected':''}>${t(s)}</option>`).join('')}</select><button class="btn small outline" type="submit">${t('saveStatus')}</button><span class="status-feedback" role="status"></span></form></div>`:''}</article>`;
 }
 function applications(admin=false) {
   const list = admin && state.filter!=='all' ? state.applications.filter(a=>a.status===state.filter) : state.applications;
@@ -168,7 +207,8 @@ function account() {
   const card = sub ? `<article class="application-card"><div class="application-card-top"><div><h2>${esc(sub.productName || t('subscription'))}</h2><span class="ref"><bdi>${esc(sub.id)}</bdi></span></div><span class="status ${subscriptionTone(sub.status)}">${t('sub_'+sub.status)}</span></div><dl class="application-meta">${meta('paidAccess',t(b.hasAccess?'accessActive':'accessInactive'))}${meta('billingPeriod',esc(interval))}${meta('nextBilling',sub.nextBilledAt?date(sub.nextBilledAt):'')}${meta('periodEnds',!sub.nextBilledAt&&sub.currentPeriodEndsAt?date(sub.currentPeriodEndsAt):'')}</dl>${change}</article>`
     : `<div class="empty-state"><h2>${t('noSubscription')}</h2><p>${t(b.hasCustomer?'noSubscriptionText':'noBillingText')}</p>${b.hasCustomer?'':`<a class="btn primary" href="/plans">${t('explorePlans')}</a>`}</div>`;
   const portal = b.hasCustomer ? `<section class="invite-panel"><button class="btn primary" type="button" id="manage-billing">${t('manageBilling')}</button><p class="small-note">${t('manageBillingHint')}</p><p id="billing-feedback" role="status"></p></section>` : '';
-  return `<div class="narrow">${titleBlock('account','accountTitle','accountLead')}<div class="application-list">${card}${portal}</div></div>`;
+  const justPaid = new URLSearchParams(location.search).get('checkout')==='complete' && !b.hasAccess ? `<div class="notice info"><p>${t('paymentProcessing')}</p><button class="btn small" type="button" id="refresh-billing">${t('refresh')}</button></div>` : '';
+  return `<div class="narrow">${titleBlock('account','accountTitle','accountLead')}<div class="application-list">${justPaid}${card}${portal}</div></div>`;
 }
 function support() {
   return `<div class="wrap">${titleBlock('support','helpTitle','helpLead')}<div class="support-layout"><section class="support-contact"><h2>${t('contactUs')}</h2><a class="email-address" href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a><a class="btn primary" href="mailto:salonieer1st@gmail.com?subject=Salonieer%20Support">${t('emailSupport')}</a><button type="button" class="btn" id="copy-email">${t('copyEmail')}</button><p id="copy-feedback" role="status"></p></section><section class="faq-list"><h2>${t('faq')}</h2>${[['faqLoginQ','faqLoginA','account'],['faqPriceQ','faqPriceA','pricing'],['faqPayQ','faqPayA','payment'],['faqNotificationsQ','faqNotificationsA','notifications'],['faqSalonQ','faqSalonA','salon']].map(([q,a,id])=>`<details id="${id}"${location.hash==='#'+id?' open':''}><summary>${t(q)}</summary><p>${t(a)}</p></details>`).join('')}</section></div></div>`;
@@ -246,6 +286,7 @@ async function submitForm(event,path) {
       delete drafts[route]; form.reset(); render();
       document.querySelector('.receipt').focus();
       window.scrollTo({top:0,behavior:'smooth'});
+      if (canPayOnline(state.receipt)) document.querySelector(`[data-pay="${CSS.escape(state.receipt.id)}"]`)?.click();
     }
   } catch (error) { showError(form,error); }
   finally { submit.disabled=false; submit.textContent=label; form.dataset.busy='false'; document.getElementById('language').disabled=false; }
@@ -312,6 +353,21 @@ function bind() {
     applicationForm.addEventListener('submit',event=>submitForm(event,'/api/applications'));
     syncApplication();
   }
+  document.querySelectorAll('[data-pay]').forEach(button=>button.addEventListener('click',async()=>{
+    const a = state.receipt?.id===button.dataset.pay ? state.receipt : state.applications.find(x=>x.id===button.dataset.pay);
+    const feedback = document.querySelector(`[data-pay-feedback="${CSS.escape(button.dataset.pay)}"]`);
+    button.disabled = true; feedback.textContent = t('openingCheckout');
+    try { await openCheckout(a); feedback.textContent = ''; }
+    catch (error) { feedback.textContent = t(error.code || 'checkoutUnavailable'); }
+    finally { button.disabled = false; }
+  }));
+  document.getElementById('manage-billing')?.addEventListener('click',async event=>{
+    const button=event.currentTarget, feedback=document.getElementById('billing-feedback');
+    button.disabled=true; feedback.textContent=t('openingPortal');
+    try { const result=await api('/api/billing/portal',{method:'POST',body:'{}'}); location.assign(result.url); }
+    catch(error){ feedback.textContent=t(error.code||'serverError'); button.disabled=false; }
+  });
+  document.getElementById('refresh-billing')?.addEventListener('click',()=>location.reload());
   document.getElementById('copy-email')?.addEventListener('click',async()=>{
     try { await navigator.clipboard.writeText('salonieer1st@gmail.com');document.getElementById('copy-feedback').textContent=t('copied'); }
     catch { document.getElementById('copy-feedback').textContent=t('copyFailed'); }
@@ -373,6 +429,7 @@ async function initialize() {
       if (!state.catalog.plans.some(p=>p.id===plan)) return location.replace('/plans');
     }
     if (route==='/account') state.billing=await api('/api/billing');
+    if (['/apply','/applications'].includes(route) && state.user) { try { state.paid=(await api('/api/billing')).hasAccess; } catch {} }
     if (['/applications','/admin'].includes(route)) state.applications=(await api(route==='/admin'?'/api/admin/applications':'/api/applications')).applications;
     render();
     if (location.hash && route==='/support') document.getElementById(location.hash.slice(1))?.scrollIntoView();
