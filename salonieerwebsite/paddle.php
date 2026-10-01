@@ -13,6 +13,7 @@ use Paddle\SDK\Entities\Event;
 use Paddle\SDK\Environment;
 use Paddle\SDK\Exceptions\ApiError;
 use Paddle\SDK\Notifications\Entities\Customer as CustomerEntity;
+use Paddle\SDK\Notifications\Entities\Shared\CustomData;
 use Paddle\SDK\Notifications\Entities\Subscription as SubscriptionEntity;
 use Paddle\SDK\Notifications\Entities\Subscription\SubscriptionItem;
 use Paddle\SDK\Notifications\Entities\Transaction as TransactionEntity;
@@ -164,13 +165,22 @@ function onPaddleCustomer(CustomerEntity $c): void {
     upsertPaddleCustomer($c->id,$c->email,paddleTime($c->updatedAt,true));
 }
 function upsertPaddleCustomer(string $id, string $email, string $paddleUpdatedAt): void {
-    $email=strtolower(trim($email));
-    // Link to the website account with the same email (emails are unique and stored lowercase in users).
     runSql(<<<SQL
-INSERT INTO customers(customer_id,email,user_id,paddle_updated_at) VALUES(?,?,(SELECT id FROM users WHERE email=?),?)
-ON CONFLICT(customer_id) DO UPDATE SET email=excluded.email,user_id=COALESCE(customers.user_id,excluded.user_id),paddle_updated_at=excluded.paddle_updated_at,updated_at=datetime('now')
+INSERT INTO customers(customer_id,email,paddle_updated_at) VALUES(?,?,?)
+ON CONFLICT(customer_id) DO UPDATE SET email=excluded.email,paddle_updated_at=excluded.paddle_updated_at,updated_at=datetime('now')
 WHERE excluded.paddle_updated_at>=customers.paddle_updated_at
-SQL,[$id,$email,$email,$paddleUpdatedAt]);
+SQL,[$id,strtolower(trim($email)),$paddleUpdatedAt]);
+}
+// Links a Paddle customer to a website account. Registration is open and emails are not verified, so an email match
+// alone is not proof: the checkout must pass custom_data {"salonieer_user_id": <users.id>} (Paddle copies it from the
+// transaction to the subscription), AND that account's email must equal the Paddle customer's email. Someone who
+// edits custom_data can only attach a purchase made with their own account's email. The first link is kept.
+const PADDLE_USER_KEY = 'salonieer_user_id';
+function paddleLinkUser(?string $customerId, ?CustomData $customData): void {
+    $data=$customData?->data;
+    $userId=is_array($data) ? filter_var($data[PADDLE_USER_KEY]??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]) : false;
+    if (!$customerId || $userId===false) return;
+    runSql("UPDATE customers SET user_id=?,updated_at=datetime('now') WHERE customer_id=? AND user_id IS NULL AND email=(SELECT email FROM users WHERE id=?)",[$userId,$customerId,$userId]);
 }
 function onPaddleSubscription(SubscriptionEntity $s): void {
     // Subscription events can arrive before customer.created; fetch the customer so the foreign key holds.
@@ -194,6 +204,7 @@ SQL,[
         $cycle?->interval->getValue(),$cycle?->frequency,$change?->action->getValue(),paddleTime($change?->effectiveAt),
         paddleTime($s->currentBillingPeriod?->endsAt),paddleTime($s->nextBilledAt),paddleTime($s->canceledAt),paddleTime($s->updatedAt,true),
     ]);
+    paddleLinkUser($s->customerId,$s->customData);
 }
 // The plan is the first recurring item still on the subscription; add-ons (loyalty, extra specialists) come after it.
 function paddlePlanItem(array $items): ?SubscriptionItem {
@@ -208,16 +219,15 @@ ON CONFLICT(transaction_id) DO UPDATE SET customer_id=excluded.customer_id,subsc
 invoice_number=excluded.invoice_number,billed_at=excluded.billed_at,paddle_updated_at=excluded.paddle_updated_at,updated_at=datetime('now')
 WHERE excluded.paddle_updated_at>=transactions.paddle_updated_at
 SQL,[$t->id,$t->customerId,$t->subscriptionId,$t->status->getValue(),$t->currencyCode->getValue(),$totals->grandTotal ?? $totals->total,$t->invoiceNumber,paddleTime($t->billedAt),paddleTime($t->updatedAt,true)]);
+    paddleLinkUser($t->customerId,$t->customData);
 }
 
 // ---- Access -------------------------------------------------------------------
 function subscriptionGrantsAccess(array|false|null $subscription): bool {
     return is_array($subscription) && in_array($subscription['status'],PADDLE_ACCESS_STATUSES,true);
 }
-// Paddle customer IDs for a signed-in user, resolved only from the server-side session user.
-// A customer created before the account existed (same email) is linked on first lookup.
+// Paddle customer IDs for a signed-in user, resolved only from the server-side session user (see paddleLinkUser).
 function paddleCustomerIds(array $user): array {
-    runSql('UPDATE customers SET user_id=?,updated_at=datetime(\'now\') WHERE user_id IS NULL AND email=?',[(int)$user['id'],strtolower($user['email'])]);
     return array_column(rows('SELECT customer_id FROM customers WHERE user_id=? ORDER BY updated_at DESC',[(int)$user['id']]),'customer_id');
 }
 function paddleUserSubscriptions(array $user): array {

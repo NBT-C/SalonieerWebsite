@@ -4,7 +4,7 @@ const mail = '<a href="mailto:salonieer1st@gmail.com">salonieer1st@gmail.com</a>
 export const terms = {
 en: `
 <div class="notice">These Terms of Service govern your use of salonieer.com and the Salonieer salon management and booking services. By creating an account, submitting an application or using the service, you agree to these terms.</div>
-<h2>1. Accounts and invitations</h2><p>Registration requires a SIN invitation code issued by Salonieer. You must give accurate account details, including your country and region, keep your password confidential and tell us promptly if you believe your account has been accessed without permission. You are responsible for activity carried out through your account.</p>
+<h2>1. Accounts</h2><p>You must give accurate account details, including your country and region, keep your password confidential and tell us promptly if you believe your account has been accessed without permission. You are responsible for activity carried out through your account.</p>
 <h2>2. Applications</h2><p>Submitting a salon application is free and does not create a paid subscription. Our team reviews each application and may approve it, decline it or ask for more information. A subscription starts only after your application is approved and the first payment has been arranged with you.</p>
 <h2>3. Plans, prices and currency</h2><p>Plans are priced per month and can be displayed in US dollars (USD) or Israeli new shekels (ILS). Prices shown to visitors who are not signed in are estimated from their approximate location, and standard pricing is shown when a location cannot be determined. The price that applies to you follows the country and region saved on your account and the currency recorded in your application. Enterprise pricing is set by individual agreement. Any applicable taxes are confirmed when payment is arranged. We may change our prices with at least 30 days’ notice; changes apply from your next billing period.</p>
 <h2>4. Billing</h2><p>Subscriptions and add-ons are billed monthly in advance, by secure payment link or bank transfer. If a payment is not received, we may suspend access after giving you notice and a reasonable opportunity to pay.</p>
@@ -19,7 +19,7 @@ en: `
 
 ar: `
 <div class="notice">تنظّم شروط الخدمة هذه استخدامك لموقع salonieer.com وخدمات Salonieer لإدارة الصالونات والحجوزات. بإنشاء حساب أو إرسال طلب أو استخدام الخدمة، فإنك توافق على هذه الشروط.</div>
-<h2>1. الحسابات والدعوات</h2><p>يتطلب التسجيل رمز دعوة SIN صادراً عن Salonieer. عليك تقديم بيانات صحيحة لحسابك، بما فيها الدولة والمنطقة، والحفاظ على سرية كلمة المرور، وإبلاغنا فوراً إذا اعتقدت أن حسابك استُخدم دون إذن. أنت مسؤول عن النشاط الذي يتم عبر حسابك.</p>
+<h2>1. الحسابات</h2><p>عليك تقديم بيانات صحيحة لحسابك، بما فيها الدولة والمنطقة، والحفاظ على سرية كلمة المرور، وإبلاغنا فوراً إذا اعتقدت أن حسابك استُخدم دون إذن. أنت مسؤول عن النشاط الذي يتم عبر حسابك.</p>
 <h2>2. الطلبات</h2><p>إرسال طلب إنشاء صالون مجاني ولا ينشئ اشتراكاً مدفوعاً. يراجع فريقنا كل طلب، وقد يقبله أو يرفضه أو يطلب معلومات إضافية. يبدأ الاشتراك فقط بعد قبول الطلب وترتيب الدفعة الأولى معك.</p>
 <h2>3. الخطط والأسعار والعملة</h2><p>أسعار الخطط شهرية ويمكن عرضها بالدولار الأمريكي (USD) أو بالشيكل الجديد (ILS). الأسعار المعروضة للزوار غير المسجلين تقديرية حسب موقعهم التقريبي، وتُعرض الأسعار الأساسية إذا تعذر تحديد الموقع. السعر الذي ينطبق عليك يعتمد على الدولة والمنطقة المسجلتين في حسابك والعملة المسجلة في طلبك. تُحدد أسعار خطة Enterprise باتفاق خاص. يتم تأكيد أي ضرائب مطبقة عند ترتيب الدفع. قد نغيّر أسعارنا بإشعار مسبق لا يقل عن 30 يوماً، ويسري التغيير من فترة الفوترة التالية.</p>
 <h2>4. الفوترة</h2><p>تُدفع الاشتراكات والإضافات شهرياً مقدماً، عبر رابط دفع آمن أو تحويل بنكي. إذا لم تصلنا الدفعة، قد نعلّق الوصول بعد إشعارك ومنحك فرصة معقولة للدفع.</p>
@@ -34,7 +34,7 @@ ar: `
 
 he: `
 <div class="notice">תנאי שימוש אלה חלים על השימוש באתר salonieer.com ובשירותי ניהול הסלון וההזמנות של Salonieer. ביצירת חשבון, בשליחת בקשה או בשימוש בשירות, אתם מסכימים לתנאים אלה.</div>
-<h2>1. חשבונות והזמנות</h2><p>ההרשמה מחייבת קוד הזמנה SIN שהונפק על ידי Salonieer. עליכם למסור פרטי חשבון נכונים, כולל מדינה ואזור, לשמור על סודיות הסיסמה ולעדכן אותנו מיד אם אתם חושדים שנעשה שימוש בחשבון ללא הרשאה. אתם אחראים לפעילות המתבצעת דרך החשבון שלכם.</p>
+<h2>1. חשבונות</h2><p>עליכם למסור פרטי חשבון נכונים, כולל מדינה ואזור, לשמור על סודיות הסיסמה ולעדכן אותנו מיד אם אתם חושדים שנעשה שימוש בחשבון ללא הרשאה. אתם אחראים לפעילות המתבצעת דרך החשבון שלכם.</p>
 <h2>2. בקשות</h2><p>שליחת בקשה להקמת סלון היא ללא תשלום ואינה יוצרת מנוי בתשלום. הצוות שלנו בודק כל בקשה ועשוי לאשר אותה, לדחות אותה או לבקש מידע נוסף. המנוי מתחיל רק לאחר אישור הבקשה ותיאום התשלום הראשון איתכם.</p>
 <h2>3. מסלולים, מחירים ומטבע</h2><p>מחירי המסלולים הם חודשיים וניתן להציג אותם בדולר אמריקאי (USD) או בשקל חדש (ILS). המחירים המוצגים למבקרים שאינם מחוברים מוערכים לפי מיקומם המשוער, וכאשר לא ניתן לזהות מיקום מוצגים מחירים רגילים. המחיר שחל עליכם נקבע לפי המדינה והאזור שנשמרו בחשבון ולפי המטבע שנרשם בבקשה. מחיר מסלול Enterprise נקבע בהסכם אישי. מסים החלים, אם יש, יאושרו בעת תיאום התשלום. אנו רשאים לשנות מחירים בהודעה מוקדמת של 30 יום לפחות, והשינוי יחול מתקופת החיוב הבאה.</p>
 <h2>4. חיוב</h2><p>מנויים ותוספות מחויבים מראש מדי חודש, באמצעות קישור תשלום מאובטח או העברה בנקאית. אם התשלום לא התקבל, אנו רשאים להשעות את הגישה לאחר מתן הודעה והזדמנות סבירה לשלם.</p>
