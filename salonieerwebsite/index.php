@@ -180,8 +180,10 @@ const PRICES = [
 // One Paddle price per plan, billed monthly; null = no online checkout (Enterprise is priced by agreement).
 const PADDLE_CLIENT_TOKEN = 'live_6bf8f0eeffe1dc28b1c91119561';
 const PADDLE_PRICE_IDS = ['basic'=>'pri_01m3w0a3ydswgs640dgrp2w14r','pro'=>'pri_01m3w0fb4pcqmje2qmqjgkqjby','business'=>'pri_01m3w0gw93sr9cbrm48hcpdrvr','enterprise'=>null];
+// Monthly add-ons, added to the same checkout: loyalty once, specialist once per extra specialist (null = billed after review).
+const PADDLE_ADDON_PRICE_IDS = ['loyalty'=>'pri_01m3w705czty7dyfc9t85gx31m','specialist'=>'pri_01m3w6t9wxkyw07ybkh1gahekt'];
 function checkoutConfig(): array {
-    return ['clientToken'=>PADDLE_CLIENT_TOKEN,'environment'=>str_starts_with(PADDLE_CLIENT_TOKEN,'test_')?'sandbox':'production','prices'=>array_filter(PADDLE_PRICE_IDS)];
+    return ['clientToken'=>PADDLE_CLIENT_TOKEN,'environment'=>str_starts_with(PADDLE_CLIENT_TOKEN,'test_')?'sandbox':'production','prices'=>array_filter(PADDLE_PRICE_IDS),'addons'=>array_filter(PADDLE_ADDON_PRICE_IDS)];
 }
 function userTier(array $user): string { return $user['country']==='PS'&&$user['region']==='WEST_BANK'?'west_bank':'standard'; }
 function catalog(string $tier, array $meta=[]): array {
