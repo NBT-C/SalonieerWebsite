@@ -173,6 +173,13 @@ const PRICES = [
         'ILS' => ['plans'=>[65,140,229,null], 'loyalty'=>15, 'specialist'=>15],
     ],
 ];
+// Paddle checkout. The client-side token and price IDs are public (they're sent to the browser); secrets stay in .env.
+// One Paddle price per plan, billed monthly; null = no online checkout (Enterprise is priced by agreement).
+const PADDLE_CLIENT_TOKEN = 'live_6bf8f0eeffe1dc28b1c91119561';
+const PADDLE_PRICE_IDS = ['basic'=>'pri_01m3w0a3ydswgs640dgrp2w14r','pro'=>'pri_01m3w0fb4pcqmje2qmqjgkqjby','business'=>'pri_01m3w0gw93sr9cbrm48hcpdrvr','enterprise'=>null];
+function checkoutConfig(): array {
+    return ['clientToken'=>PADDLE_CLIENT_TOKEN,'environment'=>str_starts_with(PADDLE_CLIENT_TOKEN,'test_')?'sandbox':'production','prices'=>array_filter(PADDLE_PRICE_IDS)];
+}
 function userTier(array $user): string { return $user['country']==='PS'&&$user['region']==='WEST_BANK'?'west_bank':'standard'; }
 function catalog(string $tier, array $meta=[]): array {
     $names=['Basic','Pro','Business','Enterprise'];$spec=[1,7,16,null];
@@ -299,7 +306,7 @@ function api(string $method,string $path,array|false $session,array|false $user)
         // Every page load calls this: keep the Paddle mirror current without cron or inbound webhooks.
         paddleSyncAfterResponse(300);
         if (!$session) rateLimit('guest-session',200,3600);
-        sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session)]);
+        sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session),'checkout'=>checkoutConfig()]);
     }
     if ($method==='GET'&&$path==='/api/health') {
         $sqlite=in_array('sqlite',PDO::getAvailableDrivers(),true);$database=false;
@@ -402,7 +409,8 @@ function api(string $method,string $path,array|false $session,array|false $user)
 }
 header('X-Content-Type-Options: nosniff');header('X-Frame-Options: DENY');header('Referrer-Policy: same-origin');
 header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
-header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.country.is; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'");
+// Paddle.js (checkout overlay) loads from cdn.paddle.com, frames buy.paddle.com and adds its own overlay styles.
+header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.paddle.com https://public.profitwell.com; style-src 'self' 'unsafe-inline' https://cdn.paddle.com; img-src 'self' data: blob: https://cdn.paddle.com; connect-src 'self' https://api.country.is https://*.paddle.com https://*.profitwell.com; frame-src https://buy.paddle.com https://sandbox-buy.paddle.com; font-src 'self' https://cdn.paddle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'");
 header('Cache-Control: no-store');header('Vary: Cookie');
 if (cookieName()==='__Host-salonieer') header('Strict-Transport-Security: max-age=31536000');
 try {
