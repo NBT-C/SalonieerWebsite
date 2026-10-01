@@ -1,0 +1,15 @@
+{
+    "name": "salonieer/website",
+    "description": "Salonieer website",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "paddlehq/paddle-php-sdk": "^1.18",
+        "guzzlehttp/guzzle": "^7.9"
+    },
+    "config": {
+        "platform": { "php": "8.1.0" },
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}
