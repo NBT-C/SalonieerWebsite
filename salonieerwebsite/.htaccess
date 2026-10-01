@@ -1,5 +1,11 @@
 Options -Indexes
 DirectoryIndex index.php index.html
+# Browsers re-check scripts and styles on every visit (a cheap 304 when unchanged), so a new upload shows up at once.
+<IfModule mod_headers.c>
+<FilesMatch "\.(?:js|css)$">
+Header set Cache-Control "no-cache"
+</FilesMatch>
+</IfModule>
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteRule ^(?:data|salonieer-private|vendor|\.env[^/]*|composer\.(?:json|lock)|paddle\.php)(?:/|$) - [F,NC]
