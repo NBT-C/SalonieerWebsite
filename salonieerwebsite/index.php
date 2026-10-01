@@ -301,6 +301,13 @@ function applicationDTO(array $r,bool $admin=false): array {
     if ($admin) $a+=['fullName'=>$r['full_name'],'email'=>$r['email'],'phone'=>$r['phone'],'country'=>$r['country'],'region'=>$r['region'],'identityNumber'=>decryptId($r['identity_encrypted'])];
     return $a;
 }
+// The app shell, with the script and stylesheet URLs stamped with their file times so browsers fetch a new upload
+// instead of a cached copy (the modules app.js imports are kept fresh by the no-cache header in .htaccess).
+function pageHtml(): string {
+    $html=(string)file_get_contents(__DIR__.'/page.html');
+    foreach (['/assets/app.js','/assets/app.css'] as $asset) $html=str_replace('"'.$asset.'"','"'.$asset.'?v='.(@filemtime(__DIR__.$asset)?:0).'"',$html);
+    return $html;
+}
 function api(string $method,string $path,array|false $session,array|false $user): never {
     if ($method==='GET'&&$path==='/api/session') {
         // Every page load calls this: keep the Paddle mirror current without cron or inbound webhooks.
@@ -427,7 +434,7 @@ try {
     if (in_array($route,$private,true)&&!$user) redirectTo('/login?next='.rawurlencode($route.(empty($_SERVER['QUERY_STRING'])?'':'?'.$_SERVER['QUERY_STRING'])));
     if ($route==='/admin'&&!$user['is_admin']) redirectTo('/applications');
     if (in_array($route,['/login','/register'],true)&&$user) redirectTo('/plans');
-    if (in_array($route,array_merge($public,$private),true)) {header('Content-Type: text/html; charset=utf-8');if ($method!=='HEAD') readfile(__DIR__.'/page.html');exit;}
+    if (in_array($route,array_merge($public,$private),true)) {header('Content-Type: text/html; charset=utf-8');if ($method!=='HEAD') echo pageHtml();exit;}
     http_response_code(404);header('Content-Type: text/html; charset=utf-8');echo '<!doctype html><html lang="en"><meta charset="utf-8"><title>Page not found · Salonieer</title><link rel="stylesheet" href="/assets/app.css"><main class="wrap empty-state"><h1>Page not found</h1><a class="btn primary" href="/">Back to Salonieer</a></main></html>';
 } catch (HttpFailure $e) {
     if ($e->status===429) header('Retry-After: 900');
