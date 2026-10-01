@@ -9,6 +9,8 @@ const SETUP_KEY = 'dd48a99c97b7af80d9';
 const SESSION_SECONDS = 604800;
 const STATUSES = ['pending','in_review','needs_info','approved','declined'];
 const PLANS = ['basic','pro','business','enterprise'];
+define('SALONIEER',true);
+require __DIR__.'/paddle.php';
 
 final class HttpFailure extends RuntimeException {
     public function __construct(public int $status, public string $errorCode, public ?string $field = null) {
@@ -33,6 +35,19 @@ CREATE TABLE IF NOT EXISTS sin_codes(code_hash TEXT PRIMARY KEY,used_by INTEGER 
 CREATE TABLE IF NOT EXISTS applications(id TEXT PRIMARY KEY,user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,submission_key TEXT NOT NULL,salon_name TEXT NOT NULL,identity_encrypted TEXT NOT NULL,identity_last4 TEXT NOT NULL,logo BLOB NOT NULL,logo_type TEXT NOT NULL,plan TEXT NOT NULL,quote_json TEXT NOT NULL,payment_method TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'pending',created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT,UNIQUE(user_id,submission_key));
 CREATE TABLE IF NOT EXISTS geo_cache(ip_hash TEXT PRIMARY KEY,country TEXT,expires_at INTEGER NOT NULL);
 PRAGMA user_version=1;
+SQL);
+    }
+    if ((int)$db->query('PRAGMA user_version')->fetchColumn() < 2) {
+        // Paddle mirror, written only by verified webhooks (paddle.php). paddle_updated_at = Paddle's own updated_at, used to drop stale deliveries.
+        $db->exec(<<<SQL
+CREATE TABLE IF NOT EXISTS customers(customer_id TEXT PRIMARY KEY,email TEXT NOT NULL,user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,paddle_updated_at TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX IF NOT EXISTS customers_user ON customers(user_id);
+CREATE INDEX IF NOT EXISTS customers_email ON customers(email);
+CREATE TABLE IF NOT EXISTS subscriptions(subscription_id TEXT PRIMARY KEY,customer_id TEXT NOT NULL REFERENCES customers(customer_id),status TEXT NOT NULL,price_id TEXT NOT NULL,product_id TEXT NOT NULL,product_name TEXT,billing_interval TEXT,billing_frequency INTEGER,scheduled_change_action TEXT,scheduled_change_at TEXT,current_period_ends_at TEXT,next_billed_at TEXT,canceled_at TEXT,paddle_updated_at TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX IF NOT EXISTS subscriptions_customer ON subscriptions(customer_id);
+CREATE TABLE IF NOT EXISTS transactions(transaction_id TEXT PRIMARY KEY,customer_id TEXT,subscription_id TEXT,status TEXT NOT NULL,currency TEXT NOT NULL,total TEXT NOT NULL,invoice_number TEXT,billed_at TEXT,paddle_updated_at TEXT NOT NULL,created_at TEXT NOT NULL DEFAULT (datetime('now')),updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX IF NOT EXISTS transactions_subscription ON transactions(subscription_id);
+PRAGMA user_version=2;
 SQL);
     }
     return $db;
@@ -284,7 +299,13 @@ function api(string $method,string $path,array|false $session,array|false $user)
         sendJson(200,['ok'=>$sqlite&&$database,'php'=>PHP_VERSION,'sqlite'=>$sqlite,'database'=>$database]);
     }
     if ($method==='GET'&&$path==='/api/setup') sendJson(200,['available'=>!one('SELECT 1 FROM users WHERE is_admin=1 LIMIT 1')]);
+    if ($method==='GET'&&$path==='/api/billing') { requireUser($user);sendJson(200,billingSummary($user)); }
     if (!in_array($method,['GET','HEAD'],true)) csrfAndOrigin($session);
+    if ($method==='POST'&&$path==='/api/billing/portal') {
+        // The customer is resolved from the signed-in session user only; nothing from the request body is used.
+        requireUser($user);rateLimit('billing-portal',20,3600,(string)$user['id']);
+        sendJson(200,['url'=>paddlePortalUrl($user)]);
+    }
     if ($method==='POST'&&$path==='/api/register') {
         if ($user) fail(409,'alreadyLoggedIn');
         rateLimit('registration',12,3600);$d=body();$v=validateRegistration($d);
@@ -395,12 +416,14 @@ if (cookieName()==='__Host-salonieer') header('Strict-Transport-Security: max-ag
 try {
     $path=rawurldecode(parse_url($_SERVER['REQUEST_URI']??'/',PHP_URL_PATH)?:'/');
     $method=strtoupper($_SERVER['REQUEST_METHOD']??'GET');
+    // Server-to-server from Paddle: authenticated by its signature, so no cookies, session or CSRF.
+    if ($path==='/api/paddle/webhook') paddleWebhook($method);
     $session=sessionRow();
     $user=$session && $session['user_id']!==null ? one('SELECT * FROM users WHERE id=?',[$session['user_id']]) : false;
     if (str_starts_with($path,'/api/')) api($method,$path,$session,$user);
     if (!in_array($method,['GET','HEAD'],true)) fail(405,'invalidRequest');
     $route=preg_replace('~\.html$~','',$path);$route=rtrim($route,'/')?:'/';if ($route==='/index') $route='/';
-    $public=['/','/login','/register','/support','/privacy','/terms','/refund','/plans','/setup'];$private=['/apply','/applications','/admin'];
+    $public=['/','/login','/register','/support','/privacy','/terms','/refund','/plans','/setup'];$private=['/apply','/applications','/account','/admin'];
     if (in_array($route,$private,true)&&!$user) redirectTo('/login?next='.rawurlencode($route.(empty($_SERVER['QUERY_STRING'])?'':'?'.$_SERVER['QUERY_STRING'])));
     if ($route==='/admin'&&!$user['is_admin']) redirectTo('/applications');
     if (in_array($route,['/login','/register'],true)&&$user) redirectTo('/plans');

@@ -9,12 +9,12 @@ try { storedLanguage = localStorage.getItem('salonieer_lang'); } catch {}
 let lang = languages.includes(storedLanguage) ? storedLanguage : (languages.includes(navigator.language.slice(0,2)) ? navigator.language.slice(0,2) : 'en');
 let route = location.pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/';
 if (route === '/index') route = '/';
-const privateRoutes = ['/apply','/applications','/admin'];
+const privateRoutes = ['/apply','/applications','/account','/admin'];
 const CURRENCIES = ['USD','ILS'];
 const SYMBOLS = { USD:'$', ILS:'₪' };
 let storedCurrency;
 try { storedCurrency = localStorage.getItem('salonieer_currency'); } catch {}
-const state = { currency: CURRENCIES.includes(storedCurrency) ? storedCurrency : 'USD', user: null, csrf: '', catalog: null, applications: [], logo: '', logoName: '', submissionKey: crypto.randomUUID(), receipt: null, filter: 'all' };
+const state = { currency: CURRENCIES.includes(storedCurrency) ? storedCurrency : 'USD', user: null, csrf: '', catalog: null, applications: [], logo: '', logoName: '', submissionKey: crypto.randomUUID(), receipt: null, filter: 'all', billing: null };
 const drafts = {};
 const t = key => translate(key,lang);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -57,7 +57,7 @@ async function api(path, options = {}) {
 }
 function nextPage() {
   const value = new URLSearchParams(location.search).get('next');
-  if (!value || !/^\/(plans|apply|applications|admin)(\?[^\r\n\\]*)?$/.test(value)) return '/plans';
+  if (!value || !/^\/(plans|apply|applications|account|admin)(\?[^\r\n\\]*)?$/.test(value)) return '/plans';
   return value;
 }
 function setLanguage(value) {
@@ -76,7 +76,7 @@ function header() {
   const link = (path,key) => `<a href="${path}"${route===path?' aria-current="page"':''}>${t(key)}</a>`;
   return `<a class="skip" href="#main">${t('skip')}</a><header class="topbar"><div class="wrap nav">
     <a href="/" class="brand" aria-label="Salonieer"><span class="brand-s" aria-hidden="true">S</span><span class="wordmark">Salonieer</span></a>
-    <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><div class="nav-links">${link('/','home')}${link('/plans','plans')}${state.user?link('/applications','applications'):''}${link('/support','support')}${state.user?.isAdmin?link('/admin','inbox'):''}</div><div class="nav-actions">${state.user?`<button class="btn small" id="logout">${t('logout')}</button>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/register">${t('register')}</a>`}</div></nav>
+    <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><div class="nav-links">${link('/','home')}${link('/plans','plans')}${state.user?link('/applications','applications')+link('/account','account'):''}${link('/support','support')}${state.user?.isAdmin?link('/admin','inbox'):''}</div><div class="nav-actions">${state.user?`<button class="btn small" id="logout">${t('logout')}</button>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/register">${t('register')}</a>`}</div></nav>
     <select id="language" class="language-select" aria-label="${t('language')}"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="ar" ${lang==='ar'?'selected':''}>العربية</option><option value="he" ${lang==='he'?'selected':''}>עברית</option></select>
     <button class="menu-toggle" id="menu-toggle" aria-controls="nav-panel" aria-expanded="false">${t('menu')}</button>
   </div></header>`;
@@ -158,6 +158,17 @@ function applicationCard(a,admin=false) {
 function applications(admin=false) {
   const list = admin && state.filter!=='all' ? state.applications.filter(a=>a.status===state.filter) : state.applications;
   return `<div class="${admin?'wrap':'narrow'}">${titleBlock(admin?'inbox':'applications',admin?'inbox':'applicationsTitle',admin?'inboxLead':'applicationsLead')}${admin?`<div class="inbox-filter" aria-label="${t('status')}">${['all',...statusNames].map(s=>`<button type="button" class="filter-btn${state.filter===s?' active':''}" data-filter="${s}" aria-pressed="${state.filter===s}">${t(s)}</button>`).join('')}</div>`:''}${admin?`<section class="invite-panel"><button class="btn outline" type="button" id="issue-sin">${t('issueSin')}</button><p class="small-note">${t('issueSinHint')}</p><p id="issued-sin" role="status" dir="ltr"></p></section>`:''}${!list.length?`<div class="empty-state"><h2>${t(admin?'noResults':'emptyTitle')}</h2>${admin?'':`<p>${t('emptyText')}</p><a class="btn primary" href="/plans">${t('explorePlans')}</a>`}</div>`:`<div class="application-list">${list.map(a=>applicationCard(a,admin)).join('')}</div>`}</div>`;
+}
+const subscriptionTone = status => ({active:'approved',trialing:'approved',canceled:'declined'}[status] || '');
+function account() {
+  const b = state.billing, sub = b.subscriptions[0];
+  const meta = (label,value) => value ? `<div><dt>${t(label)}</dt><dd>${value}</dd></div>` : '';
+  const interval = !sub?.interval ? '' : sub.frequency===1 && ['month','year'].includes(sub.interval) ? t(sub.interval==='year'?'annual':'monthly') : `${t('every')} ${sub.frequency} ${t('interval_'+sub.interval)}`;
+  const change = sub?.scheduledChange && sub.status!=='canceled' ? `<p class="notice info">${t('scheduled_'+sub.scheduledChange.action)}${sub.scheduledChange.at?` <bdi>${date(sub.scheduledChange.at)}</bdi>`:''}. ${t('accessUntilChange')}</p>` : '';
+  const card = sub ? `<article class="application-card"><div class="application-card-top"><div><h2>${esc(sub.productName || t('subscription'))}</h2><span class="ref"><bdi>${esc(sub.id)}</bdi></span></div><span class="status ${subscriptionTone(sub.status)}">${t('sub_'+sub.status)}</span></div><dl class="application-meta">${meta('paidAccess',t(b.hasAccess?'accessActive':'accessInactive'))}${meta('billingPeriod',esc(interval))}${meta('nextBilling',sub.nextBilledAt?date(sub.nextBilledAt):'')}${meta('periodEnds',!sub.nextBilledAt&&sub.currentPeriodEndsAt?date(sub.currentPeriodEndsAt):'')}</dl>${change}</article>`
+    : `<div class="empty-state"><h2>${t('noSubscription')}</h2><p>${t(b.hasCustomer?'noSubscriptionText':'noBillingText')}</p>${b.hasCustomer?'':`<a class="btn primary" href="/plans">${t('explorePlans')}</a>`}</div>`;
+  const portal = b.hasCustomer ? `<section class="invite-panel"><button class="btn primary" type="button" id="manage-billing">${t('manageBilling')}</button><p class="small-note">${t('manageBillingHint')}</p><p id="billing-feedback" role="status"></p></section>` : '';
+  return `<div class="narrow">${titleBlock('account','accountTitle','accountLead')}<div class="application-list">${card}${portal}</div></div>`;
 }
 function support() {
   return `<div class="wrap">${titleBlock('support','helpTitle','helpLead')}<div class="support-layout"><section class="support-contact"><h2>${t('contactUs')}</h2><a class="email-address" href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a><a class="btn primary" href="mailto:salonieer1st@gmail.com?subject=Salonieer%20Support">${t('emailSupport')}</a><button type="button" class="btn" id="copy-email">${t('copyEmail')}</button><p id="copy-feedback" role="status"></p><p>${t('faqSinA')}</p></section><section class="faq-list"><h2>${t('faq')}</h2>${[['faqSinQ','faqSinA','sin'],['faqLoginQ','faqLoginA','account'],['faqPriceQ','faqPriceA','pricing'],['faqPayQ','faqPayA','payment'],['faqNotificationsQ','faqNotificationsA','notifications'],['faqSalonQ','faqSalonA','salon']].map(([q,a,id])=>`<details id="${id}"${location.hash==='#'+id?' open':''}><summary>${t(q)}</summary><p>${t(a)}</p></details>`).join('')}</section></div></div>`;
@@ -307,6 +318,12 @@ function bind() {
     catch(error){feedback.textContent=t(error.code||'serverError');}
     finally{button.disabled=false;}
   });
+  document.getElementById('manage-billing')?.addEventListener('click',async event=>{
+    const button=event.currentTarget, feedback=document.getElementById('billing-feedback');
+    button.disabled=true; feedback.textContent=t('openingPortal');
+    try { const result=await api('/api/billing/portal',{method:'POST',body:'{}'}); location.assign(result.url); }
+    catch(error){ feedback.textContent=t(error.code||'serverError'); button.disabled=false; }
+  });
   document.getElementById('copy-email')?.addEventListener('click',async()=>{
     try { await navigator.clipboard.writeText('salonieer1st@gmail.com');document.getElementById('copy-feedback').textContent=t('copied'); }
     catch { document.getElementById('copy-feedback').textContent=t('copyFailed'); }
@@ -329,8 +346,8 @@ function bind() {
 }
 function render() {
   setLanguage(lang);
-  const pages = {'/':home,'/login':login,'/register':register,'/plans':plans,'/apply':apply,'/applications':()=>applications(false),'/admin':()=>applications(true),'/support':support,'/privacy':privacy,'/terms':termsPage,'/refund':refundPage,'/setup':setup};
-  const titles = {'/':'tagline','/login':'login','/register':'register','/plans':'plans','/apply':'applyTitle','/applications':'applications','/admin':'inbox','/support':'support','/privacy':'privacyPolicy','/terms':'termsTitle','/refund':'refundTitle','/setup':'setupTitle'};
+  const pages = {'/':home,'/login':login,'/register':register,'/plans':plans,'/apply':apply,'/applications':()=>applications(false),'/admin':()=>applications(true),'/account':account,'/support':support,'/privacy':privacy,'/terms':termsPage,'/refund':refundPage,'/setup':setup};
+  const titles = {'/':'tagline','/login':'login','/register':'register','/plans':'plans','/apply':'applyTitle','/applications':'applications','/admin':'inbox','/account':'account','/support':'support','/privacy':'privacyPolicy','/terms':'termsTitle','/refund':'refundTitle','/setup':'setupTitle'};
   document.title = 'Salonieer · ' + t(titles[route] || 'home');
   app.innerHTML = header()+`<main id="main" tabindex="-1">${(pages[route] || home)()}</main>`+footer();
   restoreDraft();bind();
@@ -367,6 +384,7 @@ async function initialize() {
       const plan=new URLSearchParams(location.search).get('plan') || 'basic';
       if (!state.catalog.plans.some(p=>p.id===plan)) return location.replace('/plans');
     }
+    if (route==='/account') state.billing=await api('/api/billing');
     if (['/applications','/admin'].includes(route)) state.applications=(await api(route==='/admin'?'/api/admin/applications':'/api/applications')).applications;
     render();
     if (location.hash && route==='/support') document.getElementById(location.hash.slice(1))?.scrollIntoView();
