@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 // Paddle Billing: webhook fulfillment, subscription mirror, access checks and the customer portal.
-// Loaded by index.php only. Requires `composer install --no-dev` (vendor/ must be uploaded with the site).
+// Loaded by index.php only. Needs the vendor/ folder (Paddle PHP SDK, committed) uploaded with the site.
 // Secrets come from environment variables, or from a .env file in the private folder (see .env.example).
 if (!defined('SALONIEER')) { http_response_code(404); exit; }
 
@@ -46,7 +46,7 @@ function paddleAutoload(): void {
     static $loaded=false;
     if ($loaded) return;
     $autoload=__DIR__.'/vendor/autoload.php';
-    if (!is_file($autoload)) throw new RuntimeException('Paddle SDK missing: run composer install --no-dev and upload vendor/.');
+    if (!is_file($autoload)) throw new RuntimeException('Paddle SDK missing: upload the vendor/ folder next to index.php.');
     require_once $autoload;
     $loaded=true;
 }
