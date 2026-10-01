@@ -10,7 +10,7 @@ manageBilling: ['Manage billing','إدارة الفوترة','ניהול חיו�
 noBillingAccount: ['We couldn’t find a billing account for this email.','لم نجد حساب فوترة لهذا البريد الإلكتروني.','לא מצאנו חשבון חיוב לכתובת אימייל זו.'], billingUnavailable: ['The billing portal is unavailable right now. Please try again shortly.','بوابة الفوترة غير متاحة حالياً. يرجى المحاولة بعد قليل.','פורטל החיובים אינו זמין כרגע. נסו שוב בעוד מעט.'],
 setupTitle: ['Set up Salonieer','إعداد Salonieer','הגדרת Salonieer'], setupLead: ['Create the first admin account. This page works only once.','أنشئ حساب المدير الأول. تعمل هذه الصفحة مرة واحدة فقط.','צרו את חשבון המנהל הראשון. העמוד פועל פעם אחת בלבד.'],
 setupKey: ['Setup key','مفتاح الإعداد','מפתח הגדרה'], setupKeyHint: ['The SETUP_KEY written at the top of index.php.','المفتاح SETUP_KEY المكتوب أعلى ملف index.php.','המפתח SETUP_KEY שכתוב בראש הקובץ index.php.'],
-setupSubmit: ['Create admin account','إنشاء حساب المدير','יצירת חשבון מנהל'], setupDone: ['Setup is complete.','اكتمل الإعداد.','ההגדרה הושלמה.'], setupDoneText: ['An admin account already exists. Log in to manage applications and issue invitation codes.','يوجد حساب مدير بالفعل. سجّل الدخول لإدارة الطلبات وإنشاء رموز الدعوة.','כבר קיים חשבון מנהל. היכנסו כדי לנהל בקשות וליצור קודי הזמנה.'],
+setupSubmit: ['Create admin account','إنشاء حساب المدير','יצירת חשבון מנהל'], setupDone: ['Setup is complete.','اكتمل الإعداد.','ההגדרה הושלמה.'], setupDoneText: ['An admin account already exists. Log in to manage applications.','يوجد حساب مدير بالفعل. سجّل الدخول لإدارة الطلبات.','כבר קיים חשבון מנהל. היכנסו כדי לנהל בקשות.'],
 invalidSetupKey: ['This setup key is incorrect.','مفتاح الإعداد غير صحيح.','מפתח ההגדרה שגוי.'],
 currency: ['Currency','العملة','מטבע'], currencyUSD: ['US dollar (USD)','دولار أمريكي (USD)','דולר אמריקאי (USD)'], currencyILS: ['Israeli new shekel (ILS)','شيكل جديد (ILS)','שקל חדש (ILS)'],
 pricingFromAccount: ['Prices for your account location','الأسعار حسب موقع حسابك','מחירים לפי המיקום בחשבון'], pricingFromLocation: ['Prices for your location','الأسعار حسب موقعك','מחירים לפי המיקום שלכם'], pricingDefault: ['We couldn’t detect your location','تعذر تحديد موقعك','לא הצלחנו לזהות את המיקום שלכם'],
@@ -18,9 +18,9 @@ locationPricingNote: ['Prices are estimated from your approximate location. Your
 agreeNote: ['By submitting, you agree to our','بإرسال الطلب، أنت توافق على','בשליחת הבקשה אתם מסכימים ל־'],
 legal: ['Legal','الشروط والسياسات','מידע משפטי'], termsTitle: ['Terms of Service','شروط الخدمة','תנאי השימוש'], refundTitle: ['Refund Policy','سياسة الاسترداد','מדיניות החזרים'],
 invalidCurrency: ['Choose USD or ILS.','اختر USD أو ILS.','בחרו USD או ILS.'],
-issueSin: ['Issue invitation code','إنشاء رمز دعوة','יצירת קוד הזמנה'],
-issueSinHint: ['A single-use code valid for 30 days. Copy it now; it is shown only once.','رمز صالح للاستخدام مرة واحدة لمدة 30 يومًا. انسخه الآن؛ سيُعرض مرة واحدة فقط.','קוד לשימוש חד פעמי בתוקף ל־30 יום. יש להעתיק אותו כעת; הוא יוצג פעם אחת בלבד.'],
-issuedSin: ['Invitation code:','رمز الدعوة:','קוד הזמנה:'],
+
+
+
 home: ['Home','الرئيسية','בית'], support: ['Support','الدعم','תמיכה'], privacy: ['Privacy','الخصوصية','פרטיות'],
 login: ['Log in','تسجيل الدخول','כניסה'], register: ['Create account','إنشاء حساب','יצירת חשבון'], logout: ['Log out','تسجيل الخروج','יציאה'], plans: ['Plans','الخطط','מסלולים'], applications: ['My applications','طلباتي','הבקשות שלי'], inbox: ['Applications inbox','صندوق الطلبات','תיבת בקשות'],
 tagline: ['Beauty businesses, simplified','إدارة أسهل. صالون أجمل.','ניהול פשוט לעסקי היופי'],
@@ -28,7 +28,7 @@ eyebrow: ['THE ART OF RUNNING YOUR SALON','لأن صالونك يستحق الأ
 heroFirst: ['Your salon.','صالونك.','הסלון שלכם.'], heroSecond: ['Beautifully in sync.','بتناغم أجمل.','הכול בהרמוניה.'],
 heroLead: ['Less time managing. More time doing what you love. Bring your appointments, clients and team together with Salonieer.','وقت أقل للإدارة، ووقت أكثر لشغفك. اجمع مواعيدك وزبائنك وفريقك في مكان واحد مع Salonieer.','פחות זמן על ניהול, יותר זמן לעשות את מה שאתם אוהבים. התורים, הלקוחות והצוות במקום אחד עם Salonieer.'],
 explorePlans: ['Find your plan','اختر خطتك','בחרו מסלול'], haveAccount: ['Already have an account?','لديك حساب بالفعل؟','כבר יש לכם חשבון?'],
-invitationNote: ['Registration by SIN invitation','التسجيل باستخدام رمز دعوة SIN','הרשמה באמצעות הזמנת SIN'],
+
 overview: ['A little more order. A lot more possibility.','تنظيم أكثر. إمكانيات أكبر.','יותר סדר. יותר אפשרויות.'],
 bookings: ['Every appointment, in its place.','كل موعد، في مكانه.','לכל תור יש מקום.'],
 bookingsText: ['Keep bookings organized and your clients and team informed.','نظّم الحجوزات وأبقِ زبائنك وفريقك على اطلاع.','נהלו את התורים ועדכנו את הלקוחות והצוות.'],
@@ -42,15 +42,15 @@ welcome: ['Welcome back.','أهلاً بعودتك.','ברוכים השבים.']
 email: ['Email address','البريد الإلكتروني','כתובת אימייל'], password: ['Password','كلمة المرور','סיסמה'], passwordConfirm: ['Confirm password','تأكيد كلمة المرور','אימות סיסמה'],
 show: ['Show','إظهار','הצגה'], hide: ['Hide','إخفاء','הסתרה'], forgot: ['Need help signing in?','تحتاج مساعدة للدخول؟','צריכים עזרה בכניסה?'],
 noAccount: ['New to Salonieer?','جديد على Salonieer؟','חדשים ב־Salonieer?'],
-registerTitle: ['Make it yours.','ابدأ رحلتك معنا.','זה מתחיל כאן.'], registerLead: ['Enter your details and the SIN code given to you by Salonieer.','أدخل بياناتك ورمز SIN الذي حصلت عليه من Salonieer.','הזינו את הפרטים שלכם ואת קוד SIN שקיבלתם מ־Salonieer.'],
-accountDetails: ['Your account','بيانات حسابك','פרטי החשבון'], location: ['Your location','موقعك','המיקום שלכם'], access: ['Your invitation','دعوتك','ההזמנה שלכם'],
+registerTitle: ['Make it yours.','ابدأ رحلتك معنا.','זה מתחיל כאן.'], registerLead: ['Enter your details to create your Salonieer account.','أدخل بياناتك لإنشاء حسابك في Salonieer.','הזינו את הפרטים שלכם כדי ליצור חשבון Salonieer.'],
+accountDetails: ['Your account','بيانات حسابك','פרטי החשבון'], location: ['Your location','موقعك','המיקום שלכם'], 
 username: ['Name / username','الاسم / اسم المستخدم','שם / שם משתמש'], fullName: ['Full name','الاسم الكامل','שם מלא'], phone: ['Personal phone number','رقم الهاتف الشخصي','מספר טלפון אישי'],
 usernameHint: ['3–32 letters, numbers, dots, dashes or underscores.','من 3 إلى 32 حرفاً أو رقماً أو نقطة أو شرطة.','3–32 אותיות, ספרות, נקודות, מקפים או קווים תחתונים.'],
 phoneHint: ['Include your country calling code, starting with +.','أدخل مفتاح الدولة، بدءاً بعلامة +.','כולל קידומת מדינה, החל בסימן +.'],
 country: ['Country','الدولة','מדינה'], region: ['Region','المنطقة','אזור'], chooseCountry: ['Select your country','اختر دولتك','בחרו מדינה'], chooseRegion: ['Select your region','اختر منطقتك','בחרו אזור'],
 WEST_BANK: ['West Bank','الضفة الغربية','הגדה המערבית'], GAZA: ['Gaza Strip','قطاع غزة','רצועת עזה'], OTHER: ['Jerusalem / other','القدس / أخرى','ירושלים / אחר'],
 locationHint: ['Subscription prices follow your saved country and region. Contact support if these details need correcting.','تُحدد أسعار الاشتراك حسب الدولة والمنطقة المسجلتين. لتصحيح البيانات، تواصل مع الدعم.','מחירי המנוי נקבעים לפי המדינה והאזור בחשבון. לתיקון הפרטים, פנו לתמיכה.'],
-sin: ['SIN invitation code','رمز دعوة SIN','קוד הזמנה SIN'], sinHint: ['Use the registration code provided by Salonieer.','استخدم رمز التسجيل الذي قدمه لك Salonieer.','השתמשו בקוד ההרשמה שקיבלתם מ־Salonieer.'],
+
 passwordHint: ['Use 10–128 characters.','استخدم من 10 إلى 128 حرفاً.','השתמשו ב־10–128 תווים.'],
 privacyNote: ['Read how we use your information in our','اطّلع على كيفية استخدام بياناتك في','קראו כיצד אנו משתמשים במידע שלכם ב־'], privacyPolicy: ['Privacy Policy','سياسة الخصوصية','מדיניות הפרטיות'],
 plansEyebrow: ['A PLAN FOR EVERY SALON','خطة لكل صالون','מסלול לכל סלון'], plansTitle: ['Your ambition. Your plan.','خطط تناسب كل صالون.','השאיפה שלכם. המסלול שלכם.'],
@@ -91,7 +91,7 @@ helpTitle: ['A real person. A helping hand.','دعم يفهم احتياجاتك
 emailSupport: ['Email support','راسل الدعم','שליחת אימייל לתמיכה'], copyEmail: ['Copy email address','نسخ البريد الإلكتروني','העתקת כתובת אימייל'], copied: ['Copied','تم النسخ','הועתק'],
 copyFailed: ['Select the email address above to copy it.','حدد عنوان البريد أعلاه لنسخه.','סמנו את כתובת האימייל למעלה כדי להעתיק אותה.'],
 faq: ['A few helpful answers.','إجابات قد تساعدك.','כמה תשובות מועילות.'],
-faqSinQ: ['What is a SIN code?','ما هو رمز SIN؟','מהו קוד SIN?'], faqSinA: ['It’s an invitation code issued by Salonieer to create an account. If you haven’t received one, contact our team.','هو رمز دعوة يقدمه Salonieer لإنشاء حساب. إذا لم تحصل على رمز، تواصل مع فريقنا.','זהו קוד הזמנה מטעם Salonieer ליצירת חשבון. אם טרם קיבלתם קוד, פנו לצוות שלנו.'],
+
 faqLoginQ: ['I can’t log in.','لا أستطيع تسجيل الدخول.','לא מצליחים להיכנס.'], faqLoginA: ['Use the email address and password you registered with. If you’ve forgotten your password, contact support for help recovering access. Never send your password by email.','استخدم البريد الإلكتروني وكلمة المرور اللذين سجلت بهما. إذا نسيت كلمة المرور، تواصل مع الدعم للمساعدة في استعادة الدخول. لا ترسل كلمة مرورك بالبريد.','השתמשו בכתובת האימייל ובסיסמה שאיתן נרשמתם. אם שכחתם את הסיסמה, פנו לתמיכה לשחזור הגישה. אל תשלחו סיסמאות באימייל.'],
 faqPriceQ: ['How are my prices selected?','كيف تُحدد أسعاري؟','איך נקבעים המחירים שלי?'], faqPriceA: ['When you’re signed in, prices follow the country and region saved at registration: West Bank accounts receive West Bank pricing and other accounts receive standard pricing. Visitors see prices estimated from their approximate location; if it can’t be detected, standard pricing is shown. You can view prices in US dollars or shekels. Contact support to correct your location.','عند تسجيل الدخول، تعتمد الأسعار على الدولة والمنطقة المسجلتين: تحصل حسابات الضفة الغربية على أسعارها الخاصة، وباقي الحسابات على الأسعار الأساسية. يرى الزوار أسعاراً تقديرية حسب موقعهم التقريبي، وإذا تعذر تحديده تُعرض الأسعار الأساسية. يمكنك عرض الأسعار بالدولار أو بالشيكل. لتصحيح موقعك، تواصل مع الدعم.','כשאתם מחוברים, המחירים נקבעים לפי המדינה והאזור שנשמרו בהרשמה: חשבונות מהגדה המערבית מקבלים את מחיריה, ושאר החשבונות מקבלים מחירים רגילים. מבקרים רואים מחירים לפי המיקום המשוער שלהם, ואם לא ניתן לזהות אותו מוצגים מחירים רגילים. אפשר להציג מחירים בדולרים או בשקלים. לתיקון המיקום, פנו לתמיכה.'],
 faqPayQ: ['When do I pay?','متى أدفع؟','מתי משלמים?'], faqPayA: ['Choose card or bank transfer in your application. We review the request and contact you to arrange payment and setup. Submitting the form does not activate a paid subscription.','اختر البطاقة أو التحويل البنكي في طلبك. نراجع الطلب ونتواصل معك لترتيب الدفع والإعداد. إرسال النموذج لا يفعّل اشتراكاً مدفوعاً.','בחרו כרטיס או העברה בנקאית בבקשה. נבדוק אותה וניצור קשר לתיאום התשלום וההקמה. שליחת הטופס אינה מפעילה מנוי בתשלום.'],
@@ -106,7 +106,7 @@ invalidEmail: ['Enter a valid email address.','أدخل بريداً إلكتر�
 invalidPhone: ['Enter a phone number with + and the country calling code (8–15 digits).','أدخل رقم الهاتف مع + ومفتاح الدولة (8–15 رقماً).','הזינו מספר טלפון עם + וקידומת מדינה (8–15 ספרות).'],
 invalidCountry: ['Select your country.','اختر دولتك.','בחרו מדינה.'], invalidRegion: ['Select your region.','اختر منطقتك.','בחרו אזור.'],
 invalidPassword: ['Your password must have 10–128 characters.','يجب أن تكون كلمة المرور من 10 إلى 128 حرفاً.','הסיסמה חייבת להכיל 10–128 תווים.'], passwordMismatch: ['The passwords don’t match.','كلمتا المرور غير متطابقتين.','הסיסמאות אינן תואמות.'],
-invalidSin: ['This SIN code is invalid, expired or already used.','رمز SIN غير صحيح أو منتهي أو مستخدم بالفعل.','קוד SIN אינו תקין, פג תוקף או כבר נוצל.'],
+
 accountExists: ['An account already uses this email, name or phone number. Log in or use different details.','يوجد حساب يستخدم هذا البريد أو الاسم أو الهاتف. سجّل الدخول أو استخدم بيانات أخرى.','כבר קיים חשבון עם האימייל, השם או הטלפון הזה. היכנסו או השתמשו בפרטים אחרים.'],
 invalidCredentials: ['The email or password is incorrect.','البريد الإلكتروني أو كلمة المرور غير صحيحة.','כתובת האימייל או הסיסמה שגויות.'],
 tooManyAttempts: ['Too many attempts. Please wait before trying again.','محاولات كثيرة. يرجى الانتظار قبل المحاولة مجدداً.','יותר מדי ניסיונות. המתינו לפני ניסיון נוסף.'],

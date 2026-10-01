@@ -3,7 +3,7 @@
         'name' => 'salonieer/website',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '1109151955cbea423702ffaf59c2bf912bbe57d7',
+        'reference' => '770e1e91f34b2f6a81d744cc98284266e0945bb7',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -68,6 +68,7 @@
             'dev_requirement' => false,
             'provided' => array(
                 0 => '*',
+                1 => '1.0',
             ),
         ),
         'php-http/client-common' => array(
@@ -83,6 +84,7 @@
             'dev_requirement' => false,
             'provided' => array(
                 0 => '*',
+                1 => '1.0',
             ),
         ),
         'php-http/discovery' => array(
@@ -91,6 +93,15 @@
             'reference' => '82fe4c73ef3363caed49ff8dd1539ba06044910d',
             'type' => 'composer-plugin',
             'install_path' => __DIR__ . '/../php-http/discovery',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'php-http/guzzle7-adapter' => array(
+            'pretty_version' => '1.1.0',
+            'version' => '1.1.0.0',
+            'reference' => '03a415fde709c2f25539790fecf4d9a31bc3d0eb',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../php-http/guzzle7-adapter',
             'aliases' => array(),
             'dev_requirement' => false,
         ),
@@ -205,7 +216,7 @@
         'salonieer/website' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '1109151955cbea423702ffaf59c2bf912bbe57d7',
+            'reference' => '770e1e91f34b2f6a81d744cc98284266e0945bb7',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

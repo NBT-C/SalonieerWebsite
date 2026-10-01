@@ -50,6 +50,13 @@ CREATE INDEX IF NOT EXISTS transactions_subscription ON transactions(subscriptio
 PRAGMA user_version=2;
 SQL);
     }
+    if ((int)$db->query('PRAGMA user_version')->fetchColumn() < 3) {
+        // Pull sync position in Paddle's event stream (paddleSync in paddle.php).
+        $db->exec(<<<SQL
+CREATE TABLE IF NOT EXISTS paddle_sync(id INTEGER PRIMARY KEY CHECK(id=1),cursor TEXT,failed_event TEXT,failures INTEGER NOT NULL DEFAULT 0,locked_until INTEGER NOT NULL DEFAULT 0,last_run INTEGER NOT NULL DEFAULT 0);
+PRAGMA user_version=3;
+SQL);
+    }
     return $db;
 }
 function privateDir(): string {
@@ -125,7 +132,7 @@ function countryList(): array {
     if ($js && preg_match("/COUNTRIES = '([A-Z ]+)'/",$js,$m)) return explode(' ',$m[1]);
     throw new RuntimeException('Country list missing.');
 }
-function validateRegistration(array $d, bool $needSin=true): array {
+function validateRegistration(array $d): array {
     $v=[];
     foreach (['username','fullName','email','phone'] as $field) $v[$field]=is_string($d[$field]??null)?trim($d[$field]):'';
     $v['email']=strtolower($v['email']);
@@ -141,7 +148,6 @@ function validateRegistration(array $d, bool $needSin=true): array {
     $password=$d['password']??null;
     if (!is_string($password) || mb_strlen($password)<10 || mb_strlen($password)>128) fail(400,'invalidPassword','password');
     if ($password!==($d['passwordConfirm']??null)) fail(400,'passwordMismatch','passwordConfirm');
-    if ($needSin && (!is_string($d['sinCode']??null) || strlen($d['sinCode'])<6 || strlen($d['sinCode'])>64)) fail(400,'invalidSin','sinCode');
     return $v;
 }
 function verifyHash(string $password,?string $stored): bool {
@@ -290,6 +296,8 @@ function applicationDTO(array $r,bool $admin=false): array {
 }
 function api(string $method,string $path,array|false $session,array|false $user): never {
     if ($method==='GET'&&$path==='/api/session') {
+        // Every page load calls this: keep the Paddle mirror current without cron or inbound webhooks.
+        paddleSyncAfterResponse(300);
         if (!$session) rateLimit('guest-session',200,3600);
         sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session)]);
     }
@@ -299,7 +307,7 @@ function api(string $method,string $path,array|false $session,array|false $user)
         sendJson(200,['ok'=>$sqlite&&$database,'php'=>PHP_VERSION,'sqlite'=>$sqlite,'database'=>$database]);
     }
     if ($method==='GET'&&$path==='/api/setup') sendJson(200,['available'=>!one('SELECT 1 FROM users WHERE is_admin=1 LIMIT 1')]);
-    if ($method==='GET'&&$path==='/api/billing') { requireUser($user);sendJson(200,billingSummary($user)); }
+    if ($method==='GET'&&$path==='/api/billing') { requireUser($user);paddleSync(15);sendJson(200,billingSummary($user)); }
     if (!in_array($method,['GET','HEAD'],true)) csrfAndOrigin($session);
     if ($method==='POST'&&$path==='/api/billing/portal') {
         // The customer is resolved from the signed-in session user only; nothing from the request body is used.
@@ -309,27 +317,17 @@ function api(string $method,string $path,array|false $session,array|false $user)
     if ($method==='POST'&&$path==='/api/register') {
         if ($user) fail(409,'alreadyLoggedIn');
         rateLimit('registration',12,3600);$d=body();$v=validateRegistration($d);
-        $sinHash=digest($d['sinCode']);
-        $checkSin=static function() use ($sinHash): void {
-            $sin=one('SELECT used_by,expires_at FROM sin_codes WHERE code_hash=?',[$sinHash]);
-            if (!$sin || $sin['used_by']!==null || ($sin['expires_at']!==null && (int)$sin['expires_at']<=nowMs())) fail(400,'invalidSin','sinCode');
-        };
-        $checkSin();$hash=password_hash($d['password'],PASSWORD_DEFAULT);
-        db()->exec('BEGIN IMMEDIATE');
+        $hash=password_hash($d['password'],PASSWORD_DEFAULT);
         try {
-            $checkSin();
             runSql('INSERT INTO users(username,full_name,email,phone,country,region,password_hash) VALUES(?,?,?,?,?,?,?)',[$v['username'],$v['fullName'],$v['email'],$v['phone'],$v['country'],$v['region'],$hash]);
             $id=(int)db()->lastInsertId();
-            runSql('UPDATE sin_codes SET used_by=? WHERE code_hash=? AND used_by IS NULL',[$id,$sinHash]);
-            db()->exec('COMMIT');
-        } catch (PDOException $e) { db()->exec('ROLLBACK');if (str_contains($e->getMessage(),'UNIQUE constraint failed')) fail(409,'accountExists');throw $e;
-        } catch (Throwable $e) { db()->exec('ROLLBACK');throw $e; }
+        } catch (PDOException $e) { if (str_contains($e->getMessage(),'UNIQUE constraint failed')) fail(409,'accountExists');throw $e; }
         sendJson(201,['user'=>userDTO(one('SELECT * FROM users WHERE id=?',[$id])),'csrf'=>newSession($id,$session)]);
     }
     if ($method==='POST'&&$path==='/api/setup') {
         rateLimit('setup',10,3600);$d=body();
         if (!is_string($d['setupKey']??null) || !hash_equals(SETUP_KEY,trim($d['setupKey']))) fail(403,'invalidSetupKey','setupKey');
-        $v=validateRegistration($d,false);$hash=password_hash($d['password'],PASSWORD_DEFAULT);
+        $v=validateRegistration($d);$hash=password_hash($d['password'],PASSWORD_DEFAULT);
         db()->exec('BEGIN IMMEDIATE');
         try {
             if (one('SELECT 1 FROM users WHERE is_admin=1 LIMIT 1')) fail(409,'setupDone');
@@ -389,12 +387,6 @@ function api(string $method,string $path,array|false $session,array|false $user)
         requireUser($user);$r=one('SELECT user_id,logo,logo_type FROM applications WHERE id=?',[$m[1]]);
         if (!$r || ((int)$r['user_id']!==(int)$user['id'] && !(int)$user['is_admin'])) fail(404,'notFound');
         header('Content-Type: '.$r['logo_type']);header('Content-Disposition: inline; filename="salon-logo"');echo $r['logo'];exit;
-    }
-    if ($method==='POST'&&$path==='/api/admin/sin') {
-        requireAdmin($user);rateLimit('sin-issue',10,3600,(string)$user['id']);
-        $code=strtoupper(bin2hex(random_bytes(12)));
-        runSql('INSERT INTO sin_codes(code_hash,expires_at) VALUES(?,?)',[digest($code),nowMs()+30*86400*1000]);
-        sendJson(201,['code'=>$code]);
     }
     if ($method==='GET'&&$path==='/api/admin/applications') {
         requireAdmin($user);
