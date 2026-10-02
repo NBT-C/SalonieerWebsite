@@ -143,8 +143,10 @@ function loadPaddle() {
       try {
         if (state.checkout.environment==='sandbox') window.Paddle.Environment.set('sandbox');
         window.Paddle.Initialize({ token: state.checkout.clientToken, eventCallback: event => {
+          if (event.name==='checkout.loaded') state.checkoutOpen = true;
+          if (event.name==='checkout.closed') { state.checkoutOpen = false; document.getElementById('open-checkout')?.removeAttribute('hidden'); }
           // Paddle redirects to successUrl itself; this is only a fallback.
-          if (event.name==='checkout.completed') setTimeout(()=>location.assign('/account?checkout=complete'),4000);
+          if (event.name==='checkout.completed') setTimeout(()=>location.assign(state.user?'/account?checkout=complete':'/'),4000);
         }});
         resolve(window.Paddle);
       } catch { paddleLoading=null; reject({code:'checkoutUnavailable'}); }
@@ -153,6 +155,25 @@ function loadPaddle() {
     document.head.appendChild(script);
   });
   return paddleLoading;
+}
+// Paddle payment links (/checkout?_ptxn=txn_...): Paddle.js opens the checkout for that transaction by itself once
+// initialized on this page. If it hasn't opened after a moment, open it explicitly; closing it shows a Pay button.
+const paymentLinkTxn = () => { const t = new URLSearchParams(location.search).get('_ptxn') || ''; return /^txn_[a-z\d]{26}$/.test(t) ? t : ''; };
+function paymentLink() {
+  const valid = !!paymentLinkTxn();
+  return `<div class="narrow empty-state"><h1>${t('payByCard')}</h1><p id="checkout-status" role="status">${t(valid?'openingCheckout':'notFound')}</p><button class="btn primary" type="button" id="open-checkout" hidden>${t('payByCard')}</button></div>`;
+}
+function openPaymentLinkCheckout(paddle) {
+  paddle.Checkout.open({ transactionId: paymentLinkTxn(), settings: { displayMode:'overlay', theme:'dark', ...(['en','ar'].includes(lang)?{locale:lang}:{}) } });
+}
+async function startPaymentLink() {
+  if (!paymentLinkTxn()) return;
+  const status = document.getElementById('checkout-status');
+  try {
+    const paddle = await loadPaddle();
+    status.textContent = '';
+    setTimeout(()=>{ if (!state.checkoutOpen) openPaymentLinkCheckout(paddle); }, 2500);
+  } catch (error) { status.textContent = t(error.code || 'checkoutUnavailable'); }
 }
 async function openCheckout(a) {
   if (!checkoutPrice(a.plan) || !state.user) throw {code:'checkoutUnavailable'};
@@ -378,6 +399,11 @@ function bind() {
     catch(error){ feedback.textContent=t(error.code||'serverError'); button.disabled=false; }
   });
   document.getElementById('refresh-billing')?.addEventListener('click',()=>location.reload());
+  document.getElementById('open-checkout')?.addEventListener('click',async event=>{
+    event.currentTarget.hidden = true;
+    try { openPaymentLinkCheckout(await loadPaddle()); }
+    catch (error) { document.getElementById('checkout-status').textContent = t(error.code || 'checkoutUnavailable'); }
+  });
   document.getElementById('copy-email')?.addEventListener('click',async()=>{
     try { await navigator.clipboard.writeText('salonieer1st@gmail.com');document.getElementById('copy-feedback').textContent=t('copied'); }
     catch { document.getElementById('copy-feedback').textContent=t('copyFailed'); }
@@ -400,8 +426,8 @@ function bind() {
 }
 function render() {
   setLanguage(lang);
-  const pages = {'/':home,'/login':login,'/register':register,'/plans':plans,'/apply':apply,'/applications':()=>applications(false),'/admin':()=>applications(true),'/account':account,'/support':support,'/privacy':privacy,'/terms':termsPage,'/refund':refundPage,'/setup':setup};
-  const titles = {'/':'tagline','/login':'login','/register':'register','/plans':'plans','/apply':'applyTitle','/applications':'applications','/admin':'inbox','/account':'account','/support':'support','/privacy':'privacyPolicy','/terms':'termsTitle','/refund':'refundTitle','/setup':'setupTitle'};
+  const pages = {'/':home,'/login':login,'/register':register,'/plans':plans,'/apply':apply,'/applications':()=>applications(false),'/admin':()=>applications(true),'/account':account,'/support':support,'/privacy':privacy,'/terms':termsPage,'/refund':refundPage,'/setup':setup,'/checkout':paymentLink};
+  const titles = {'/checkout':'payByCard','/':'tagline','/login':'login','/register':'register','/plans':'plans','/apply':'applyTitle','/applications':'applications','/admin':'inbox','/account':'account','/support':'support','/privacy':'privacyPolicy','/terms':'termsTitle','/refund':'refundTitle','/setup':'setupTitle'};
   document.title = 'Salonieer · ' + t(titles[route] || 'home');
   app.innerHTML = header()+`<main id="main" tabindex="-1">${(pages[route] || home)()}</main>`+footer();
   restoreDraft();bind();
@@ -442,6 +468,7 @@ async function initialize() {
     if (['/apply','/applications'].includes(route) && state.user) { try { state.paid=(await api('/api/billing')).hasAccess; } catch {} }
     if (['/applications','/admin'].includes(route)) state.applications=(await api(route==='/admin'?'/api/admin/applications':'/api/applications')).applications;
     render();
+    if (route==='/checkout') startPaymentLink();
     if (location.hash && route==='/support') document.getElementById(location.hash.slice(1))?.scrollIntoView();
   } catch(error) {
     app.innerHTML=header()+`<main id="main" class="wrap empty-state"><h1>Salonieer</h1><p role="alert">${t(error.code || 'serverError')}</p><button class="btn primary" id="retry">${t('retry')}</button></main>`+footer();

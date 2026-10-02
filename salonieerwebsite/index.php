@@ -445,7 +445,8 @@ try {
     if (str_starts_with($path,'/api/')) api($method,$path,$session,$user);
     if (!in_array($method,['GET','HEAD'],true)) fail(405,'invalidRequest');
     $route=preg_replace('~\.html$~','',$path);$route=rtrim($route,'/')?:'/';if ($route==='/index') $route='/';
-    $public=['/','/login','/register','/support','/privacy','/terms','/refund','/plans','/setup'];$private=['/apply','/applications','/account','/admin'];
+    // /checkout is Paddle's default payment link (invoices, card updates, payment links): it opens checkout for ?_ptxn=.
+    $public=['/','/login','/register','/support','/privacy','/terms','/refund','/plans','/setup','/checkout'];$private=['/apply','/applications','/account','/admin'];
     if (in_array($route,$private,true)&&!$user) redirectTo('/login?next='.rawurlencode($route.(empty($_SERVER['QUERY_STRING'])?'':'?'.$_SERVER['QUERY_STRING'])));
     if ($route==='/admin'&&!$user['is_admin']) redirectTo('/applications');
     if (in_array($route,['/login','/register'],true)&&$user) redirectTo('/plans');
