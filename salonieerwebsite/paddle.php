@@ -205,11 +205,21 @@ SQL,[
         paddleTime($s->currentBillingPeriod?->endsAt),paddleTime($s->nextBilledAt),paddleTime($s->canceledAt),paddleTime($s->updatedAt,true),
     ]);
     paddleLinkUser($s->customerId,$s->customData);
+    // The site only offers Palestine prices to accounts registered in Palestine, but anyone can open a Paddle checkout
+    // with a public price ID. Log it when the price tier doesn't match the linked account so it can be reviewed.
+    $owner=one('SELECT u.id,u.country FROM customers c JOIN users u ON u.id=c.user_id WHERE c.customer_id=?',[$s->customerId]);
+    $tier=paddlePriceTier($item->price->id);
+    if ($owner && $tier && $tier!==userTier($owner)) error_log('Salonieer Paddle subscription '.$s->id.' uses '.$tier.' pricing but user '.$owner['id'].' is registered in '.$owner['country'].'.');
+}
+// Which pricing tier in index.php a plan price belongs to ('standard', 'west_bank'), or null if it isn't listed.
+function paddlePriceTier(string $priceId): ?string {
+    foreach (defined('PADDLE_PRICE_IDS')?PADDLE_PRICE_IDS:[] as $tier=>$prices) if (in_array($priceId,array_filter($prices),true)) return $tier;
+    return null;
 }
 // The plan is the item whose price is one of the plan prices in index.php; add-ons (loyalty, extra specialists) are
 // other items on the same subscription. Falls back to the first active recurring item for prices not listed there.
 function paddlePlanItem(array $items): ?SubscriptionItem {
-    $plans=defined('PADDLE_PRICE_IDS')?array_values(array_filter(PADDLE_PRICE_IDS)):[];
+    $plans=defined('PADDLE_PRICE_IDS')?array_merge(...array_map(static fn($p)=>array_values(array_filter($p)),array_values(PADDLE_PRICE_IDS))):[];
     foreach ($items as $i) if (in_array($i->price->id,$plans,true) && $i->status->getValue()!=='inactive') return $i;
     foreach ($items as $i) if ($i->recurring && $i->status->getValue()!=='inactive') return $i;
     return $items[0] ?? null;

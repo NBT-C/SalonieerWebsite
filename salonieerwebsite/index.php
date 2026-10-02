@@ -180,13 +180,20 @@ const PRICES = [
     ],
 ];
 // Paddle checkout. The client-side token and price IDs are public (they're sent to the browser); secrets stay in .env.
-// One Paddle price per plan, billed monthly; null = no online checkout (Enterprise is priced by agreement).
+// One Paddle price per plan and pricing tier, billed monthly; null = no online checkout (Enterprise is priced by agreement).
+// The tier comes from the account's saved country (userTier), never from the visitor's location, so the price shown on the
+// site is the price charged. The Paddle prices have no country overrides for the same reason.
 const PADDLE_CLIENT_TOKEN = 'live_f46c13539b6db94cb05e4eb04ec';
-const PADDLE_PRICE_IDS = ['basic'=>'pri_01m3ysefa4m4ysdz2afgw325ry','pro'=>'pri_01m3yseftqb0cdc1ag5zqthkbv','business'=>'pri_01m3ysegqz9s8qs6gayftkbxe6','enterprise'=>null];
+const PADDLE_PRICE_IDS = [
+    'standard'  => ['basic'=>'pri_01m3ysefa4m4ysdz2afgw325ry','pro'=>'pri_01m3yseftqb0cdc1ag5zqthkbv','business'=>'pri_01m3ysegqz9s8qs6gayftkbxe6','enterprise'=>null],
+    'west_bank' => ['basic'=>'pri_01m3ytvq3m1j4rv0xe58a9fpm9','pro'=>'pri_01m3ytvqhr7770x13st7cr5xz2','business'=>'pri_01m3ytvqzv5b6ph9k2tvea6z74','enterprise'=>null],
+];
 // Monthly add-ons, added to the same checkout: loyalty once, specialist once per extra specialist (null = billed after review).
 const PADDLE_ADDON_PRICE_IDS = ['loyalty'=>'pri_01m3yseh8s5v5cm1sma0hrbbe4','specialist'=>'pri_01m3ysehvnsyeybntjqy10fa9v'];
-function checkoutConfig(): array {
-    return ['clientToken'=>PADDLE_CLIENT_TOKEN,'environment'=>str_starts_with(PADDLE_CLIENT_TOKEN,'test_')?'sandbox':'production','prices'=>array_filter(PADDLE_PRICE_IDS),'addons'=>array_filter(PADDLE_ADDON_PRICE_IDS)];
+// Checkout settings for this visitor: the plan prices of the signed-in account's tier (guests can't check out).
+function checkoutConfig(array|false $user): array {
+    $tier=$user?userTier($user):'standard';
+    return ['clientToken'=>PADDLE_CLIENT_TOKEN,'environment'=>str_starts_with(PADDLE_CLIENT_TOKEN,'test_')?'sandbox':'production','tier'=>$tier,'prices'=>array_filter(PADDLE_PRICE_IDS[$tier]),'addons'=>array_filter(PADDLE_ADDON_PRICE_IDS)];
 }
 function userTier(array $user): string { return $user['country']==='PS'?'west_bank':'standard'; }
 function catalog(string $tier, array $meta=[]): array {
@@ -321,7 +328,7 @@ function api(string $method,string $path,array|false $session,array|false $user)
         // Every page load calls this: keep the Paddle mirror current without cron or inbound webhooks.
         paddleSyncAfterResponse(300);
         if (!$session) rateLimit('guest-session',200,3600);
-        sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session),'checkout'=>checkoutConfig()]);
+        sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session),'checkout'=>checkoutConfig($user)]);
     }
     if ($method==='GET'&&$path==='/api/health') {
         $sqlite=in_array('sqlite',PDO::getAvailableDrivers(),true);$database=false;
