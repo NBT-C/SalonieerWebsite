@@ -18,7 +18,9 @@ const state = { currency: CURRENCIES.includes(storedCurrency) ? storedCurrency :
 const drafts = {};
 const t = key => translate(key,lang);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money = (value,currency=state.currency) => value === null || value === undefined ? t('byAgreement') : (SYMBOLS[currency] || '₪') + Number(value).toLocaleString('en-US');
+// Whole amounts show as "39"; amounts with cents always show both digits, as "19.50".
+const amountText = value => Number(value).toLocaleString('en-US',{minimumFractionDigits:Number.isInteger(Number(value))?0:2,maximumFractionDigits:2});
+const money = (value,currency=state.currency) => value === null || value === undefined ? t('byAgreement') : (SYMBOLS[currency] || '₪') + amountText(value);
 const priceOf = prices => prices ? prices[state.currency] ?? null : null;
 function setCurrency(value) {
   state.currency = CURRENCIES.includes(value) ? value : 'USD';
@@ -88,7 +90,7 @@ function titleBlock(eyebrow,title,lead,center=false,extra='') {
   return `<div class="page-heading${center?' center':''}"><div class="eyebrow">${t(eyebrow)}</div><h1>${t(title)}</h1>${lead?`<p>${t(lead)}</p>`:''}${extra}</div>`;
 }
 function priceHTML(value,currency=state.currency) {
-  return value === null || value === undefined ? `<div class="price"><span class="agreement">${t('byAgreement')}</span></div>` : `<div class="price"><span class="currency">${SYMBOLS[currency] || '₪'}</span><span class="amount">${Number(value).toLocaleString('en-US')}</span></div>`;
+  return value === null || value === undefined ? `<div class="price"><span class="agreement">${t('byAgreement')}</span></div>` : `<div class="price"><span class="currency">${SYMBOLS[currency] || '₪'}</span><span class="amount">${amountText(value)}</span></div>`;
 }
 function field(name,label,{type='text',hint='',required=true,autocomplete='',minlength='',maxlength='',placeholder='',extra='',full=false}={}) {
   const password = type === 'password';
@@ -121,6 +123,15 @@ function plans() {
 // Card applications for plans with a Paddle price pay the plan's first month in Paddle's overlay checkout.
 // custom_data carries the account ID; the server links the payment to this account only if the emails match.
 const checkoutPrice = plan => state.checkout?.prices?.[plan] || null;
+const addonPrice = addon => state.checkout?.addons?.[addon] || null;
+// The plan plus the add-ons chosen on the application (the server already dropped loyalty for Business/Enterprise
+// and extra specialists for Enterprise). An add-on without a Paddle price is left out and billed after review.
+function checkoutItems(a) {
+  const items = [{ priceId: checkoutPrice(a.plan), quantity: 1 }];
+  if (a.quote?.loyalty && addonPrice('loyalty')) items.push({ priceId: addonPrice('loyalty'), quantity: 1 });
+  if (a.quote?.extraSpecialists > 0 && addonPrice('specialist')) items.push({ priceId: addonPrice('specialist'), quantity: a.quote.extraSpecialists });
+  return items;
+}
 const canPayOnline = a => a.paymentMethod==='card' && !!checkoutPrice(a.plan) && a.status!=='declined' && !state.paid;
 let paddleLoading;
 function loadPaddle() {
@@ -144,11 +155,10 @@ function loadPaddle() {
   return paddleLoading;
 }
 async function openCheckout(a) {
-  const priceId = checkoutPrice(a.plan);
-  if (!priceId || !state.user) throw {code:'checkoutUnavailable'};
+  if (!checkoutPrice(a.plan) || !state.user) throw {code:'checkoutUnavailable'};
   const paddle = await loadPaddle();
   paddle.Checkout.open({
-    items: [{ priceId, quantity: 1 }],
+    items: checkoutItems(a),
     customer: { email: state.user.email },
     customData: { salonieer_user_id: state.user.id, application_id: a.id },
     settings: { displayMode:'overlay', theme:'dark', ...(['en','ar'].includes(lang)?{locale:lang}:{}), successUrl: location.origin+'/account?checkout=complete' }
@@ -185,7 +195,7 @@ function syncApplication() {
   const q = selectedQuote();
   const online = payment==='card' && !!checkoutPrice(q.plan.id);
   document.getElementById('payment-note').textContent = t(payment==='card'?(online?'cardNote':'cardLaterNote'):payment==='bank_transfer'?'bankNote':'noCharge');
-  document.getElementById('order-summary').innerHTML = `<h2>${t('summary')}</h2><div class="summary-plan"><h3>${q.plan.name}</h3><a href="/plans" class="text-link">${t('backPlans')}</a></div><span class="tag">${t(state.catalog.region==='west_bank'?'westBankPricing':'standardPricing')}</span><div class="summary-row"><span>${q.plan.name}</span><span><bdi>${money(q.base)}</bdi></span></div>${q.loyalty?`<div class="summary-row"><span>${t('loyalty')}</span><span><bdi>${money(q.loyaltyPrice)}</bdi></span></div>`:''}${q.count?`<div class="summary-row"><span>${t('extraSpecialists')} × ${q.count}</span><span><bdi>${money(q.count*q.specialistPrice)}</bdi></span></div>`:''}<div class="summary-total"><span class="label">${q.total===null?t('requestQuote'):t('monthlyTotal')}</span>${priceHTML(q.total)}${q.total===null?'':`<p class="small-note">${t('perMonth')}</p>`}</div><p class="summary-contact">${t('contactDetails')}<br><strong class="ltr">${esc(state.user.email)}</strong><br><strong class="ltr">${esc(state.user.phone)}</strong></p><div class="section-divider"></div><p class="small-note">${online?t('checkoutPriceNote')+(q.loyalty||q.count?' '+t('addonsLaterNote'):''):t('noCharge')}</p>`;
+  document.getElementById('order-summary').innerHTML = `<h2>${t('summary')}</h2><div class="summary-plan"><h3>${q.plan.name}</h3><a href="/plans" class="text-link">${t('backPlans')}</a></div><span class="tag">${t(state.catalog.region==='west_bank'?'westBankPricing':'standardPricing')}</span><div class="summary-row"><span>${q.plan.name}</span><span><bdi>${money(q.base)}</bdi></span></div>${q.loyalty?`<div class="summary-row"><span>${t('loyalty')}</span><span><bdi>${money(q.loyaltyPrice)}</bdi></span></div>`:''}${q.count?`<div class="summary-row"><span>${t('extraSpecialists')} × ${q.count}</span><span><bdi>${money(q.count*q.specialistPrice)}</bdi></span></div>`:''}<div class="summary-total"><span class="label">${q.total===null?t('requestQuote'):t('monthlyTotal')}</span>${priceHTML(q.total)}${q.total===null?'':`<p class="small-note">${t('perMonth')}</p>`}</div><p class="summary-contact">${t('contactDetails')}<br><strong class="ltr">${esc(state.user.email)}</strong><br><strong class="ltr">${esc(state.user.phone)}</strong></p><div class="section-divider"></div><p class="small-note">${online?t('checkoutPriceNote')+((q.loyalty&&!addonPrice('loyalty'))||(q.count&&!addonPrice('specialist'))?' '+t('addonsLaterNote'):''):t('noCharge')}</p>`;
 }
 function receipt() {
   const a = state.receipt;

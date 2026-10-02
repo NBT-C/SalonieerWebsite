@@ -206,8 +206,11 @@ SQL,[
     ]);
     paddleLinkUser($s->customerId,$s->customData);
 }
-// The plan is the first recurring item still on the subscription; add-ons (loyalty, extra specialists) come after it.
+// The plan is the item whose price is one of the plan prices in index.php; add-ons (loyalty, extra specialists) are
+// other items on the same subscription. Falls back to the first active recurring item for prices not listed there.
 function paddlePlanItem(array $items): ?SubscriptionItem {
+    $plans=defined('PADDLE_PRICE_IDS')?array_values(array_filter(PADDLE_PRICE_IDS)):[];
+    foreach ($items as $i) if (in_array($i->price->id,$plans,true) && $i->status->getValue()!=='inactive') return $i;
     foreach ($items as $i) if ($i->recurring && $i->status->getValue()!=='inactive') return $i;
     return $items[0] ?? null;
 }
