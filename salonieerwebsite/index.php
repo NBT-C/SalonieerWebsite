@@ -171,21 +171,24 @@ const PRICES = [
         'USD' => ['plans'=>[39,85,139,null], 'loyalty'=>9, 'specialist'=>9],
         'ILS' => ['plans'=>[130,280,459,null], 'loyalty'=>30, 'specialist'=>30],
     ],
+    // Palestine (West Bank and Gaza): half of the standard plan prices, matching Paddle's PS price overrides.
+    // Add-ons have no Paddle override, so they cost the same as standard. The key stays 'west_bank' because saved
+    // application quotes use it.
     'west_bank' => [
-        'USD' => ['plans'=>[19,42,69,null], 'loyalty'=>5, 'specialist'=>5],
-        'ILS' => ['plans'=>[65,140,229,null], 'loyalty'=>15, 'specialist'=>15],
+        'USD' => ['plans'=>[19.5,42.5,69.5,null], 'loyalty'=>9, 'specialist'=>9],
+        'ILS' => ['plans'=>[65,140,229.5,null], 'loyalty'=>30, 'specialist'=>30],
     ],
 ];
 // Paddle checkout. The client-side token and price IDs are public (they're sent to the browser); secrets stay in .env.
 // One Paddle price per plan, billed monthly; null = no online checkout (Enterprise is priced by agreement).
-const PADDLE_CLIENT_TOKEN = 'live_6bf8f0eeffe1dc28b1c91119561';
-const PADDLE_PRICE_IDS = ['basic'=>'pri_01m3w0a3ydswgs640dgrp2w14r','pro'=>'pri_01m3w0fb4pcqmje2qmqjgkqjby','business'=>'pri_01m3w0gw93sr9cbrm48hcpdrvr','enterprise'=>null];
+const PADDLE_CLIENT_TOKEN = 'live_f46c13539b6db94cb05e4eb04ec';
+const PADDLE_PRICE_IDS = ['basic'=>'pri_01m3ysefa4m4ysdz2afgw325ry','pro'=>'pri_01m3yseftqb0cdc1ag5zqthkbv','business'=>'pri_01m3ysegqz9s8qs6gayftkbxe6','enterprise'=>null];
 // Monthly add-ons, added to the same checkout: loyalty once, specialist once per extra specialist (null = billed after review).
-const PADDLE_ADDON_PRICE_IDS = ['loyalty'=>'pri_01m3w705czty7dyfc9t85gx31m','specialist'=>'pri_01m3w6t9wxkyw07ybkh1gahekt'];
+const PADDLE_ADDON_PRICE_IDS = ['loyalty'=>'pri_01m3yseh8s5v5cm1sma0hrbbe4','specialist'=>'pri_01m3ysehvnsyeybntjqy10fa9v'];
 function checkoutConfig(): array {
     return ['clientToken'=>PADDLE_CLIENT_TOKEN,'environment'=>str_starts_with(PADDLE_CLIENT_TOKEN,'test_')?'sandbox':'production','prices'=>array_filter(PADDLE_PRICE_IDS),'addons'=>array_filter(PADDLE_ADDON_PRICE_IDS)];
 }
-function userTier(array $user): string { return $user['country']==='PS'&&$user['region']==='WEST_BANK'?'west_bank':'standard'; }
+function userTier(array $user): string { return $user['country']==='PS'?'west_bank':'standard'; }
 function catalog(string $tier, array $meta=[]): array {
     $names=['Basic','Pro','Business','Enterprise'];$spec=[1,7,16,null];
     $features=[['oneSpecialist','coreSystem','bookingsCustomers','salonSettings'],['allBasic','sevenSpecialists','productsPage','analytics'],['allPro','sixteenSpecialists','loyaltyIncluded','largerCapacity'],['allFeatures','unlimitedSpecialists','loyaltyIncluded','customAddons','dedicatedSupport']];
@@ -262,8 +265,8 @@ function guestPricing(string $timeZone, string $hint=''): array {
     // If the server could not locate the visitor, accept the country their browser looked up (display only;
     // the price on an application always comes from the account's saved country and region).
     if ($country===null && preg_match('/^[A-Z]{2}$/D',$hint)) $country=$hint;
-    // Palestinian IPs get West Bank pricing unless the device clock is set to Gaza.
-    $tier=($country==='PS' && $timeZone!=='Asia/Gaza')?'west_bank':'standard';
+    // Visitors in Palestine (West Bank and Gaza) see Palestine pricing.
+    $tier=$country==='PS'?'west_bank':'standard';
     return catalog($tier,['source'=>$country?'location':'default','country'=>$country]);
 }
 function logoData(mixed $input): ?array {

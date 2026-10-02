@@ -18,7 +18,9 @@ const state = { currency: CURRENCIES.includes(storedCurrency) ? storedCurrency :
 const drafts = {};
 const t = key => translate(key,lang);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money = (value,currency=state.currency) => value === null || value === undefined ? t('byAgreement') : (SYMBOLS[currency] || '₪') + Number(value).toLocaleString('en-US');
+// Whole amounts show as "39"; amounts with cents always show both digits, as "19.50".
+const amountText = value => Number(value).toLocaleString('en-US',{minimumFractionDigits:Number.isInteger(Number(value))?0:2,maximumFractionDigits:2});
+const money = (value,currency=state.currency) => value === null || value === undefined ? t('byAgreement') : (SYMBOLS[currency] || '₪') + amountText(value);
 const priceOf = prices => prices ? prices[state.currency] ?? null : null;
 function setCurrency(value) {
   state.currency = CURRENCIES.includes(value) ? value : 'USD';
@@ -88,7 +90,7 @@ function titleBlock(eyebrow,title,lead,center=false,extra='') {
   return `<div class="page-heading${center?' center':''}"><div class="eyebrow">${t(eyebrow)}</div><h1>${t(title)}</h1>${lead?`<p>${t(lead)}</p>`:''}${extra}</div>`;
 }
 function priceHTML(value,currency=state.currency) {
-  return value === null || value === undefined ? `<div class="price"><span class="agreement">${t('byAgreement')}</span></div>` : `<div class="price"><span class="currency">${SYMBOLS[currency] || '₪'}</span><span class="amount">${Number(value).toLocaleString('en-US')}</span></div>`;
+  return value === null || value === undefined ? `<div class="price"><span class="agreement">${t('byAgreement')}</span></div>` : `<div class="price"><span class="currency">${SYMBOLS[currency] || '₪'}</span><span class="amount">${amountText(value)}</span></div>`;
 }
 function field(name,label,{type='text',hint='',required=true,autocomplete='',minlength='',maxlength='',placeholder='',extra='',full=false}={}) {
   const password = type === 'password';
