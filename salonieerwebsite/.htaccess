@@ -8,7 +8,7 @@ Header set Cache-Control "no-cache"
 </IfModule>
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteRule ^(?:data|salonieer-private|vendor|\.env[^/]*|composer\.(?:json|lock)|paddle\.php)(?:/|$) - [F,NC]
+RewriteRule ^(?:data|salonieer-private|vendor|\.env[^/]*|composer\.(?:json|lock)|paddle\.php|security\.php|supabase\.php|mail\.php|cron\.php)(?:/|$) - [F,NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [L,QSA]

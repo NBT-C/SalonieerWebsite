@@ -1,0 +1,15 @@
+/* Gliker (Latin display) + Tarif (Arabic and Latin text). Both are commercial fonts: upload your licensed webfont
+   files into this folder with these names and index.php starts using this stylesheet automatically:
+     gliker-regular.woff2, gliker-bold.woff2, tarif-regular.woff2, tarif-medium.woff2, tarif-bold.woff2
+   Hebrew keeps Heebo (neither family covers Hebrew). */
+@font-face{font-family:Gliker;src:url(/assets/fonts/gliker-regular.woff2) format("woff2");font-weight:400 500;font-display:swap}
+@font-face{font-family:Gliker;src:url(/assets/fonts/gliker-bold.woff2) format("woff2");font-weight:600 800;font-display:swap}
+@font-face{font-family:Tarif;src:url(/assets/fonts/tarif-regular.woff2) format("woff2");font-weight:300 400;font-display:swap}
+@font-face{font-family:Tarif;src:url(/assets/fonts/tarif-medium.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:Tarif;src:url(/assets/fonts/tarif-bold.woff2) format("woff2");font-weight:600 800;font-display:swap}
+:root{--font-display:Gliker,"Cormorant Garamond",Georgia,serif;--font-body:Tarif,Manrope,"Segoe UI",system-ui,sans-serif}
+:lang(ar){--font-display:Tarif,"IBM Plex Sans Arabic",Tahoma,sans-serif;--font-body:Tarif,"IBM Plex Sans Arabic",Tahoma,sans-serif}
+/* Gliker is a bold display face: headings drop the italic serif treatment and tighten slightly. */
+h1,.home-copy h1,.section-head h2,.showcase-copy h2,.cta-band h2,.auth-intro h1{font-weight:500;letter-spacing:-.01em}
+.home-copy h1 em{font-style:normal}
+.wordmark,.plan-card h2,.plan-icon,.summary-plan h3,.price .agreement,.tm-current h2{font-family:var(--font-display)}

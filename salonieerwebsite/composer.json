@@ -4,6 +4,7 @@
     "type": "project",
     "require": {
         "php": ">=8.2",
+        "giggsey/libphonenumber-for-php-lite": "^9",
         "guzzlehttp/guzzle": "^7.9",
         "paddlehq/paddle-php-sdk": "^1.18",
         "php-http/guzzle7-adapter": "^1.1"
