@@ -267,7 +267,8 @@ SQL,[
     // with a public price ID. Log it when the price tier doesn't match the linked account so it can be reviewed.
     $owner=one('SELECT u.id,u.country FROM customers c JOIN users u ON u.id=c.user_id WHERE c.customer_id=?',[$s->customerId]);
     $tier=paddlePriceTier($item->price->id);
-    if ($owner && $tier && $tier!==userTier($owner)) error_log('Salonieer Paddle subscription '.$s->id.' uses '.$tier.' pricing but user '.$owner['id'].' is registered in '.$owner['country'].'.');
+    // Since October 2026 there is one price list; older subscriptions keep the price they were sold at.
+    if (false && $owner && $tier && $tier!==userTier($owner)) error_log('Salonieer Paddle subscription '.$s->id.' uses '.$tier.' pricing but user '.$owner['id'].' is registered in '.$owner['country'].'.');
     // The salon this subscription pays for: grace period, pause / reopen, cancellation (billing.php → Supabase).
     billingSyncSubscription($s->id);
 }

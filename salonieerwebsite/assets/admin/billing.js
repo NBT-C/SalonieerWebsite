@@ -8,7 +8,9 @@ import { billingPill, txTable, bindTxActions, changeEditor, bindChangeEditors, p
 const api = (path, opts) => site().api(path, opts);
 const post = (path, data) => site().api(path, { method: 'POST', body: JSON.stringify(data || {}) });
 const CURRENCIES = ['USD', 'ILS', 'JOD', 'EUR'];
-const PLANS = ['basic', 'pro', 'business', 'enterprise'];
+// October 2026: Business is no longer sold; it stays selectable only for a salon already on it.
+const PLANS = ['basic', 'pro', 'enterprise'];
+const plansFor = current => current === 'business' ? ['basic', 'pro', 'business', 'enterprise'] : PLANS;
 const field = (label, input, cls = '') => `<label class="ap-field ${cls}"><span>${esc(label)}</span>${input}</label>`;
 const options = (list, value, label) => list.map(v => `<option value="${esc(v)}"${v === value ? ' selected' : ''}>${esc(label(v))}</option>`).join('');
 // Amounts are kept in cents; shown in their own currency (cash salons may pay in shekels or dinars).
@@ -58,11 +60,12 @@ function formDialog({ title, lead = '', body, submit, danger = false, onSubmit, 
     host.form = form;
   });
 }
-const planFields = (c = {}) => `${field(T('plan'), `<select name="plan">${options(PLANS, c.plan || 'basic', p => PLAN_NAMES[p])}</select>`)}
+const planFields = (c = {}) => `${field(T('plan'), `<select name="plan">${options(plansFor(c.plan), c.plan || 'basic', p => PLAN_NAMES[p])}</select>`)}
   ${field(T('billingInterval'), `<select name="interval">${options(['month', 'year'], c.interval || 'month', v => T(v === 'year' ? 'yearly' : 'intervalMonthly'))}</select>`)}
   ${field(T('extraSpecialists'), `<input name="extraSpecialists" type="number" min="0" max="50" step="1" value="${Number(c.extraSpecialists || 0)}" dir="ltr">`)}
-  <label class="ap-check"><input type="checkbox" name="loyalty"${c.loyalty ? ' checked' : ''}> <span>${esc(T('loyaltyAddon'))}</span></label>`;
-const readPlan = f => ({ plan: f.elements.plan.value, interval: f.elements.interval.value, extraSpecialists: Math.max(0, Math.min(50, parseInt(f.elements.extraSpecialists.value, 10) || 0)), loyalty: f.elements.loyalty.checked });
+  ${field(T('basicOptionAdmin'), `<select name="basicOption">${options(['', 'loyalty', 'smart_waitlist'], c.loyalty ? (c.option || 'loyalty') : '', v => T(v === 'loyalty' ? 'optLoyaltyAdmin' : v === 'smart_waitlist' ? 'optWaitlistAdmin' : 'optNoneAdmin'))}</select><small>${esc(T('basicOptionAdminHint'))}</small>`)}`;
+const readPlan = f => ({ plan: f.elements.plan.value, interval: f.elements.interval.value, extraSpecialists: Math.max(0, Math.min(50, parseInt(f.elements.extraSpecialists.value, 10) || 0)),
+  loyalty: !!f.elements.basicOption.value && f.elements.plan.value === 'basic', option: f.elements.basicOption.value || 'loyalty' });
 const ownerFields = (o = {}) => `${field(T('ownerEmail'), `<input name="email" type="email" dir="ltr" maxlength="200" value="${esc(o.email || '')}" autocomplete="off">`)}
   ${field(T('ownerName'), `<input name="name" maxlength="120" value="${esc(o.name || '')}">`)}
   ${field(T('emailLanguage'), `<select name="lang">${options(['ar', 'en', 'he'], o.lang || 'ar', l => ({ ar: 'العربية', en: 'English', he: 'עברית' })[l])}</select>`)}
@@ -127,7 +130,7 @@ export async function tabBilling(host, s) {
 
 function setupPanel(s, data) {
   const a = data.application, q = a?.quote || {};
-  const plan = { plan: a?.plan || 'basic', interval: q.interval || 'month', extraSpecialists: q.extraSpecialists || 0, loyalty: !!q.loyalty };
+  const plan = { plan: a?.plan || 'basic', interval: q.interval || 'month', extraSpecialists: q.extraSpecialists || 0, loyalty: !!q.loyalty, option: q.option || 'loyalty' };
   const owner = a ? { email: a.email, name: a.name, lang: a.lang, country: a.country } : { lang: 'ar', country: 'PS' };
   return `<section class="ap-panel"><header class="ap-panel-head"><div><h2>${esc(T('setupBilling'))}</h2><p class="ap-quiet">${esc(T('setupBillingLead'))}</p></div>${pill('muted', T('noBilling'))}</header>
     <form id="bl-setup" class="ap-form-grid" novalidate>
@@ -142,7 +145,7 @@ function setupPanel(s, data) {
         ${field(T('receivedNow'), `<input name="received" type="number" min="0" step="0.01" dir="ltr" placeholder="0"><small>${esc(T('receivedNowHint'))}</small>`)}
         ${field(T('paidVia'), `<select name="via">${options(['cash', 'bank_transfer', 'other'], 'cash', VIA)}</select>`)}
         ${field(T('internalNote'), `<input name="note" maxlength="500">`)}</div></div>
-      <div class="is-full" data-for="card" hidden>${field(T('pricingTier'), `<select name="tier">${options(['west_bank', 'standard'], owner.country === 'PS' ? 'west_bank' : 'standard', t => T('tier_' + t))}</select><small>${esc(T('pricingTierHint'))}</small>`)}</div>
+      <input type="hidden" name="tier" value="list2026">
       <h4>${esc(T('ownerContact'))}</h4>${ownerFields(owner)}
       <label class="ap-check is-full"><input type="checkbox" name="applyPlan" checked> <span>${esc(T('applyPlanToSalon'))}</span></label>
       <div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit">${esc(T('setupBillingNow'))}</button><p class="ap-error" role="alert"></p></div></form>
@@ -234,7 +237,7 @@ function cardPanel(b, data, running) {
         ${running ? `<button class="ap-btn is-quiet is-danger" type="button" data-bl="cancel-now">${esc(T('stopNow'))}</button>` : ''}<p class="ap-error" role="alert"></p></div></section>
     <section class="ap-panel"><header class="ap-panel-head"><h2>${esc(T('changePlan'))}</h2></header><p class="ap-quiet">${esc(T('changePlanLead'))}</p>
       ${b.pendingChange ? `<p class="ap-note">${esc(T('ownerAsked', { change: PLAN_NAMES[b.pendingChange.requested?.plan] || '' }))} <a class="ap-link" href="/admin/requests">${esc(T('openRequests'))}</a></p>` : ''}
-      ${!running ? `<p class="ap-quiet">${esc(T('canceledNoChange'))}</p>` : changeEditor(data.applicationId, { plan: a.plan, extraSpecialists: q.extraSpecialists || 0, loyalty: !!q.loyalty, interval: b.interval }, b.pendingChange?.id || null)}</section></div>
+      ${!running ? `<p class="ap-quiet">${esc(T('canceledNoChange'))}</p>` : changeEditor(data.applicationId, { plan: a.plan, extraSpecialists: q.extraSpecialists || 0, loyalty: !!q.loyalty, option: q.option, interval: b.interval }, b.pendingChange?.id || null)}</section></div>
     <section class="ap-panel"><header class="ap-panel-head"><h2>${esc(T('invoices'))}</h2></header>${txTable(data.transactions || [])}</section>`;
 }
 
@@ -274,7 +277,7 @@ function bindBillingActions(host, s, data, reload) {
     } else if (action === 'cash-edit') {
       const q = a.quote || {};
       const r = await formDialog({ title: T('editCash'), lead: T('editCashLead'), submit: T('saveChanges'), wide: true,
-        body: `${planFields({ plan: a.plan, interval: b.interval, extraSpecialists: q.extraSpecialists, loyalty: q.loyalty })}
+        body: `${planFields({ plan: a.plan, interval: b.interval, extraSpecialists: q.extraSpecialists, loyalty: q.loyalty, option: q.option })}
           ${field(T('pricePerPeriod'), `<input name="price" type="number" min="0" step="0.01" dir="ltr" value="${Number(b.recurringTotal || 0) / 100}">`)}
           ${field(T('currency'), `<select name="currency">${options(CURRENCIES, b.currency, c => c)}</select>`)}
           ${field(T('paidUntilBase'), `<input name="paidUntil" type="date" dir="ltr" value="${esc(b.cashBaseUntil || '')}"><small>${esc(T('paidUntilBaseHint'))}</small>`, 'is-full')}`,
@@ -305,8 +308,8 @@ function bindBillingActions(host, s, data, reload) {
       if (!a.email) { site().toast(T('emailRequired'), 'error'); return; }
       const q = a.quote || {};
       const r = await formDialog({ title: T('switchToCard'), lead: T('cardLinkLead', { email: a.email }), submit: T('sendLink'), wide: true,
-        body: `${planFields({ plan: a.plan === 'enterprise' ? 'business' : a.plan, interval: b.interval, extraSpecialists: q.extraSpecialists, loyalty: q.loyalty })}
-          ${field(T('pricingTier'), `<select name="tier">${options(['west_bank', 'standard'], a.country === 'PS' ? 'west_bank' : 'standard', t => T('tier_' + t))}</select>`, 'is-full')}`,
+        body: `${planFields({ plan: a.plan === 'enterprise' ? 'pro' : a.plan, interval: b.interval, extraSpecialists: q.extraSpecialists, loyalty: q.loyalty, option: q.option })}
+          <input type="hidden" name="tier" value="list2026">`,
         onSubmit: f => { const p = readPlan(f); if (p.plan === 'enterprise') throw Object.assign(new Error(T('enterpriseByAgreement')), { code: 'enterpriseByAgreement' }); return post(`/api/admin/billing/${app}/card-link`, { ...p, tier: f.elements.tier.value }); } });
       if (r?.link) { await linkDialog(r.link); reload(); }
     } else if (action === 'owner') {

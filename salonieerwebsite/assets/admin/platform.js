@@ -1,5 +1,5 @@
 // Platform-wide pages: plans and add-ons, the team, the activity log and the notification service.
-import { T, esc, rpc, view, setTitle, loading, empty, pill, act, params, fmtTime, isOwner, site, actionLabel, salonColor } from './panel.js';
+import { T, esc, rpc, view, setTitle, loading, empty, pill, act, params, fmtTime, isOwner, site, actionLabel, salonColor, errorText } from './panel.js';
 
 const field = (label, input, cls = '') => `<label class="ap-field ${cls}"><span>${esc(label)}</span>${input}</label>`;
 const local = (ar, en) => site().lang === 'ar' ? ar : en || ar;
@@ -29,8 +29,29 @@ export async function plansView() {
         <div class="ap-actions is-full"><button class="ap-btn" type="submit">${esc(T('addToCatalog'))}</button><p class="ap-error" role="alert"></p></div></form>` : ''}</section>
     <section class="ap-panel"><h3>${esc(T('newPlan'))}</h3>${can ? `<form id="ap-new-plan" class="ap-form-grid">${field(T('code'), `<input name="code" dir="ltr" required pattern="[a-z][a-z0-9_]{1,31}" placeholder="premium">`)}
         ${field(T('includedSpecialists'), `<input type="number" name="included_specialists" min="0" value="1">`)}${field(T('nameEn'), `<input name="name_en" dir="ltr" required maxlength="60">`)}${field(T('nameAr'), `<input name="name_ar" dir="rtl" required maxlength="60">`)}
-        <div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit">${esc(T('createPlan'))}</button><p class="ap-error" role="alert"></p></div></form>` : `<p class="ap-quiet">${esc(T('readOnlyManager'))}</p>`}</section></div>`;
+        <div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit">${esc(T('createPlan'))}</button><p class="ap-error" role="alert"></p></div></form>` : `<p class="ap-quiet">${esc(T('readOnlyManager'))}</p>`}</section></div>
+    <div class="ap-columns">
+    <section class="ap-panel"><h3>${esc(T('featureRegistry'))}</h3><p class="ap-quiet">${esc(T('featureRegistryLead'))}</p>
+      <ul class="ap-rows" data-paginate="feature-registry">${cat.features.map(f => `<li><span><b>${esc(local(f.label, f.label_en))}</b><small dir="ltr">${esc(f.key)}</small></span>${can ? `<button class="ap-link" type="button" data-edit-feature="${esc(f.key)}">${esc(T('edit'))}</button>` : ''}</li>`).join('')}</ul>
+      ${can ? `<form id="ap-feature" class="ap-form-grid"><h4 class="is-full">${esc(T('registerFeature'))}</h4>${field(T('code'), `<input name="key" dir="ltr" required pattern="[a-z][a-z0-9_]{1,63}">`)}
+        ${field(T('sortOrder'), `<input type="number" name="sort_order" min="0" max="1000" value="50">`)}
+        ${field(T('nameAr'), `<input name="label" dir="rtl" required maxlength="80">`)}${field(T('nameEn'), `<input name="label_en" dir="ltr" maxlength="80">`)}
+        ${field(T('description'), `<input name="description" maxlength="300">`, 'is-full')}
+        <div class="ap-actions is-full"><button class="ap-btn" type="submit">${esc(T('saveFeature'))}</button><p class="ap-error" role="alert"></p></div></form>` : ''}</section>
+    <section class="ap-panel"><h3>${esc(T('catalogHistory'))}</h3><div id="ap-catalog-history">${can ? loading() : `<p class="ap-quiet">${esc(T('errOwnerOnly'))}</p>`}</div></section></div>`;
   if (!can) return;
+  rpc('platform_subscription_audit', { p_slug: null, p_offset: 0 }).then(rows => {
+    const box = document.getElementById('ap-catalog-history'); if (!box) return;
+    box.innerHTML = rows.length ? `<ol class="ap-feed" data-paginate="catalog-history">${rows.map(r => `<li><span><b>${esc(actionLabel(r.action))}</b><small dir="ltr">${esc([r.entity_id, r.actor_email].filter(Boolean).join(' · '))}</small></span><time>${esc(fmtTime(r.created_at))}</time></li>`).join('')}</ol>` : `<p class="ap-quiet">${esc(T('noActivity'))}</p>`;
+  }).catch(e => { const box = document.getElementById('ap-catalog-history'); if (box) box.innerHTML = `<p class="ap-error">${esc(errorText(e))}</p>`; });
+  const ff = document.getElementById('ap-feature');
+  view().querySelectorAll('[data-edit-feature]').forEach(b => b.addEventListener('click', () => {
+    const f = cat.features.find(x => x.key === b.dataset.editFeature);
+    ff.elements.key.value = f.key; ff.elements.label.value = f.label || ''; ff.elements.label_en.value = f.label_en || '';
+    ff.elements.description.value = f.description || ''; ff.elements.sort_order.value = f.sort_order ?? 50; ff.elements.label.focus();
+  }));
+  ff.addEventListener('submit', e => { e.preventDefault(); if (!ff.reportValidity()) return;
+    act(ff.querySelector('button'), () => rpc('platform_feature_catalog_save', { p_data: Object.fromEntries(new FormData(ff)) }), T('saved')).then(plansView).catch(() => {}); });
   view().querySelectorAll('[data-plan]').forEach(form => form.addEventListener('submit', e => {
     e.preventDefault(); if (!form.reportValidity()) return;
     const g = n => form.elements[n], features = {};

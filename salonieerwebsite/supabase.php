@@ -61,6 +61,9 @@ function supabaseFail(Throwable $e): never {
             'رمز الصالون'=>[409,'codeTaken'],'المنطقة الزمنية'=>[400,'invalidTimezone'],'invalid_timezone'=>[400,'invalidTimezone'],
             'not_subscribed'=>[403,'notSubscribed'],'too_many_reports'=>[429,'tooManyReports'],'invalid_report_message'=>[400,'reportMessageInvalid'],
             'invalid_category'=>[400,'invalidRequest'],'report_not_found'=>[404,'notFound'],
+            // 2.27 app Help (FAQ) and app versions
+            'السؤال مطلوب'=>[400,'faqQuestionRequired'],'اكتب الإجابة بالعربية'=>[400,'faqAnswerAllLangs'],'أضف إجابة مكتوبة أو رابط فيديو'=>[400,'faqAnswerOrVideo'],
+            'رابط الفيديو'=>[400,'faqVideoUrl'],'رقم الإصدار يكتب'=>[400,'versionFormat'],'الحد الأدنى لا يمكن'=>[400,'versionOrder'],'رابط المتجر'=>[400,'storeUrlInvalid'],
             // 2.26 admin billing and accounts
             'account_has_subscription'=>[409,'activeSubscription'],'billing_exists'=>[409,'billingExists'],'billing_not_found'=>[404,'noSubscription'],
             'salon_not_found'=>[404,'notFound'],'payment_not_found'=>[404,'notFound'],'not_cash'=>[409,'notCash'],'already_cash'=>[409,'alreadyCash'],

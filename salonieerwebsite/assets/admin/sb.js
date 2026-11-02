@@ -1,5 +1,5 @@
 // Platform session for the admin panel: Supabase Auth (email + password of a Salonieer platform owner or manager)
-// and calls to the same server functions the app's console uses. Every permission is checked by the database; this
+// and calls to the platform server functions (the app has no console since 2.29). Every permission is checked by the database; this
 // file only carries the signed-in user's token. The URL and publishable key are public by design.
 const STORE = 'salonieer:platform-session:v1';
 let config = null, session = null, refreshing = null;

@@ -8,6 +8,10 @@ import { plansView, teamView, activityView, serviceView } from './platform.js';
 import { financeView, requestsView, discountsView } from './finance.js';
 import { billingView } from './billing.js';
 import { reportsView, cleanupView, reviewBadge, reviewPanel } from './ops.js';
+import { faqView, appVersionsView } from './help.js';
+import { paymentsView } from './payments.js';
+import { accountsView } from './accounts.js';
+import { loadPhone, toE164, splitE164, countryOptions, countryForTimezone, DIAL_COUNTRIES } from './phone-input.js';
 
 export const isAdminRoute = route => route === '/admin' || route.startsWith('/admin/');
 let ctx = null, me = null, mountToken = 0;
@@ -36,7 +40,14 @@ export function errorText(e) {
   const known = [[/غير مصرح|42501|permission/i, 'errForbidden'], [/مالك المنصة/, 'errOwnerOnly'], [/هذا المعرف مستخدم/, 'errSlugTaken'], [/المعرف:/, 'errSlugFormat'],
     [/رمز الصالون مستخدم/, 'errCodeTaken'], [/رمز الصالون غير صحيح/, 'errCodeFormat'], [/المنطقة الزمنية/, 'errTimezone'], [/اكتب رمز الصالون بالضبط/, 'errDeleteConfirm'],
     [/حد المختصين|المختصين النشطين|active Specialists/i, 'errSeatLimit'], [/رقم الهاتف مسجل/, 'errPhoneUsed'], [/رقم هاتف غير صحيح/, 'errPhone'], [/payment_required/, 'paymentRequired'],
-    [/already_approved/, 'alreadyApproved'], [/message_required/, 'messageRequired'], [/أضف المستخدم/, 'errTeamUser']];
+    [/already_approved/, 'alreadyApproved'], [/message_required/, 'messageRequired'], [/أضف المستخدم/, 'errTeamUser'],
+    // 2.40: access by phone number
+    [/الحد الأقصى لعدد المختصين/, 'errSeatLimit'], [/رقم هاتف صحيحاً مع رمز الدولة|invalid_phone/, 'errAccessPhone'], [/المسمى الوظيفي/, 'errJobTitle'],
+    [/هذا الحساب مالك للصالون/, 'errAccessOwner'], [/عضو في فريق الصالون بالفعل/, 'errAccessMember'], [/ملف مختص قديم/, 'errAccessLegacy'],
+    [/حسابان في Salonieer/, 'errAccessTwo'], [/المالك الأخير/, 'errLastOwner'], [/لا يوجد وصول بانتظار/, 'errAccessGone'],
+    // 2.40.1: account help
+    [/سبب إعادة التعيين/, 'errResetReason'], [/الحساب غير موجود/, 'errAccountMissing'], [/هذا الحساب موقوف/, 'accountDisabled'],
+    [/مرتبط بحساب Salonieer: غيّر كلمة مرور الحساب/, 'errSignupLinked']];
   const extra = e?.detail ? ` (${e.detail})` : '';
   for (const [re, key] of known) if (re.test(m)) return T(key) + extra;
   if (e?.code && hasKey(e.code)) return T(e.code) + extra;
@@ -77,12 +88,16 @@ const NAV = [
   ['', 'navOverview', 'M3 12l9-8 9 8M5 10v10h14V10'],
   ['applications', 'navApplications', 'M4 4h16v16H4zM8 9h8M8 13h8M8 17h5'],
   ['salons', 'navSalons', 'M4 20V9l8-5 8 5v11M9 20v-6h6v6'],
+['accounts', 'navAccounts', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c0-3.3 3.6-6 8-6s8 2.7 8 6', true],
   ['finance', 'navFinance', 'M4 19h16M7 16V10M12 16V6M17 16v-4', true],
   ['billing', 'navBilling', 'M3 7h18v10H3zM3 11h18M7 15h3', true],
   ['requests', 'navRequests', 'M4 7h12l-3-3M20 17H8l3 3', true],
   ['discounts', 'navDiscounts', 'M20 12l-8 8-8-8V4h8zM8.5 8.5h.01', true],
   ['reports', 'navReports', 'M5 21V4h11l-1.5 4L16 12H5'],
   ['cleanup', 'navCleanup', 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3', true],
+  ['faq', 'navFaq', 'M12 21a9 9 0 110-18 9 9 0 010 18zM9.5 9a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01'],
+  ['app-versions', 'navAppVersions', 'M7 3h10v18H7zM11 18h2', true],
+  ['payments', 'navPayments', 'M3 6h18v12H3zM3 10h18M7 15h4'],
   ['plans', 'navPlans', 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z'],
   ['team', 'navTeam', 'M16 14a4 4 0 10-8 0M12 11a3 3 0 100-6 3 3 0 000 6zM3 20c0-2.2 2.7-4 6-4M21 20c0-2.2-2.7-4-6-4', true],
   ['activity', 'navActivity', 'M12 7v5l3 2M12 21a9 9 0 110-18 9 9 0 010 18z'],
@@ -93,7 +108,7 @@ const icon = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" s
 export function adminShell(c) {
   ctx = c;
   return `<div class="ap" id="ap"><aside class="ap-spine" id="ap-spine" aria-label="${esc(T('panelNav'))}">
-    <a class="ap-brand" href="/admin"><img src="/assets/img/logo-mark-96.webp" alt="" width="34" height="34"><span><b>Salonieer</b><small>${esc(T('panelName'))}</small></span></a>
+    <a class="ap-brand" href="/admin"><img src="/assets/brand/Salonieer_symbol_for_dark.svg" alt="" width="34" height="36"><span><b>Salonieer</b><small>${esc(T('panelName'))}</small></span></a>
     <nav class="ap-nav" id="ap-nav"></nav>
     <div class="ap-spine-foot"><a class="ap-nav-item" href="/">${icon('M10 17l-5-5 5-5M5 12h14')}<span>${esc(T('backToSite'))}</span></a>
       <div class="ap-account" id="ap-account"></div></div></aside>
@@ -150,13 +165,17 @@ async function mount() {
     if (!first) await overview();
     else if (first === 'applications') await (second ? applicationView(second) : applicationsView());
     else if (first === 'salons') await (second === 'new' ? newSalonView() : second ? salonView(second) : salonsView());
+    else if (first === 'accounts') await accountsView();
     else if (first === 'plans') await plansView();
+    else if (first === 'payments') await paymentsView();
     else if (first === 'finance') await financeView();
     else if (first === 'billing') await billingView();
     else if (first === 'requests') await requestsView();
     else if (first === 'discounts') await discountsView();
     else if (first === 'reports') await reportsView();
     else if (first === 'cleanup') await cleanupView();
+    else if (first === 'faq') await faqView();
+    else if (first === 'app-versions') await appVersionsView();
     else if (first === 'team') await teamView();
     else if (first === 'activity') await activityView();
     else if (first === 'service') await serviceView();
@@ -233,6 +252,9 @@ async function countApplications() {
 }
 const planName = p => ({ basic: 'Basic', pro: 'Pro', business: 'Business', enterprise: 'Enterprise' })[p] || p;
 const money = q => q?.total == null ? T('byAgreement') : `${q.currency === 'ILS' ? '₪' : '$'}${Number(q.total).toLocaleString('en', { maximumFractionDigits: 2 })}`;
+// A quote's total is for its billing period: a yearly quote holds the whole year (11 × monthly); quotes from before
+// yearly billing have no interval and are monthly.
+const perPeriod = q => q?.total == null ? money(q) : `${money(q)} / ${T(q.interval === 'year' ? 'year' : 'month')}`;
 function appStatus(a) { return a.awaitingApproval ? pill('info', T('awaitingApproval')) : pill(STATUS[a.status] || 'muted', ctx.t(a.status)); }
 const payPill = a => pill(PAY[a.paymentStatus] || 'muted', ctx.t('pay_' + (a.paymentStatus || 'unpaid')));
 
@@ -289,7 +311,7 @@ async function applicationsView() {
     document.getElementById('ap-rows').innerHTML = rows.length ? rows.map(a => `<tr data-href="/admin/applications/${esc(a.id)}" tabindex="0">
       <td data-label="${esc(T('salon'))}"><span class="ap-cell-salon">${salonMark(a, 34)}<span><b>${esc(a.salonName)}</b><small dir="ltr">${esc(a.id)}</small></span></span></td>
       <td data-label="${esc(T('applicant'))}"><b>${esc(a.fullName)}</b><small dir="ltr">${esc(a.email)}</small></td>
-      <td data-label="${esc(T('plan'))}">${esc(planName(a.plan))}<small>${esc(money(a.quote))}</small></td>
+      <td data-label="${esc(T('plan'))}">${esc(planName(a.plan))}<small class="ap-nowrap">${esc(perPeriod(a.quote))}</small></td>
       <td data-label="${esc(T('payment'))}">${payPill(a)}</td><td data-label="${esc(T('status'))}">${appStatus(a)}${reviewBadge(a)}</td>
       <td data-label="${esc(T('submitted'))}">${esc(fmtDate(a.createdAt))}</td></tr>`).join('') : `<tr data-no-page><td colspan="6">${empty(T('noApplications'))}</td></tr>`;
   };
@@ -312,13 +334,21 @@ async function applicationView(id) {
   const a = (await loadApplications()).find(x => x.id === id);
   if (!a) { view().innerHTML = empty(T('notFound'), T('applicationMissing')); return; }
   const open = !['approved', 'declined'].includes(a.status), paid = ['paid', 'test_paid'].includes(a.paymentStatus);
+  // The owner's number for the approval, as country + number (like "Owners & access" and the app); prefilled from
+  // the application (ownerPhone is the local number the applicant gave, e.g. 0599123456; phone is E.164).
+  await loadPhone().catch(() => null);
+  const owner = (() => {
+    const own = String(a.ownerPhone || ''), split = splitE164(own.startsWith('+') ? own : a.phone);
+    const country = split?.country || countryForTimezone(a.timezone) || (DIAL_COUNTRIES.includes(a.country) ? a.country : 'PS');
+    return { country, national: own && !own.startsWith('+') ? own : split?.national || own };
+  })();
   const q = a.quote || {}, addons = [q.loyalty ? ctx.t('loyalty') : '', q.extraSpecialists ? `${ctx.t('extraSpecialists')} × ${q.extraSpecialists}` : ''].filter(Boolean);
   const facts = (rows) => `<dl class="ap-facts">${rows.filter(r => r[1]).map(([k, v, ltr]) => `<div><dt>${esc(k)}</dt><dd${ltr ? ' dir="ltr"' : ''}>${v}</dd></div>`).join('')}</dl>`;
   const who = m => m.direction === 'in' ? esc(m.author || a.fullName) : m.direction === 'out' ? 'Salonieer' : esc(T('system'));
   view().innerHTML = `<section class="ap-app-head" style="--salon:#1a88a4">${salonMark(a, 64)}<div><h2>${esc(a.salonName)}</h2><p dir="ltr">${esc(a.id)}</p><div class="ap-pills">${appStatus(a)}${payPill(a)}${reviewBadge(a)}</div></div></section>
     <div class="ap-columns is-detail"><div class="ap-stack">
       ${reviewPanel(a)}
-      <section class="ap-panel"><h3>${esc(T('order'))}</h3>${facts([[T('plan'), esc(planName(a.plan))], [T('monthly'), esc(money(q))], [T('addons'), esc(addons.join(', '))], [T('paymentMethod'), esc(ctx.t(a.paymentMethod))], [T('paymentRef'), esc(a.paymentReference || ''), true], [T('paidOn'), a.paidAt ? esc(fmtTime(a.paidAt)) : ''], [T('salonType'), esc(ctx.t('cat_' + a.salonCategory))], [T('timezone'), esc(a.timezone), true]])}</section>
+      <section class="ap-panel"><h3>${esc(T('order'))}</h3>${facts([[T('plan'), esc(planName(a.plan))], [T(q.interval === 'year' ? 'yearlyTotal' : 'monthly'), esc(money(q))], [T('addons'), esc(addons.join(', '))], [T('paymentMethod'), esc(ctx.t(a.paymentMethod))], [T('paymentRef'), esc(a.paymentReference || ''), true], [T('paidOn'), a.paidAt ? esc(fmtTime(a.paidAt)) : ''], [ctx.t('teamComposition'), a.teamComposition ? esc(ctx.t('team_' + a.teamComposition)) : ''], [ctx.t('clientele'), a.clientele ? esc(ctx.t('clientele_' + a.clientele)) : esc(ctx.t('cat_' + a.salonCategory))], [T('timezone'), esc(a.timezone), true]])}</section>
       <section class="ap-panel"><h3>${esc(T('applicant'))}</h3>${facts([[T('name'), esc(a.fullName)], [T('email'), `<a href="mailto:${esc(a.email)}">${esc(a.email)}</a>`, true], [T('phone'), `<a href="tel:${esc(a.phone)}">${esc(a.phone)}</a>`, true], [T('country'), esc(a.country)], [T('idNumber'), esc(a.identityNumber || '••' + a.idLast4), true], [T('ownerLogin'), esc(a.ownerPhone), true], [T('submitted'), esc(fmtTime(a.createdAt))]])}</section>
       ${a.salon ? `<section class="ap-panel is-success"><h3>${esc(T('salonCreated'))}</h3><p>${esc(a.salon.name)} · <span dir="ltr">${esc(a.salon.accessCode)}</span></p><a class="ap-btn" href="/admin/salons/${esc(a.salon.slug)}">${esc(T('openSalon'))}</a></section>` : ''}
     </div><div class="ap-stack">
@@ -328,9 +358,12 @@ async function applicationView(id) {
       <section class="ap-panel is-decision"><h3>${esc(T('decision'))}</h3>${paid ? '' : `<p class="ap-note">${esc(T('approveNeedsPayment'))}</p>`}
         <form id="ap-approve" class="ap-form-grid"><label class="ap-field"><span>${esc(T('slug'))}</span><input name="slug" dir="ltr" pattern="[a-z][a-z0-9]{1,23}" placeholder="${esc(T('automatic'))}" value="${esc(a.proposedSlug || '')}"></label>
           <label class="ap-field"><span>${esc(T('salonCode'))}</span><input name="accessCode" dir="ltr" pattern="[A-Za-z0-9_\\-]{4,32}" placeholder="${esc(T('automatic'))}" value="${esc(a.proposedCode || '')}"></label>
-          <label class="ap-field"><span>${esc(T('salonType'))}</span><select name="salonCategory">${['male', 'female', 'beauty'].map(c => `<option value="${c}"${a.salonCategory === c ? ' selected' : ''}>${esc(ctx.t('cat_' + c))}</option>`).join('')}</select></label>
+          <label class="ap-field"><span>${esc(ctx.t('teamComposition'))}</span><select name="teamComposition" required>${a.teamComposition ? '' : `<option value="">${esc(ctx.t('chooseOne'))}</option>`}${['male', 'female', 'mixed'].map(c => `<option value="${c}"${a.teamComposition === c ? ' selected' : ''}>${esc(ctx.t('team_' + c))}</option>`).join('')}</select></label>
+          <label class="ap-field"><span>${esc(ctx.t('clientele'))}</span><select name="clientele" required>${a.clientele ? '' : `<option value="">${esc(ctx.t('chooseOne'))}</option>`}${['men', 'women', 'both'].map(c => `<option value="${c}"${a.clientele === c ? ' selected' : ''}>${esc(ctx.t('clientele_' + c))}</option>`).join('')}</select></label>
           <label class="ap-field"><span>${esc(T('timezone'))}</span><input name="timezone" dir="ltr" value="${esc(a.timezone)}"></label>
-          <label class="ap-field is-full"><span>${esc(T('ownerLogin'))}</span><input name="ownerPhone" dir="ltr" inputmode="tel" value="${esc(a.ownerPhone || '')}"></label>
+          <label class="ap-field"><span>${esc(T('dialCode'))}</span><select name="ownerCountry">${countryOptions(owner.country, ctx.lang)}</select></label>
+          <label class="ap-field"><span>${esc(T('ownerPhoneLabel'))}</span><input name="ownerPhone" dir="ltr" type="tel" inputmode="tel" autocomplete="off" maxlength="24" required value="${esc(owner.national)}"></label>
+          <p class="ap-note is-full" id="ap-owner-to" aria-live="polite"></p><small class="ap-quiet is-full">${esc(T('ownerAccessHint'))}</small>
           <div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit"${paid ? '' : ' disabled'}>${esc(T('approveCreate'))}</button><button class="ap-btn is-danger" type="button" id="ap-decline">${esc(T('decline'))}</button><p class="ap-error" role="alert"></p></div></form></section>` : ''}
       <section class="ap-panel"><h3>${esc(T('conversation'))}</h3>
         ${a.messages.length ? `<ol class="ap-thread" data-paginate="admin-thread-${esc(a.id)}" data-paginate-start="last">${a.messages.map(m => `<li class="is-${m.direction}"><header><b>${who(m)}</b><time>${esc(fmtTime(m.createdAt))}</time></header><p>${esc(m.body)}</p></li>`).join('')}</ol>` : `<p class="ap-quiet">${esc(T('noMessages'))}</p>`}
@@ -342,10 +375,23 @@ async function applicationView(id) {
   document.getElementById('ap-paid')?.addEventListener('click', e => act(e.currentTarget, () => ctx.post(base + '/mark-paid', { reference: document.getElementById('ap-ref').value.trim() }), T('paymentRecorded')).then(reload).catch(() => {}));
   document.getElementById('ap-testpay')?.addEventListener('click', async e => { if (await confirm(T('testBuy'), T('testBuyConfirm'))) act(e.currentTarget, () => ctx.post('/api/applications/' + encodeURIComponent(id) + '/test-pay', {}), T('paidTest')).then(reload).catch(() => {}); });
   const approve = document.getElementById('ap-approve');
+  const ownerNumber = () => approve && toE164(approve.elements.ownerPhone.value, approve.elements.ownerCountry.value);
+  const showOwner = () => {
+    const box = document.getElementById('ap-owner-to'); if (!box) return;
+    const n = ownerNumber();
+    box.textContent = n ? T('ownerAccessTo', { phone: n.e164 }) : approve.elements.ownerPhone.value.trim() ? T('invalidPhoneIntl') : '';
+    if (n) approve.querySelector('.ap-error').textContent = '';
+  };
+  approve?.elements.ownerPhone.addEventListener('input', showOwner);
+  approve?.elements.ownerCountry.addEventListener('change', showOwner);
+  showOwner();
   approve?.addEventListener('submit', async e => {
     e.preventDefault();
+    const n = ownerNumber();
+    if (!n) { approve.querySelector('.ap-error').textContent = T('invalidPhoneIntl'); approve.elements.ownerPhone.focus(); return; }
     if (!approve.reportValidity() || !(await confirm(T('approveCreate'), T('approveConfirm')))) return;
-    await act(approve.querySelector('[type=submit]'), () => ctx.post(base + '/approve', Object.fromEntries(new FormData(approve))), T('salonCreated')).then(reload).catch(() => {});
+    const data = Object.fromEntries(new FormData(approve)); delete data.ownerCountry; data.ownerPhone = n.e164;
+    await act(approve.querySelector('[type=submit]'), () => ctx.post(base + '/approve', data), T('salonCreated')).then(reload).catch(() => {});
   });
   document.getElementById('ap-decline')?.addEventListener('click', async e => {
     const note = document.querySelector('#ap-compose textarea').value.trim();

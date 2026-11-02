@@ -407,3 +407,376 @@ html{scrollbar-width:thin;scrollbar-color:var(--barbicide) var(--night)}
 .danger-zone form{display:grid;gap:12px}
 .billing-items li small{display:block;color:var(--color-text-muted);font-size:.78rem}
 @media (max-width:640px){.compare-table{min-width:0;font-size:.78rem;table-layout:fixed}.compare-table thead th{font-size:.72rem;padding:10px 2px;font-stretch:90%}.compare-table thead th:first-child{width:38%}.compare-table th[scope=row]{min-width:0;padding:10px 8px;position:static}.compare-table th[scope=row] small{font-size:.7rem}.compare-table td{padding:10px 2px}.cmp-tag{padding:1px 5px;font-size:.62rem}}
+
+/* =================================================================================================================
+   2.31 — THE OFFICIAL SALONIEER IDENTITY
+   Deep navy, white, cool blue and a restrained champagne gold, sampled from the approved logo (brand package,
+   Salonieer_color_palette.json). The "Cut Time" tokens above are re-pointed, so every page and component follows;
+   the cut corner stays (it echoes the emblem's chamfered octagon). The logo itself is the supplied outlined artwork
+   (/assets/brand/) — never the wordmark typed in a font.
+   ================================================================================================================= */
+:root{
+  --night:#061939;--night-2:#0B2347;--night-3:#14315F;--barbicide:#4286D7;--barbicide-deep:#3576CA;--chrome:#C9D4E4;
+  --talc:#F4F7FB;--talc-2:#E8F1FA;--paper:#FFFFFF;--peroxide:#E8C588;--steel:#637086;
+  --color-secondary:#2B3B58;--color-accent-hover:#2C63AD;--color-accent-text:#2C63AD;--color-accent-soft:rgba(66,134,215,.12);
+  --color-surface-sunken:#EEF3FA;--color-text-secondary:#2B3B58;--color-text-muted:#56647C;
+  --color-border:rgba(6,25,57,.11);--color-border-strong:rgba(6,25,57,.26);--color-info:var(--barbicide-deep);--color-info-text:#2C63AD;
+  --color-overlay:rgba(2,15,38,.62);--badge-bg:rgba(66,134,215,.12);--badge-text:#2C63AD;--shade:#020F26;--ring:0 0 0 3px rgba(66,134,215,.35);
+  --elev-2:0 30px 60px -40px rgba(2,15,38,.4);--elev-3:0 40px 90px -40px rgba(2,15,38,.55);
+}
+/* Latin headings: a clean grotesque instead of the stretched display face (Arabic and Hebrew keep their faces). */
+html:not(:lang(ar)):not(:lang(he)){--font-display:Hanken,"Segoe UI",system-ui,sans-serif;--stretch-head:100%;--w-head:720;--lh-head:1.06;--track-head:-.02em}
+.ink{--color-surface-sunken:#04163A;--color-text-secondary:var(--chrome);--color-text-muted:#97A5BB;
+  --color-border:rgba(232,241,250,.14);--color-border-strong:rgba(232,241,250,.3);--button-primary-hover:#88D6FD}
+
+/* The logo: navy artwork on light surfaces, white artwork on dark ones. The artboard includes the brand's clear
+   space, so it is pulled back by that margin to line up with the page edge. */
+.brand{gap:0}
+.brand .brand-logo{display:block;width:auto;height:50px;margin-inline-start:-15px}
+.brand .brand-logo-dark{display:none}
+body.menu-open .topbar .brand-logo-light{display:none}
+body.menu-open .topbar .brand-logo-dark{display:block}
+@media (min-width:901px){
+  body[data-scene=is-auth] .topbar:not(.is-solid) .brand-logo-light{display:none}
+  body[data-scene=is-auth] .topbar:not(.is-solid) .brand-logo-dark{display:block}
+}
+@media (max-width:480px){.brand .brand-logo{height:42px}}
+.footer-logo{display:block;width:200px;height:auto;margin:0 0 14px;margin-inline-start:-19px}
+.initial-loader img{max-width:min(240px,70vw)}
+
+/* Home: calm blue-white surfaces, navy type and actions, gold only for the one "popular" tag. */
+.hm-hero{background:radial-gradient(90% 70% at 85% 10%,rgba(66,134,215,.10),transparent 60%),var(--talc)}
+.hm-hero h1{color:var(--night)}
+.hm-lead{color:var(--color-text-secondary)}
+.hm-points .ck,.check-list .ck{color:var(--barbicide-deep)}
+.hm-tint{background:var(--paper);border-block:1px solid var(--color-border)}
+.hm-num{background:var(--night);color:#fff;box-shadow:inset 0 -3px 0 var(--barbicide)}
+.hm-shot img,.hm-feature figure img{filter:drop-shadow(0 24px 40px rgba(2,15,38,.18))}
+.hm-plan{background:var(--talc);border-color:var(--color-border)}
+.hm-plan.is-popular{border:2px solid var(--barbicide-deep);background:var(--paper)}
+.hm-plan .tag{background:var(--peroxide);color:var(--night)}
+.hm-box{background:var(--paper)}
+.btn.primary:before{background:var(--barbicide-deep)}
+.btn.primary:hover{color:#fff}
+.ink .btn.primary:hover{color:var(--night)}
+.site-footer{background:var(--night);color:var(--chrome)}
+.site-footer a{color:#E8F1FA}
+.site-footer a:hover{color:#fff}
+/* =================================================================================================================
+   2.32 — REBALANCED TO THE LOGO
+   2.31 re-pointed every accent to blue and tinted the surfaces blue, so the home and plans pages read as one blue
+   block. Now: warm white surfaces, the logo's navy for type, buttons and dark bands, champagne gold as the accent
+   (the popular plan, check marks, the hover fill). Blue stays only for the focus ring readers rely on.
+   ================================================================================================================= */
+:root{
+  --talc:#F7F6F3;--talc-2:#EFECE6;--paper:#FFFFFF;--barbicide:#C9A35E;--barbicide-deep:#9C7849;
+  --color-accent:#0B1F44;--color-accent-hover:#16305E;--color-accent-text:#7A5C33;--color-accent-soft:rgba(232,197,136,.18);
+  --color-background:var(--talc);--color-surface-secondary:var(--talc-2);--color-surface-sunken:#F1EFEA;
+  --color-border:rgba(13,21,38,.10);--color-border-strong:rgba(13,21,38,.22);--color-info:#0B1F44;--color-info-text:#0B1F44;
+  --badge-bg:rgba(232,197,136,.22);--badge-text:#5E4523;--ring:0 0 0 3px rgba(66,134,215,.35);
+  --gold:#E8C588;--gold-deep:#9C7849;
+}
+.ink{--color-surface-sunken:#0A1428;--button-primary-hover:#E8C588}
+.hm-hero{background:radial-gradient(90% 70% at 85% 10%,rgba(232,197,136,.16),transparent 60%),var(--talc)}
+.hm-points .ck,.check-list .ck{color:var(--gold-deep)}
+.hm-num{background:var(--night);color:var(--gold);box-shadow:none}
+.hm-plan{background:var(--paper)}
+.hm-plan.is-popular{border:2px solid var(--gold-deep)}
+.btn.primary:before{background:#16305E}
+.ink .btn.primary:before{background:var(--gold)}
+.ink .btn.primary:hover{color:var(--night)}
+
+/* Plan comparison (plans page) */
+.plan-compare{margin-top:clamp(40px,6vw,72px);display:flex;flex-direction:column;gap:18px}
+.plan-compare h2{margin:0;font-size:clamp(24px,3.4vw,34px)}
+.cmp-lead{margin:0;color:var(--color-text-secondary);max-width:62ch;line-height:1.7}
+.ink .plan-compare{--cmp-card:rgba(255,255,255,.04);--cmp-line:rgba(255,255,255,.12)}
+.plan-compare{--cmp-card:var(--paper);--cmp-line:var(--color-border)}
+.cmp-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}
+.cmp-card{position:relative;padding:20px;border:1px solid var(--cmp-line);background:var(--cmp-card)}
+.cmp-card.is-popular{border:2px solid var(--gold-deep)}
+.cmp-card h3{margin:0 0 6px;font-size:20px}
+.cmp-card p{margin:0;line-height:1.7;color:var(--color-text-secondary);font-size:15px}
+.cmp-card .tag{display:inline-block;margin-bottom:8px;padding:3px 10px;background:var(--gold);color:#0B1F44;font-size:12px;font-weight:700}
+.cmp-wrap{overflow-x:auto;border:1px solid var(--cmp-line);background:var(--cmp-card)}
+.cmp-table{width:100%;min-width:560px;border-collapse:collapse}
+.cmp-table th,.cmp-table td{padding:14px 16px;border-bottom:1px solid var(--cmp-line);text-align:center;vertical-align:top}
+.cmp-table thead th{font-size:15px}
+.cmp-table tbody th{text-align:start;font-weight:600;width:46%}
+.cmp-table .cmp-price td b{display:block;font-size:20px}
+.cmp-table .cmp-price td small{color:var(--color-text-muted)}
+.cmp-yes{color:#1F8A5B;font-weight:800;font-size:18px}
+.ink .cmp-yes{color:#6FD9A9}
+.cmp-no{color:var(--color-text-muted)}
+.cmp-lim{font-weight:600;font-size:14px}
+.cmp-more{margin-top:6px}
+.cmp-more summary{cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:var(--color-accent-text);list-style:none}
+.ink .cmp-more summary{color:var(--gold)}
+.cmp-more summary::-webkit-details-marker{display:none}
+.cmp-more summary::after{content:"+"}
+.cmp-more[open] summary::after{content:"−"}
+.cmp-more p{margin:8px 0 0;font-weight:400;line-height:1.75;color:var(--color-text-secondary);font-size:14.5px}
+.cmp-more p em{display:block;margin-top:6px;font-style:normal;color:var(--color-text-muted)}
+.cmp-more summary:focus-visible{outline:none;box-shadow:var(--ring)}
+.cmp-notes{margin:0;padding:0;list-style:none;display:grid;gap:6px;color:var(--color-text-secondary)}@media (max-width:640px){
+  .cmp-wrap{overflow:visible;border:0;background:none}
+  .cmp-table{min-width:0;display:block}
+  .cmp-table thead{display:none}
+  .cmp-table tbody{display:grid;gap:10px}
+  .cmp-table tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--cmp-line);background:var(--cmp-card)}
+  .cmp-table tbody th{grid-column:1/-1;width:auto;border-bottom:1px solid var(--cmp-line)}
+  .cmp-table td{border-bottom:0;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .cmp-table td::before{content:attr(data-label);font-size:12px;font-weight:700;color:var(--color-text-muted)}
+}/* 2.32: the plans page is light like the rest of the site (it was one full navy board). */
+.plans-page{background:var(--talc);color:var(--color-text-primary)}
+.plans-page .page-heading h1{color:var(--night)}
+.plans-page .page-heading p{color:var(--color-text-secondary)}
+.plans-page .menu-row{border-color:var(--color-border)}
+.plans-page .menu-row .price small,.plans-page .menu-row .desc,.plans-page .menu-row .features li{color:var(--color-text-secondary)}
+@media (hover:hover) and (pointer:fine){.plans-page .menu-row:hover h3{color:var(--gold-deep)}}.plans-page .menu-row h3,.plans-page .extras h2{color:var(--night)}
+.plans-page .menu-row .price,.plans-page .menu-row .price bdi{color:var(--night)}
+.plans-page .menu-row .price small,.plans-page .menu-row .desc,.plans-page .plan-rows .features,.plans-page .payment-footnote{color:var(--color-text-secondary)}
+.plans-page .menu-row .leader{border-color:var(--color-border-strong)}
+.plans-page .menu-row .price{color:var(--gold-deep)}
+/* 2.33 — team invitation page (/invite) */
+.invite-page .title-block{margin-bottom:22px}
+.invite-card{display:grid;gap:16px;padding:22px;border-radius:20px;background:var(--card,#fff);border:1px solid var(--line,rgba(11,31,68,.12));box-shadow:0 10px 30px rgba(11,31,68,.06)}
+.invite-card .btn.primary{justify-self:stretch;text-align:center}
+.invite-code{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:var(--paper-2,#f3f1ec)}
+.invite-code code{flex:1;min-width:0;font-size:13px;word-break:break-all}
+.invite-steps{margin:0;padding-inline-start:20px;display:grid;gap:8px;line-height:1.6}
+
+/* 2.34: a salon's own link (/s/<code>) */
+.salon-link-page .store-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:14px 0 4px}
+.salon-link-page .salon-link-brand{display:flex;flex-direction:column;align-items:center;gap:10px;margin:6px 0 14px}
+.salon-link-page .salon-link-brand img{width:76px;height:76px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.salon-link-page .salon-link-brand h2{margin:0;font-size:1.35rem}
+.salon-link-page .salon-link-qr{display:grid;place-items:center;margin:12px auto}
+.salon-link-page .salon-link-qr svg{width:200px;height:200px;background:#fff;padding:10px;border-radius:14px}
+.salon-link-page .invite-code span{font-size:.85rem;opacity:.75;margin-inline-end:8px}
+
+/* =================================================================================================================
+   2.42 — HOME: THE PRODUCT, SHOWN
+   Real screens of the app (tools/showcase) in device frames: a phone and an iPad in landscape. The frames are pure
+   CSS and size themselves from their own width (container units), so one set of rules fits the hero, the steps, the
+   tour and the iPad band. Warm-white surfaces, navy type, gold only as the accent. Movement: one fade-up per section
+   and the tour's cross-fade, both off with reduced motion (fx/showcase.js).
+   ================================================================================================================= */
+.sc-home{overflow-x:clip}
+.sc-home .hm-head p{max-width:62ch}
+
+/* Devices */
+/* A button never stretches to its row by itself (and container sizing gives it no content width): always sized here. */
+.sc-device{all:unset;box-sizing:border-box;display:block;position:relative;width:100%;container-type:inline-size;cursor:zoom-in;-webkit-tap-highlight-color:transparent;transition:transform .45s var(--ease-out)}
+.sc-device:focus-visible{outline:2px solid var(--barbicide-deep);outline-offset:6px;border-radius:14px}
+.sc-bezel{display:block;position:relative;background:linear-gradient(155deg,#323b4c 0%,#0d121b 34%,#111723 70%,#2a3242 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 0 0 1px rgba(6,25,57,.32),0 42px 70px -42px rgba(2,15,38,.6),0 16px 30px -20px rgba(2,15,38,.4)}
+.sc-phone .sc-bezel{padding:3.4cqw;border-radius:15.5cqw}
+.sc-tablet .sc-bezel{padding:2cqw;border-radius:3.4cqw}
+.sc-screen{display:block;position:relative;overflow:hidden;background:#F6F5F2;transform:translateZ(0)}
+.sc-phone .sc-screen{aspect-ratio:390/844;border-radius:12.4cqw}
+.sc-tablet .sc-screen{aspect-ratio:1180/820;border-radius:1.5cqw}
+.sc-screen img{display:block;width:100%;height:100%;object-fit:cover}
+/* The phone's Dynamic Island and side buttons, the iPad's front camera (hardware: never mirrored). */
+.sc-phone .sc-screen:after{content:"";position:absolute;top:2.5cqw;left:50%;width:29%;height:8cqw;transform:translateX(-50%);border-radius:99px;background:#05070b}
+.sc-phone .sc-bezel:before{content:"";position:absolute;right:-.7cqw;top:25%;width:.9cqw;height:13%;border-radius:0 3px 3px 0;background:#1b2231}
+.sc-phone .sc-bezel:after{content:"";position:absolute;left:-.7cqw;top:20%;width:.9cqw;height:7%;border-radius:3px 0 0 3px;background:#1b2231;box-shadow:0 10cqw 0 #1b2231}
+.sc-tablet .sc-bezel:after{content:"";position:absolute;top:.6cqw;left:50%;width:.8cqw;height:.8cqw;transform:translateX(-50%);border-radius:50%;background:#222b3a;box-shadow:inset 0 0 0 .2cqw #0b0f16}
+.sc-zoom-hint{position:absolute;bottom:6%;inset-inline-end:-6px;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--paper);color:var(--night);
+  box-shadow:0 6px 16px -6px rgba(2,15,38,.35),0 0 0 1px var(--color-border);opacity:0;transform:scale(.85);transition:opacity .25s,transform .25s var(--ease-out)}
+.sc-device:hover .sc-zoom-hint,.sc-device:focus-visible .sc-zoom-hint{opacity:1;transform:none}
+@media (hover:none){.sc-zoom-hint{opacity:.95;transform:none;width:30px;height:30px}}
+@media (hover:hover) and (pointer:fine){.sc-device:hover{transform:translateY(-4px)}}
+
+/* Hero: the words, then the iPad with the owner's dashboard and the customer's phone in front of it. */
+.sc-hero{position:relative;padding:calc(var(--nav-h) + clamp(28px,6vh,64px)) 0 clamp(56px,9vh,100px);
+  background:radial-gradient(60% 55% at 76% 42%,rgba(232,197,136,.24),transparent 64%),radial-gradient(40% 40% at 6% 0%,rgba(66,134,215,.07),transparent 60%),var(--talc)}
+[dir=rtl] .sc-hero{background:radial-gradient(60% 55% at 24% 42%,rgba(232,197,136,.24),transparent 64%),radial-gradient(40% 40% at 94% 0%,rgba(66,134,215,.07),transparent 60%),var(--talc)}
+.sc-hero-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(32px,4.5vw,72px);align-items:center}
+.sc-kicker{display:flex;align-items:center;gap:12px;margin:0 0 18px;font-size:.95rem;font-weight:650;color:#7A5C33!important;max-width:none}
+.sc-kicker:before{content:"";flex:0 0 28px;height:2px;background:var(--gold)}
+.sc-hero h1{font-size:clamp(2.35rem,1.2rem + 3.4vw,4.3rem);letter-spacing:var(--track-head);color:var(--night)}
+.sc-lead{margin-top:20px;font-size:var(--fs-lead);max-width:52ch}
+.sc-hero .hm-points{margin-top:26px}
+.sc-hero-visual{margin:0}
+.sc-stage{position:relative;padding-inline-start:11%;padding-bottom:8%}
+.sc-stage .sc-tablet{width:100%}
+.sc-stage .sc-phone{position:absolute;inset-inline-start:0;bottom:0;width:25%;z-index:1}
+.sc-stage .sc-zoom-hint{display:none}
+.sc-note{margin:18px auto 0;font-size:.85rem;color:var(--color-text-muted);text-align:center;max-width:56ch}
+@media (max-width:900px){.sc-hero-grid{grid-template-columns:minmax(0,1fr)}.sc-stage{max-width:640px;margin-inline:auto}}
+
+/* How a booking works: four steps, four real screens. */
+.sc-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(20px,2.6vw,40px)}
+.sc-step{display:flex;flex-direction:column}
+.sc-step-shot{display:flex;justify-content:center;padding:8px 0 26px}
+.sc-step .sc-phone{width:min(230px,86%)}
+.sc-step-num{display:inline-grid;place-items:center;width:36px;height:36px;margin-bottom:14px;background:var(--night);color:var(--gold);font-weight:700;
+  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%)}
+[dir=rtl] .sc-step-num{clip-path:polygon(8px 0,100% 0,100% 100%,0 100%,0 8px)}
+.sc-step h3{font-size:1.22rem}
+.sc-step p{margin-top:8px;font-size:1rem}
+@media (max-width:1100px){.sc-steps{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:48px}}
+@media (max-width:640px){
+  .sc-steps{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;margin-inline:calc(-1 * var(--gutter));
+    padding:4px var(--gutter) 18px;scroll-padding-inline:var(--gutter);scrollbar-width:none}
+  .sc-steps::-webkit-scrollbar{display:none}
+  .sc-step{flex:0 0 min(76vw,300px);scroll-snap-align:start}
+  .sc-step .sc-phone{width:76%}
+}
+
+/* The tour: one tab per part of the app, its real screen beside what it does. */
+.sc-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 clamp(28px,4vh,44px)}
+.sc-tab{display:inline-flex;align-items:center;gap:9px;min-height:48px;padding:10px 18px;border:1.5px solid var(--color-border-strong);background:var(--paper);color:var(--night);
+  font:inherit;font-weight:650;font-size:.98rem;cursor:pointer;transition:background-color .2s,color .2s,border-color .2s}
+.sc-tab svg{flex:0 0 auto;color:var(--gold-deep)}
+.sc-tab[aria-selected=true]{background:var(--night);border-color:var(--night);color:#fff}
+.sc-tab[aria-selected=true] svg{color:var(--gold)}
+.sc-tab:focus-visible{outline:2px solid var(--barbicide-deep);outline-offset:2px}
+@media (hover:hover) and (pointer:fine){.sc-tab:hover{border-color:var(--night)}}
+@media (max-width:640px){
+  .sc-tabs{flex-wrap:nowrap;overflow-x:auto;margin-inline:calc(-1 * var(--gutter));padding:2px var(--gutter) 8px;scroll-padding-inline:var(--gutter);scrollbar-width:none}
+  .sc-tabs::-webkit-scrollbar{display:none}
+  .sc-tab{flex:0 0 auto;min-height:44px;padding:8px 14px;font-size:.92rem}
+}
+/* All panels share one grid cell, so switching never changes the page's height. */
+.sc-panels{display:grid}
+.sc-panel{grid-area:1/1;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(28px,5vw,88px);align-items:center;visibility:hidden;opacity:0;
+  transition:opacity .3s var(--ease-out),visibility 0s .3s}
+.sc-panel.is-active{visibility:visible;opacity:1;transition:opacity .45s var(--ease-out),visibility 0s}
+.sc-panel-shot{display:flex;justify-content:center;padding:clamp(12px,3vw,40px) 0;background:radial-gradient(closest-side,rgba(232,197,136,.32),transparent 78%)}
+.sc-panel .sc-phone{width:min(280px,64%)}
+.sc-panel-copy h3{font-size:clamp(1.6rem,1.15rem + 1.3vw,2.4rem);color:var(--night)}
+.sc-panel-copy > p{margin-top:14px;font-size:var(--fs-lead)}
+.sc-panel-copy .check-list{margin-top:22px}
+.sc-tour-cta{display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px;margin-top:clamp(32px,5vh,56px);padding-top:clamp(24px,4vh,36px);border-top:1px solid var(--color-border)}
+@media (max-width:900px){.sc-panel{grid-template-columns:minmax(0,1fr);align-items:start;gap:22px}.sc-panel .sc-phone{width:min(270px,66vw)}}
+
+/* iPad */
+.sc-ipad-grid{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(28px,5vw,80px);align-items:center}
+.sc-ipad h2{font-size:clamp(1.8rem,1.2rem + 1.8vw,2.6rem)}
+.sc-ipad p{margin-top:14px;font-size:var(--fs-lead)}
+@media (max-width:900px){.sc-ipad-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Everything else, with the plans that include it. */
+.sc-feats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.sc-feat{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:24px 22px;background:var(--paper);border:1px solid var(--color-border);transition:border-color .2s,box-shadow .3s}
+@media (hover:hover) and (pointer:fine){.sc-feat:hover{border-color:rgba(156,120,73,.45);box-shadow:0 18px 40px -30px rgba(2,15,38,.4)}}
+.sc-feat-icon{display:grid;place-items:center;width:44px;height:44px;margin-bottom:4px;background:rgba(232,197,136,.24);color:#7A5C33}
+.sc-feat h3{font-size:1.08rem;line-height:1.3}
+.sc-feat p{flex:1;margin:0;font-size:.95rem;line-height:1.6}
+.sc-feat-tag{margin-top:6px;padding:3px 10px;font-size:.78rem;font-weight:700;line-height:1.5;border:1px solid var(--color-border-strong);color:var(--color-text-secondary)}
+.sc-feat-tag.is-pro{background:var(--night);border-color:var(--night);color:#fff}
+.sc-feat-tag.is-option{border-color:var(--gold-deep);color:#7A5C33}
+@media (max-width:1100px){.sc-feats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:820px){.sc-feats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:540px){
+  .sc-feats{grid-template-columns:minmax(0,1fr);gap:10px}
+  .sc-feat{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:14px;row-gap:6px;align-items:start;padding:16px}
+  .sc-feat-icon{grid-row:span 3;width:40px;height:40px;margin:0}
+  .sc-feat-tag{justify-self:start;margin-top:2px}
+}
+
+/* The call to action, on the logo's navy. */
+.sc-band{padding:clamp(56px,10vh,108px) 0;background:radial-gradient(55% 90% at 88% 10%,rgba(232,197,136,.13),transparent 62%),var(--night);color:#F4F7F8;border-top:2px solid var(--gold)}
+[dir=rtl] .sc-band{background:radial-gradient(55% 90% at 12% 10%,rgba(232,197,136,.13),transparent 62%),var(--night)}
+.sc-band-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px 56px;align-items:center}
+.sc-band h2{color:#fff;font-size:clamp(1.8rem,1.2rem + 1.9vw,2.9rem)}
+.sc-band p{margin-top:12px;color:var(--chrome);font-size:var(--fs-lead)}
+.sc-band .hero-actions{margin:0}
+@media (max-width:820px){.sc-band-grid{grid-template-columns:minmax(0,1fr)}}
+.sc-help{padding-top:0}
+.sc-help-box{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 32px}
+.sc-help-box .hero-actions{margin:0}
+
+/* A screen, enlarged */
+.sc-lightbox{padding:0;border:0;background:transparent;overflow:visible;max-width:none;max-height:none}
+.sc-lightbox::backdrop{background:rgba(2,15,38,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.sc-lightbox[open]{animation:sc-pop .3s var(--ease-out)}
+@keyframes sc-pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.sc-lightbox img{display:block;width:auto;height:auto;max-width:min(92vw,430px);max-height:calc(100dvh - 48px);border-radius:26px;background:#F6F5F2;box-shadow:0 40px 90px -20px rgba(0,0,0,.6)}
+.sc-lightbox.is-tablet img{max-width:min(94vw,1500px);border-radius:16px}
+.sc-lb-close{position:fixed;top:14px;inset-inline-end:14px;display:grid;place-items:center;width:48px;height:48px;border:0;border-radius:50%;background:rgba(255,255,255,.95);color:var(--night);cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.sc-lb-close:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+html.sc-locked{overflow:hidden}
+/* The yearly discount tag stays gold with navy text, also on the selected (navy) button (app.css made it dim green). */
+.currency-option .save-tag,.currency-option.active .save-tag{background:var(--peroxide);color:var(--night)!important}
+/* November 2026: approximate local prices ("≈ ₪125") with the USD amount actually charged under them, the
+   "Show prices in" picker and the note that local amounts are approximate. */
+.px-usd,.menu-row .price small.px-usd,.hm-price small.px-usd{display:block;margin:4px 0 0;font-family:var(--font-body);font-size:.8rem;font-weight:600;font-stretch:100%;letter-spacing:0;color:var(--color-text-secondary);white-space:nowrap}
+.price:has(.px-usd),.hm-price:has(.px-usd){display:flex;flex-wrap:wrap;align-items:baseline;column-gap:6px}
+.price:has(.px-usd) .px-usd,.hm-price:has(.px-usd) .px-usd{flex-basis:100%}
+.cmp-table .cmp-price td b .px-usd{font-size:12px}
+.currency-pick{display:inline-flex;align-items:center;flex-wrap:wrap;gap:8px 10px;font-size:.95rem;font-weight:600;color:var(--color-text-secondary)}
+.currency-pick select{min-height:44px;max-width:100%;padding:8px 12px;border:1.5px solid var(--color-border-strong);border-radius:0;background:var(--color-background);color:var(--color-text-primary);font:inherit;font-weight:700}
+.fx-note{max-width:72ch;margin:16px 0 0;font-size:.85rem;color:var(--color-text-secondary)}
+.px-approx{margin-top:4px}
+
+/* Fade-up as sections arrive (only when fx/showcase.js adds .sc-anim: never with reduced motion). */
+.sc-anim .sc-reveal{opacity:0;transform:translateY(18px);transition:opacity .75s var(--ease-out),transform .75s var(--ease-out)}
+.sc-anim .sc-reveal.is-in{opacity:1;transform:none}
+.sc-anim .sc-hero-visual{transition-delay:.12s}
+.sc-anim .sc-step:nth-child(2),.sc-anim .sc-feat:nth-child(4n+2){transition-delay:.07s}
+.sc-anim .sc-step:nth-child(3),.sc-anim .sc-feat:nth-child(4n+3){transition-delay:.14s}
+.sc-anim .sc-step:nth-child(4),.sc-anim .sc-feat:nth-child(4n+4){transition-delay:.21s}
+@media (prefers-reduced-motion:reduce){
+  .sc-anim .sc-reveal{opacity:1;transform:none;transition:none}
+  .sc-panel,.sc-panel.is-active,.sc-device,.sc-zoom-hint,.sc-tab,.sc-feat{transition:none}
+  .sc-device:hover{transform:none}
+  .sc-lightbox[open]{animation:none}
+}
+
+/* Plan Finder (plans page, assets/plan-finder.js): team size and needs in, the cheapest plan that covers them out. */
+.pf-jump{display:inline-block;margin-top:16px;font-weight:700}
+.plan-finder{margin-top:clamp(40px,6vw,72px);padding:clamp(18px,3vw,32px);background:var(--paper);border:1px solid var(--color-border);scroll-margin-top:96px}
+.pf-head h2{margin:0 0 8px;font-size:clamp(24px,3.4vw,34px);color:var(--night)}
+.pf-lead{margin:0;max-width:64ch;line-height:1.7;color:var(--color-text-secondary)}
+.pf-grid{display:grid;gap:clamp(20px,3vw,36px);margin-top:24px;min-width:0}
+.pf-form,.pf-result{min-width:0}
+@media (min-width:960px){.pf-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start}.pf-result{position:sticky;top:96px}}
+.pf-q{margin:0 0 22px;padding:0;border:0;min-width:0}
+.pf-label{display:block;margin:0 0 10px;padding:0;font-weight:700;font-size:1.05rem;color:var(--night)}
+.pf-hint{margin:8px 0 0;font-size:.9rem;line-height:1.6;color:var(--color-text-muted)}
+.pf-stepper{display:inline-flex;align-items:stretch;border:1.5px solid var(--color-border-strong);background:var(--paper)}
+.pf-step{min-width:48px;min-height:48px;border:0;background:var(--talc);color:var(--night);font:inherit;font-size:1.4rem;font-weight:700;line-height:1;cursor:pointer}
+.pf-step:hover{background:var(--talc-2)}
+#pf-n{width:5.5ch;min-height:48px;border:0;border-inline:1.5px solid var(--color-border-strong);border-radius:0;text-align:center;font:inherit;font-size:1.25rem;font-weight:700;color:var(--night);background:var(--paper);-moz-appearance:textfield;appearance:textfield}
+#pf-n::-webkit-outer-spin-button,#pf-n::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pf-step:focus-visible,#pf-n:focus-visible,.pf-chip input:focus-visible,.pf-custom input:focus-visible,.pf-reset:focus-visible{outline:none;box-shadow:var(--ring)}
+.pf-group{margin-top:14px}
+.pf-group-title{margin:0 0 8px;font-size:.85rem;font-weight:700;color:var(--color-text-muted)}
+.pf-chips{display:flex;flex-wrap:wrap;gap:8px}
+.pf-chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;max-width:100%;padding:8px 14px;border:1.5px solid var(--color-border-strong);background:var(--paper);cursor:pointer;font-size:.95rem;font-weight:600;line-height:1.3;color:var(--color-text-secondary)}
+.pf-chip input,.pf-custom input{flex:none;width:18px;height:18px;margin:0;accent-color:var(--night)}
+.pf-chip:has(input:checked){border-color:var(--night);background:var(--color-accent-soft);color:var(--night)}
+.pf-custom{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1.5px dashed var(--color-border-strong);cursor:pointer;line-height:1.5;color:var(--color-text-secondary)}
+.pf-custom:has(input:checked){border-style:solid;border-color:var(--night);color:var(--night)}
+.pf-custom input{margin-top:3px}
+.pf-reset{display:inline-block;margin-top:14px;padding:4px 0;background:none;border:0;font:inherit;font-weight:700;cursor:pointer;color:var(--color-accent-text)}
+.pf-verdict{padding:clamp(18px,2.4vw,24px);background:var(--night);color:#F4F7F8}
+.pf-kicker{margin:0;font-size:.85rem;font-weight:700;color:var(--gold)}
+.pf-verdict h3{margin:4px 0 6px;font-size:clamp(26px,3vw,34px);color:#fff}
+.pf-total{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;margin:0;font-size:clamp(22px,2.6vw,30px);font-weight:800;color:#fff}
+.pf-total bdi{color:#fff}
+.pf-total small{font-size:.95rem;font-weight:600;color:var(--chrome)}
+.pf-total .px-usd{flex-basis:100%;font-size:.9rem;font-weight:600;color:var(--chrome)}
+.pf-other{margin:6px 0 0;font-size:.9rem;color:var(--chrome)}
+.pf-why{margin:14px 0 16px;line-height:1.7;color:#E8EDF4}
+.pf-verdict .btn{width:100%;justify-content:center;text-align:center}
+.pf-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px;margin-top:12px}
+.pf-card{padding:16px;border:1px solid var(--color-border);background:var(--paper);min-width:0}
+.pf-card.is-pick{border:2px solid var(--gold-deep)}
+.pf-card.is-out{background:var(--talc)}
+.pf-card header{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+.pf-card h4{margin:0;font-size:1.15rem;color:var(--night)}
+.pf-card .tag{padding:3px 10px;border-radius:0;background:var(--gold);color:#0B1F44;font-size:12px;font-weight:700}
+.pf-card .trial-badge{border-color:var(--gold-deep);color:var(--gold-deep);font-size:.75rem}
+.pf-lines{display:grid;gap:6px;margin:0;padding:0;list-style:none;font-size:.92rem;line-height:1.45;color:var(--color-text-secondary)}
+.pf-lines li{display:flex;justify-content:space-between;gap:12px}
+.pf-lines b{flex:none;color:var(--night)}
+.pf-card-total{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:10px 0 0;padding-top:10px;border-top:1px solid var(--color-border);font-weight:700;color:var(--night)}
+.pf-amount{display:inline-flex;flex-wrap:wrap;justify-content:flex-end;align-items:baseline;gap:0 6px;text-align:end}
+.pf-amount bdi{color:var(--night)}
+.pf-amount small{font-weight:600;color:var(--color-text-muted)}
+.pf-amount .px-usd{flex-basis:100%;font-size:.8rem;font-weight:600;color:var(--color-text-muted)}
+.pf-miss{margin:10px 0 0;font-size:.88rem;line-height:1.55;color:#8A3B2E}

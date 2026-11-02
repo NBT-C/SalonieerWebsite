@@ -14,6 +14,10 @@ const SESSION_SECONDS = 604800;
 const DUMMY_HASH = '$2y$10$5nsRln6fSBcJLXi2knBco..BlfDadb83eFkpJHnAIUFoPusRAHsGS';
 const STATUSES = ['pending','in_review','needs_info','approved','declined'];
 const PLANS = ['basic','pro','business','enterprise'];
+// October 2026: Business is no longer sold (salons already on it keep it); Basic has one optional feature.
+const OFFERED_PLANS = ['basic','pro','enterprise'];
+const BASIC_OPTIONS = ['loyalty','smart_waitlist'];
+const PRICE_TIER = 'usd2026';
 define('SALONIEER',true);
 require __DIR__.'/paddle.php';
 if (is_file(__DIR__.'/vendor/autoload.php')) require_once __DIR__.'/vendor/autoload.php';
@@ -141,6 +145,12 @@ CREATE INDEX IF NOT EXISTS adjustments_transaction ON adjustments(transaction_id
 PRAGMA user_version=8;
 SQL);
     }
+    if ((int)$db->query('PRAGMA user_version')->fetchColumn() < 9) {
+        // 2.41: the account holder's gender, chosen at sign-up; accounts made before stay empty until they choose.
+        $cols=array_column($db->query('PRAGMA table_info(users)')->fetchAll(),'name');
+        if (!in_array('gender',$cols,true)) $db->exec("ALTER TABLE users ADD COLUMN gender TEXT CHECK (gender IN ('male','female'))");
+        $db->exec('PRAGMA user_version=9');
+    }
     return $db;
 }
 function privateDir(): string {
@@ -180,8 +190,9 @@ function newSession(?int $uid, array|false $old): string {
 }
 function userDTO(array|false $user): ?array {
     if (!$user) return null;
-    return ['id'=>(int)$user['id'],'username'=>$user['username'],'fullName'=>$user['full_name'],'email'=>$user['email'],'phone'=>$user['phone']??'','country'=>$user['country'],'region'=>$user['region'],'isAdmin'=>(bool)$user['is_admin']];
+    return ['id'=>(int)$user['id'],'username'=>$user['username'],'fullName'=>$user['full_name'],'email'=>$user['email'],'phone'=>$user['phone']??'','country'=>$user['country'],'region'=>$user['region'],'gender'=>$user['gender']??null,'isAdmin'=>(bool)$user['is_admin']];
 }
+const GENDERS = ['male','female'];
 function requireUser(array|false $user): void { if (!$user) fail(401,'loginRequired'); }
 function requireAdmin(array|false $user): void { requireUser($user); if (!(int)$user['is_admin']) fail(403,'forbidden'); }
 function sendJson(int $status,array $data): never { http_response_code($status);header('Content-Type: application/json; charset=utf-8');echo json_encode($data,JSON_UNESCAPED_SLASHES|JSON_INVALID_UTF8_SUBSTITUTE);exit; }
@@ -220,6 +231,8 @@ function countryList(): array {
 function validateRegistration(array $d): array {
     $v=['fullName'=>cleanText($d['fullName']??null),'email'=>strtolower(cleanText($d['email']??null))];
     if (!validFullName($v['fullName'])) fail(400,'invalidFullName','fullName');
+    $v['gender']=$d['gender']??null;
+    if (!in_array($v['gender'],GENDERS,true)) fail(400,'invalidGender','gender');
     if (!validEmail($v['email'])) fail(400,'invalidEmail','email');
     if (!in_array($d['country']??null,countryList(),true)) fail(400,'invalidCountry','country');
     $v['country']=$d['country'];$v['region']='';
@@ -240,7 +253,7 @@ function ensureAvailable(array $v): void {
 }
 function createUser(array $v,string $password,bool $admin=false): int {
     try {
-        runSql('INSERT INTO users(username,full_name,email,country,region,password_hash,is_admin) VALUES(?,?,?,?,?,?,?)',[generatedUsername($v['email']),$v['fullName'],$v['email'],$v['country'],$v['region'],password_hash($password,PASSWORD_DEFAULT),$admin?1:0]);
+        runSql('INSERT INTO users(username,full_name,email,country,region,password_hash,is_admin,gender) VALUES(?,?,?,?,?,?,?,?)',[generatedUsername($v['email']),$v['fullName'],$v['email'],$v['country'],$v['region'],password_hash($password,PASSWORD_DEFAULT),$admin?1:0,$v['gender']]);
     } catch (PDOException $e) { if (str_contains($e->getMessage(),'UNIQUE constraint failed')) fail(409,'accountUnavailable');throw $e; }
     return (int)db()->lastInsertId();
 }
@@ -255,9 +268,19 @@ function verifyHash(string $password,?string $stored): bool {
 // ---- Pricing ----------------------------------------------------------------
 // Edit prices here. Order of 'plans': Basic, Pro, Business, Enterprise (null = by agreement).
 // 'standard' is the higher price list and is used whenever a location cannot be determined.
-const CURRENCIES = ['USD','ILS'];
+// One price list in US dollars for everyone (November 2026): every checkout and subscription is charged in USD. Visitors
+// may see an approximate amount in their own currency next to it (fxRates below), for information only.
+// The older tiers below stay only so saved quotes and existing subscriptions on their prices are still recognised
+// (October 2026 shekels, and the earlier USD/ILS lists).
+const CURRENCIES = ['USD'];
 const DEFAULT_CURRENCY = 'USD';
 const PRICES = [
+    PRICE_TIER => [
+        'USD' => ['plans'=>[20,40,null,null], 'loyalty'=>3, 'specialist'=>5],
+    ],
+    'list2026' => [
+        'ILS' => ['plans'=>[65,130,null,null], 'loyalty'=>10, 'specialist'=>15],
+    ],
     'standard' => [
         'USD' => ['plans'=>[39,85,139,null], 'loyalty'=>9, 'specialist'=>9],
         'ILS' => ['plans'=>[130,280,459,null], 'loyalty'=>30, 'specialist'=>30],
@@ -280,6 +303,21 @@ const PADDLE_CLIENT_TOKEN = 'live_f46c13539b6db94cb05e4eb04ec';
 const YEARLY_MONTHS = 11;
 const TRIAL_PLANS = ['pro'];
 const PADDLE_CATALOG = [
+    // November 2026: ONE price list for everyone, in US dollars (Paddle prices without country overrides, so Paddle
+    // charges USD everywhere). 'loyalty' is the Basic option (Loyalty Coins OR the Smart waitlist, one at a time) at $3.
+    'usd2026' => [
+        'month'       => ['basic'=>'pri_01m69c7nd231q0q3817px6pwd5','pro'=>'pri_01m69c7np1xtzt1ymd8wn81872','loyalty'=>'pri_01m69c7nz4ydbvnw4pm10hc943','specialist'=>'pri_01m69c7p7y0fvp4dnh5n3bh9e5'],
+        'year'        => ['basic'=>'pri_01m69c7pher6h86m6enwef26q4','pro'=>'pri_01m69c7q2kf8a1kf7qgjzgv9sd','loyalty'=>'pri_01m69c7qakpt8chys1d7zjp6hj','specialist'=>'pri_01m69c7qjta3590m72y1rs98yy'],
+        'month_trial' => ['pro'=>'pri_01m69c7qv32a22v08ydp14hme3','loyalty'=>'pri_01m69c7r2vxfxqhxj5xwxxhdt5','specialist'=>'pri_01m69c7rb1nqx4gcjndjawmkrv'],
+        'year_trial'  => ['pro'=>'pri_01m69c7rjtya3yj4f8y6yvm3ej','loyalty'=>'pri_01m69c7rtzmn7qxjcqaefp9026','specialist'=>'pri_01m69c7s2pfkmnb1j4yjyw5cjj'],
+    ],
+    // October 2026 shekel list: no longer sold, kept for the subscriptions already on it (their changes stay in ILS).
+    'list2026' => [
+        'month'       => ['basic'=>'pri_01m4dwf2fnyv56zeyn6f6rnf87','pro'=>'pri_01m4dwf3eqb7qxj78wzbz41crc','loyalty'=>'pri_01m4dwf3xhxp8qvg4zae74cjj2','specialist'=>'pri_01m4dwf4cppnndkww47a1zffmn'],
+        'year'        => ['basic'=>'pri_01m4dwf36gp8mtbzm0exdbtd6a','pro'=>'pri_01m4dwf3p0th2n6ac4zz4pryzm','loyalty'=>'pri_01m4dwf451ed6ry28py2myfgm6','specialist'=>'pri_01m4dwf4mbbn73ktv4g594p48k'],
+        'month_trial' => ['pro'=>'pri_01m4dwf4vveck6ka9ne0c1j69j','loyalty'=>'pri_01m4dwf5ahme0ydgf2mj83vqac','specialist'=>'pri_01m4dwf5rnngrrk5m195dartww'],
+        'year_trial'  => ['pro'=>'pri_01m4dwf52sxg3fzb227qatf4kd','loyalty'=>'pri_01m4dwf5hk5cqq32k84ph4fr0y','specialist'=>'pri_01m4dwf60tk242e1gvkdrfpbd8'],
+    ],
     'standard' => [
         'month'       => ['basic'=>'pri_01m3ysefa4m4ysdz2afgw325ry','pro'=>'pri_01m3yseftqb0cdc1ag5zqthkbv','business'=>'pri_01m3ysegqz9s8qs6gayftkbxe6','loyalty'=>'pri_01m3yseh8s5v5cm1sma0hrbbe4','specialist'=>'pri_01m3ysehvnsyeybntjqy10fa9v'],
         'year'        => ['basic'=>'pri_01m4176vyr0p4bzb4g8vsqwshk','pro'=>'pri_01m4176w6rd7njyzcgvy17ghwq','business'=>'pri_01m4176weas18qr4gd7594ddn6','loyalty'=>'pri_01m4176wpveb4k8q60tw7rt1yb','specialist'=>'pri_01m4176wy4cm9t7qhyr2s1ea2w'],
@@ -296,6 +334,8 @@ const PADDLE_CATALOG = [
 ];
 // Monthly plan prices, as before (paddle.php uses them to spot the plan item and to log mismatched tiers).
 const PADDLE_PRICE_IDS = [
+    PRICE_TIER  => ['basic'=>PADDLE_CATALOG[PRICE_TIER]['month']['basic'],'pro'=>PADDLE_CATALOG[PRICE_TIER]['month']['pro'],'business'=>null,'enterprise'=>null],
+    'list2026'  => ['basic'=>PADDLE_CATALOG['list2026']['month']['basic'],'pro'=>PADDLE_CATALOG['list2026']['month']['pro'],'business'=>null,'enterprise'=>null],
     'standard'  => ['basic'=>PADDLE_CATALOG['standard']['month']['basic'],'pro'=>PADDLE_CATALOG['standard']['month']['pro'],'business'=>PADDLE_CATALOG['standard']['month']['business'],'enterprise'=>null],
     'west_bank' => ['basic'=>PADDLE_CATALOG['west_bank']['month']['basic'],'pro'=>PADDLE_CATALOG['west_bank']['month']['pro'],'business'=>PADDLE_CATALOG['west_bank']['month']['business'],'enterprise'=>null],
 ];
@@ -303,38 +343,44 @@ const PADDLE_PRICE_IDS = [
 function trialEligible(array|false $user): bool { return $user && !paddleUserSubscriptions($user); }
 // Checkout settings for this visitor: the prices of the signed-in account's tier (guests can't check out).
 function checkoutConfig(array|false $user): array {
-    $tier=$user?userTier($user):'standard';$c=PADDLE_CATALOG[$tier];
+    $tier=PRICE_TIER;$c=PADDLE_CATALOG[$tier];
     $pick=static fn(array $set,array $keys)=>array_intersect_key($set,array_flip($keys));
     return ['clientToken'=>PADDLE_CLIENT_TOKEN,'environment'=>str_starts_with(PADDLE_CLIENT_TOKEN,'test_')?'sandbox':'production','tier'=>$tier,
         // 'prices'/'addons' = monthly, kept for older pages; 'catalog' holds every interval and the trial versions.
-        'prices'=>$pick($c['month'],['basic','pro','business']),'addons'=>$pick($c['month'],['loyalty','specialist']),
+        'prices'=>$pick($c['month'],['basic','pro']),'addons'=>$pick($c['month'],['loyalty','specialist']),'basicOptions'=>BASIC_OPTIONS,
         'catalog'=>$c,'trialPlans'=>TRIAL_PLANS,'trialEligible'=>trialEligible($user),'yearlyMonths'=>YEARLY_MONTHS,
         // Paddle Retain (payment recovery prompts) identifies a signed-in owner by their Paddle customer ID.
         'customerId'=>$user ? (paddleCustomerIds($user)[0] ?? null) : null];
 }
-function userTier(array $user): string { return $user['country']==='PS'?'west_bank':'standard'; }
+// Everyone is on the same price list since October 2026 (the account's country no longer changes the price).
+function userTier(array $user): string { return PRICE_TIER; }
 function catalog(string $tier, array $meta=[]): array {
     $names=['Basic','Pro','Business','Enterprise'];$spec=[1,7,16,null];
-    $features=[['oneSpecialist','coreSystem','bookingsCustomers','salonSettings'],['allBasic','sevenSpecialists','productsPage','analytics'],['allPro','sixteenSpecialists','loyaltyIncluded','largerCapacity'],['allFeatures','unlimitedSpecialists','loyaltyIncluded','customAddons','dedicatedSupport']];
+    $features=[['oneSpecialist','coreSystem','bookingsCustomers','salonSettings','basicOptionFeature'],['allBasic','sevenSpecialists','productsPage','analytics','loyaltyIncluded','extraSpecialistsFeature'],['allPro','sixteenSpecialists','loyaltyIncluded','largerCapacity'],['allFeatures','unlimitedSpecialists','customAddons','dedicatedSupport']];
     $plans=[];
-    foreach (PLANS as $i=>$id) {
+    $tier=PRICE_TIER;
+    foreach (OFFERED_PLANS as $id) {
+        $i=array_search($id,PLANS,true);
         $prices=[];foreach (CURRENCIES as $cur) $prices[$cur]=PRICES[$tier][$cur]['plans'][$i];
-        $plans[]=['id'=>$id,'name'=>$names[$i],'prices'=>$prices,'specialists'=>$spec[$i],'features'=>$features[$i]];
+        $plans[]=['id'=>$id,'name'=>$names[$i],'prices'=>$prices,'specialists'=>$spec[$i],'features'=>$features[$i],'includesOptions'=>$id!=='basic'];
     }
     $addons=['loyalty'=>[],'specialist'=>[]];
     foreach (CURRENCIES as $cur) { $addons['loyalty'][$cur]=PRICES[$tier][$cur]['loyalty'];$addons['specialist'][$cur]=PRICES[$tier][$cur]['specialist']; }
-    return ['currencies'=>CURRENCIES,'defaultCurrency'=>DEFAULT_CURRENCY,'region'=>$tier,'plans'=>$plans,'addons'=>$addons,'yearlyMonths'=>YEARLY_MONTHS,'trialPlans'=>TRIAL_PLANS,'trialDays'=>14]+$meta;
+    return ['currencies'=>CURRENCIES,'defaultCurrency'=>DEFAULT_CURRENCY,'region'=>$tier,'plans'=>$plans,'addons'=>$addons,'basicOptions'=>BASIC_OPTIONS,'yearlyMonths'=>YEARLY_MONTHS,'trialPlans'=>TRIAL_PLANS,'trialDays'=>14,
+        'fx'=>fxPublic(is_string($meta['country'] ?? null) ? $meta['country'] : null)]+$meta;
 }
 // Prices per billing period: monthly as listed, yearly = YEARLY_MONTHS × monthly.
 // The free trial is optional: a Pro applicant who doesn't ask for it subscribes (and pays) right away.
-function quote(array $user,string $plan,bool $loyalty,int $extra,string $currency,string $interval='month',bool $wantsTrial=false): array {
+// The Basic option ('loyalty' in saved quotes) is Loyalty Coins or the Smart waitlist; Pro and above include both.
+function quote(array $user,string $plan,bool $loyalty,int $extra,string $currency,string $interval='month',bool $wantsTrial=false,string $option='loyalty'): array {
     $tier=userTier($user);$p=PRICES[$tier][$currency];$i=array_search($plan,PLANS,true);
     $k=$interval==='year'?YEARLY_MONTHS:1;
     $base=$p['plans'][$i]===null?null:$p['plans'][$i]*$k;
-    $loyalty=$loyalty && !in_array($plan,['business','enterprise'],true);
+    $loyalty=$loyalty && $plan==='basic';
+    $option=in_array($option,BASIC_OPTIONS,true)?$option:'loyalty';
     $extra=$plan==='enterprise'?0:$extra;
     $trial=$wantsTrial && $interval!=='' && in_array($plan,TRIAL_PLANS,true) && trialEligible($user);
-    return ['plan'=>$plan,'currency'=>$currency,'region'=>$tier,'interval'=>$interval,'trialDays'=>$trial?14:0,'base'=>$base,'loyalty'=>$loyalty,'extraSpecialists'=>$extra,
+    return ['plan'=>$plan,'currency'=>$currency,'region'=>$tier,'interval'=>$interval,'trialDays'=>$trial?14:0,'base'=>$base,'loyalty'=>$loyalty,'option'=>$loyalty?$option:null,'extraSpecialists'=>$extra,
         'loyaltyPrice'=>$loyalty?$p['loyalty']*$k:0,'specialistPrice'=>$p['specialist']*$k,'total'=>$base===null?null:$base+($loyalty?$p['loyalty']*$k:0)+$extra*$p['specialist']*$k];
 }
 
@@ -395,9 +441,104 @@ function guestPricing(string $timeZone, string $hint=''): array {
     // If the server could not locate the visitor, accept the country their browser looked up (display only;
     // the price on an application always comes from the account's saved country and region).
     if ($country===null && preg_match('/^[A-Z]{2}$/D',$hint)) $country=$hint;
-    // Visitors in Palestine (West Bank and Gaza) see Palestine pricing.
-    $tier=$country==='PS'?'west_bank':'standard';
-    return catalog($tier,['source'=>$country?'location':'default','country'=>$country]);
+    return catalog(PRICE_TIER,['source'=>$country?'location':'default','country'=>$country]);
+}
+
+// ---- Approximate local prices (display only) ----------------------------------------------------------------------
+// Everything is charged in US dollars. Visitors also see roughly what that is in their own currency, converted with
+// daily market rates. Rates come from open.er-api.com, or the free currency-api (jsDelivr, then its pages.dev mirror) when
+// that fails, and a table is accepted only if every currency the European Central Bank also publishes (frankfurter.dev)
+// agrees within 3% (or, when the ECB can't be reached, within 15% of the last accepted table). The table is cached in the
+// private folder and refreshed every 6 hours (cron.php, or the first visit after that). Without a checked table from the
+// last 3 days the site shows US dollars only.
+const FX_CURRENCIES = ['USD','ILS','JOD','EGP','SAR','AED','QAR','KWD','BHD','OMR','IQD','MAD','TND','DZD','LYD','TRY','EUR','GBP','CHF','SEK','NOK','DKK','PLN','CZK','HUF','RON','CAD','AUD','NZD','INR','PKR','MYR','IDR','SGD','JPY','CNY','KRW','ZAR','BRL','MXN'];
+const FX_REFRESH = 21600, FX_RETRY = 900, FX_MAX_AGE = 259200, FX_ECB_TOLERANCE = 0.03, FX_PREVIOUS_TOLERANCE = 0.15;
+// The currency shown by default for a country (anything not listed sees US dollars).
+const COUNTRY_CURRENCY = ['PS'=>'ILS','IL'=>'ILS','JO'=>'JOD','EG'=>'EGP','SA'=>'SAR','AE'=>'AED','QA'=>'QAR','KW'=>'KWD','BH'=>'BHD','OM'=>'OMR','IQ'=>'IQD',
+    'MA'=>'MAD','TN'=>'TND','DZ'=>'DZD','LY'=>'LYD','TR'=>'TRY','GB'=>'GBP','CH'=>'CHF','LI'=>'CHF','SE'=>'SEK','NO'=>'NOK','DK'=>'DKK','PL'=>'PLN','CZ'=>'CZK',
+    'HU'=>'HUF','RO'=>'RON','CA'=>'CAD','AU'=>'AUD','NZ'=>'NZD','IN'=>'INR','PK'=>'PKR','MY'=>'MYR','ID'=>'IDR','SG'=>'SGD','JP'=>'JPY','CN'=>'CNY','KR'=>'KRW',
+    'ZA'=>'ZAR','BR'=>'BRL','MX'=>'MXN','AT'=>'EUR','BE'=>'EUR','CY'=>'EUR','DE'=>'EUR','EE'=>'EUR','ES'=>'EUR','FI'=>'EUR','FR'=>'EUR','GR'=>'EUR','HR'=>'EUR',
+    'IE'=>'EUR','IT'=>'EUR','LT'=>'EUR','LU'=>'EUR','LV'=>'EUR','MT'=>'EUR','NL'=>'EUR','PT'=>'EUR','SI'=>'EUR','SK'=>'EUR','AD'=>'EUR','MC'=>'EUR','SM'=>'EUR',
+    'VA'=>'EUR','ME'=>'EUR','XK'=>'EUR','BG'=>'EUR'];
+function fxSources(): array {
+    // Local tests only: stub sources on this machine (never anything but loopback).
+    $local = paddleEnv('FX_TEST_BASE');
+    if ($local && preg_match('~^http://127\.0\.0\.1:\d+$~D', $local))
+        return ['main'=>[$local.'/er/USD', $local.'/fa/usd.min.json', $local.'/fb/usd.min.json'], 'ecb'=>$local.'/ecb?base=USD'];
+    return ['main'=>['https://open.er-api.com/v6/latest/USD', 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.min.json',
+        'https://latest.currency-api.pages.dev/v1/currencies/usd.min.json'], 'ecb'=>'https://api.frankfurter.dev/v1/latest?base=USD'];
+}
+function fxGet(string $url): ?array {
+    try {
+        $c = curl_init($url);
+        curl_setopt_array($c, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_CONNECTTIMEOUT=>3, CURLOPT_TIMEOUT=>5, CURLOPT_FOLLOWLOCATION=>false, CURLOPT_HTTPHEADER=>['Accept: application/json'], CURLOPT_USERAGENT=>'Salonieer/1.0']);
+        $r = curl_exec($c); $code = (int)curl_getinfo($c, CURLINFO_HTTP_CODE); curl_close($c);
+    } catch (Throwable $e) { error_log('Salonieer rates: '.$e->getMessage()); return null; }
+    if (!is_string($r) || $code !== 200 || strlen($r) > 400000) return null;
+    $d = json_decode($r, true);
+    return is_array($d) ? $d : null;
+}
+// One source's answer as [rates (per 1 USD), as-of time], keeping only the site's currencies with a sane rate.
+function fxParse(?array $d): ?array {
+    if (!$d) return null;
+    if (($d['result'] ?? '') === 'success' && ($d['base_code'] ?? '') === 'USD' && is_array($d['rates'] ?? null)) { $raw = $d['rates']; $at = (int)($d['time_last_update_unix'] ?? 0); }
+    elseif (is_array($d['usd'] ?? null) && is_string($d['date'] ?? null)) { $raw = array_change_key_case($d['usd'], CASE_UPPER); $at = (int)strtotime($d['date'].' 00:00:00 UTC'); }
+    elseif (($d['base'] ?? '') === 'USD' && is_array($d['rates'] ?? null) && is_string($d['date'] ?? null)) { $raw = $d['rates']; $at = (int)strtotime($d['date'].' 00:00:00 UTC'); }
+    else return null;
+    $rates = ['USD'=>1.0];
+    foreach (FX_CURRENCIES as $cur) {
+        $v = $raw[$cur] ?? null;
+        if ($cur !== 'USD' && is_numeric($v) && is_finite((float)$v) && (float)$v > 0 && (float)$v < 1e7) $rates[$cur] = (float)$v;
+    }
+    return ['rates'=>$rates, 'asOf'=>$at];
+}
+// The largest relative difference between two tables over the currencies both have (0 when none are shared).
+function fxGap(array $a, array $b): float {
+    $gap = 0.0;
+    foreach ($a as $cur => $v) if ($cur !== 'USD' && isset($b[$cur])) $gap = max($gap, abs($v - $b[$cur]) / $b[$cur]);
+    return $gap;
+}
+function fxDownload(?array $previous): ?array {
+    $src = fxSources();
+    $ecb = fxParse(fxGet($src['ecb']));
+    if ($ecb && count($ecb['rates']) < 10) $ecb = null;
+    foreach ($src['main'] as $i => $url) {
+        $t = fxParse(fxGet($url));
+        if (!$t || count($t['rates']) < 20 || !isset($t['rates']['ILS'], $t['rates']['EUR']) || $t['asOf'] < time() - FX_MAX_AGE || $t['asOf'] > time() + 86400) continue;
+        if ($ecb ? fxGap($t['rates'], $ecb['rates']) > FX_ECB_TOLERANCE : ($previous && fxGap($t['rates'], $previous['rates']) > FX_PREVIOUS_TOLERANCE)) {
+            error_log('Salonieer rates: source '.$i.' disagrees with the check, skipped'); continue;
+        }
+        return ['rates'=>$t['rates'], 'asOf'=>$t['asOf'], 'source'=>['open.er-api.com','currency-api','currency-api'][$i], 'checked'=>$ecb ? 'ecb' : 'previous', 'fetchedAt'=>time()];
+    }
+    return null;
+}
+// The cached table, refreshed when it is 6 hours old (one request at a time, at most every 15 minutes on failures).
+function fxRates(bool $force = false): ?array {
+    $file = privateDir().'/fx-rates.json';
+    $cache = is_file($file) ? json_decode((string)@file_get_contents($file), true) : null;
+    $cache = is_array($cache) ? $cache : [];
+    $table = is_array($cache['table'] ?? null) ? $cache['table'] : null;
+    $due = !$table || ($table['fetchedAt'] ?? 0) < time() - FX_REFRESH;
+    if (($force || $due) && ($cache['triedAt'] ?? 0) < time() - ($force ? 60 : FX_RETRY)) {
+        $lock = @fopen(privateDir().'/fx-rates.lock', 'c');
+        if ($lock && flock($lock, LOCK_EX | LOCK_NB)) {
+            $fresh = fxDownload($table);
+            $cache = ['table'=>$fresh ?? $table, 'triedAt'=>time()];
+            $tmp = $file.'.'.bin2hex(random_bytes(4));
+            if (@file_put_contents($tmp, json_encode($cache)) !== false) @rename($tmp, $file);
+            $table = $cache['table'];
+            flock($lock, LOCK_UN);
+        }
+        if ($lock) fclose($lock);
+    }
+    return $table && ($table['asOf'] ?? 0) >= time() - FX_MAX_AGE ? $table : null;
+}
+// What the browser gets: the rates of the offered currencies and the visitor's own currency (null = US dollars only).
+function fxPublic(?string $country): ?array {
+    try { $t = fxRates(); } catch (Throwable $e) { error_log('Salonieer rates: '.$e->getMessage()); $t = null; }
+    if (!$t) return null;
+    $local = COUNTRY_CURRENCY[strtoupper((string)$country)] ?? 'USD';
+    return ['base'=>'USD', 'rates'=>$t['rates'], 'asOf'=>gmdate('Y-m-d\TH:i:s\Z', (int)$t['asOf']), 'local'=>isset($t['rates'][$local]) ? $local : 'USD'];
 }
 function logoData(mixed $input): ?array {
     if (!is_string($input)||strlen($input)>2800000||!preg_match('~^data:image/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$~D',$input,$m) || strlen($m[2])%4!==0) return null;
@@ -441,6 +582,8 @@ function applicationDTO(array $r,bool $admin=false): array {
 }
 // ---- Applications in Supabase ----------------------------------------------------------------------------------------
 const SALON_CATEGORIES = ['male','female','beauty'];
+const TEAM_COMPOSITIONS = ['male','female','mixed'];
+const CLIENTELES = ['men','women','both'];
 function defaultTimezone(string $country): string {
     return ['PS'=>'Asia/Hebron','IL'=>'Asia/Jerusalem','JO'=>'Asia/Amman','SA'=>'Asia/Riyadh','AE'=>'Asia/Dubai','EG'=>'Africa/Cairo','TR'=>'Europe/Istanbul',
         'LB'=>'Asia/Beirut','QA'=>'Asia/Qatar','KW'=>'Asia/Kuwait','BH'=>'Asia/Bahrain','OM'=>'Asia/Muscat','IQ'=>'Asia/Baghdad','SY'=>'Asia/Damascus',
@@ -464,7 +607,7 @@ function submitApplication(array $user, string $id, array $f, string $logoBytes,
     $logoUrl = sbUploadLogo('applications/'.$id.'-'.substr(hash('sha256', $logoBytes), 0, 10).'.'.logoExtension($logoType), $logoBytes, $logoType);
     return sbRpc('website_submit_application', ['p_data'=>[
         'id'=>$id, 'websiteUserId'=>(int)$user['id'], 'fullName'=>$user['full_name'], 'email'=>$user['email'], 'phone'=>$phone, 'country'=>$user['country'],
-        'lang'=>$f['lang'], 'salonName'=>$f['salonName'], 'salonCategory'=>$f['salonCategory'], 'timezone'=>$f['timezone'], 'logoUrl'=>$logoUrl,
+        'lang'=>$f['lang'], 'salonName'=>$f['salonName'], 'salonCategory'=>$f['salonCategory'], 'teamComposition'=>$f['teamComposition']??null, 'clientele'=>$f['clientele']??null, 'timezone'=>$f['timezone'], 'logoUrl'=>$logoUrl,
         'plan'=>$f['plan'], 'quote'=>$f['quote'], 'paymentMethod'=>$f['paymentMethod'], 'idLast4'=>$f['idLast4'], 'ownerPhone'=>$phone === '' ? '' : localPhone($phone),
     ] + $extra]);
 }
@@ -599,6 +742,20 @@ function api(string $method,string $path,array|false $session,array|false $user)
         sendJson(200,['ok'=>$sqlite&&$database,'php'=>PHP_VERSION,'sqlite'=>$sqlite,'database'=>$database]);
     }
     if ($method==='GET'&&$path==='/api/setup') sendJson(200,['available'=>!one('SELECT 1 FROM users WHERE is_admin=1 LIMIT 1')]);
+    // 2.34: the salon behind a salon link (/s/<code>): its public name and logo only.
+    if ($method==='GET'&&$path==='/api/salon-link') {
+        rateLimit('salon-link',600,3600);
+        $code=(string)($_GET['code']??'');
+        if (!preg_match('/^[A-Za-z0-9_-]{2,64}$/D',$code)) fail(400,'invalidRequest');
+        $salon=null;
+        // sbRpc only calls website_* functions, so this one public lookup goes through supabaseRequest directly.
+        try { [$st,$raw]=supabaseRequest('POST','/rest/v1/rpc/platform_lookup_salon',json_encode(['p_code'=>$code]),['Content-Type: application/json','Accept: application/json']);
+            $s=$st>=200&&$st<300?json_decode($raw,true):null; if ($st<200||$st>=300) error_log('Salonieer salon link: HTTP '.$st);
+            if (is_array($s)&&!empty($s['slug'])) $salon=['name'=>(string)($s['name']??''),'logo_url'=>preg_match('~^https://~',(string)($s['logo_url']??''))?(string)$s['logo_url']:'','code'=>(string)($s['access_code']??$code)]; }
+        catch (Throwable $e) { error_log('Salonieer salon link: '.$e->getMessage()); }
+        header('Cache-Control: public, max-age=300');
+        sendJson(200,['salon'=>$salon]);
+    }
     if ($method==='GET'&&$path==='/api/billing') {
         // Right after a checkout (?fresh=1) the page waits for Paddle's newest events; otherwise it answers at once and
         // the sync runs after the response.
@@ -688,7 +845,10 @@ function api(string $method,string $path,array|false $session,array|false $user)
         requireUser($user);rateLimit('account-edit',30,3600,(string)$user['id']);$d=body();
         $name=cleanText($d['fullName']??null);
         if (!validFullName($name)) fail(400,'invalidFullName','fullName');
-        runSql('UPDATE users SET full_name=? WHERE id=?',[$name,$user['id']]);
+        // Gender is optional here: an account made before 2.41 keeps it empty until the person chooses.
+        $gender=$d['gender']??null;
+        if ($gender!==null && !in_array($gender,GENDERS,true)) fail(400,'invalidGender','gender');
+        runSql('UPDATE users SET full_name=?,gender=COALESCE(?,gender) WHERE id=?',[$name,$gender,$user['id']]);
         sendJson(200,['user'=>userDTO(one('SELECT * FROM users WHERE id=?',[$user['id']]))]);
     }
     if ($method==='POST'&&$path==='/api/account/password') {
@@ -729,6 +889,24 @@ function api(string $method,string $path,array|false $session,array|false $user)
     if ($method==='POST'&&preg_match('~^/api/salons/(SLN-[A-F0-9]{8}-[A-F0-9]{4})/report$~D',$path,$m)) {
         requireUser($user);rateLimit('problem-report',10,3600,(string)$user['id']);
         sendJson(201,['report'=>problemReportCreate($user,$m[1],body())]);
+    }
+    // ---- 2.27: Help / FAQ shown in the app and the app versions (update check), edited only here ----
+    if (str_starts_with($path,'/api/admin/faq')||str_starts_with($path,'/api/admin/app-versions')) {
+        requireAdmin($user);
+        try {
+            if ($method==='GET'&&$path==='/api/admin/faq') sendJson(200,['faq'=>sbRpc('website_faq_list')]);
+            if ($method==='POST'&&$path==='/api/admin/faq') { rateLimit('faq-save',120,3600,(string)$user['id']); $d=body(); if (!is_array($d)) fail(400,'invalidRequest'); sendJson(200,['faq'=>sbRpc('website_faq_save',['p_data'=>$d])]); }
+            if ($method==='POST'&&$path==='/api/admin/faq/order') {
+                $ids=body()['ids']??null; if (!is_array($ids)||count($ids)>500) fail(400,'invalidRequest');
+                foreach ($ids as $id) if (!is_string($id)||!preg_match('/^[0-9a-f-]{36}$/D',$id)) fail(400,'invalidRequest');
+                sendJson(200,['faq'=>sbRpc('website_faq_reorder',['p_ids'=>array_values($ids)])]);
+            }
+            if ($method==='DELETE'&&preg_match('~^/api/admin/faq/([0-9a-f-]{36})$~D',$path,$m)) sendJson(200,['faq'=>sbRpc('website_faq_delete',['p_id'=>$m[1]])]);
+            if ($method==='GET'&&$path==='/api/admin/app-versions') sendJson(200,['releases'=>sbRpc('website_app_release_list')]);
+            if ($method==='PUT'&&preg_match('~^/api/admin/app-versions/(android|ios)$~D',$path,$m)) { $d=body(); if (!is_array($d)) fail(400,'invalidRequest'); sendJson(200,['releases'=>sbRpc('website_app_release_save',['p_platform'=>$m[1],'p_data'=>$d])]); }
+        } catch (HttpFailure $e) { throw $e; }
+        catch (Throwable $e) { supabaseFail($e); }
+        fail(404,'notFound');
     }
     if (str_starts_with($path,'/api/admin/problem-reports')||str_starts_with($path,'/api/admin/cleanup')) {
         requireAdmin($user);
@@ -906,15 +1084,20 @@ function api(string $method,string $path,array|false $session,array|false $user)
         $idNumber=canonicalIdNumber($rawId,$user['country']);
         if ($idNumber===null) fail(400,ctype_digit($rawId)&&strlen($rawId)>=ID_MIN_DIGITS&&strlen($rawId)<=ID_MAX_CHARS?'fakeId':'invalidId','identityNumber');
         $idHash=idFingerprint($idNumber,$user['country']);
-        if (!in_array($d['plan']??null,PLANS,true)) fail(400,'invalidPlan','plan');
+        if (!in_array($d['plan']??null,OFFERED_PLANS,true)) fail(400,'invalidPlan','plan');
         if (!in_array($d['paymentMethod']??null,['card','bank_transfer'],true)) fail(400,'invalidPayment','paymentMethod');
+        if (array_key_exists('option',$d) && !in_array($d['option'],BASIC_OPTIONS,true)) fail(400,'invalidAddons');
         if (!is_bool($d['loyalty']??null)||!is_int($d['extraSpecialists']??null)||$d['extraSpecialists']<0||$d['extraSpecialists']>50) fail(400,'invalidAddons');
         $logo=logoData($d['logo']??null);if (!$logo) fail(400,'invalidLogo','logo');
         $currency=$d['currency']??DEFAULT_CURRENCY;if (!in_array($currency,CURRENCIES,true)) fail(400,'invalidCurrency','currency');
         $interval=$d['interval']??'month';if (!in_array($interval,['month','year'],true)) fail(400,'invalidInterval','interval');
         if (array_key_exists('trial',$d) && !is_bool($d['trial'])) fail(400,'invalidRequest');
-        $quote=quote($user,$d['plan'],$d['loyalty'],$d['extraSpecialists'],$currency,$interval,($d['trial']??false)===true && $d['paymentMethod']==='card');
-        $category=$d['salonCategory']??null;if (!in_array($category,SALON_CATEGORIES,true)) fail(400,'invalidCategory','salonCategory');
+        $quote=quote($user,$d['plan'],$d['loyalty'],$d['extraSpecialists'],$currency,$interval,($d['trial']??false)===true && $d['paymentMethod']==='card',$d['option']??'loyalty');
+        // Two separate classifications (stored for later use); the old salon type is derived from the clientele so the
+        // app's existing Discover category keeps working.
+        $team=$d['teamComposition']??null;if (!in_array($team,TEAM_COMPOSITIONS,true)) fail(400,'invalidTeamComposition','teamComposition');
+        $clientele=$d['clientele']??null;if (!in_array($clientele,CLIENTELES,true)) fail(400,'invalidClientele','clientele');
+        $category=$clientele==='women'?'female':'male';
         $timezone=$d['timezone']??defaultTimezone($user['country']);if (!validTimezone($timezone)) fail(400,'invalidTimezone','timezone');
         // The salon's contact and owner sign-in number; the same number may be used on any number of applications.
         $dial=is_string($d['phoneCountry']??null)&&in_array($d['phoneCountry'],countryList(),true)?$d['phoneCountry']:$user['country'];
@@ -928,7 +1111,7 @@ function api(string $method,string $path,array|false $session,array|false $user)
         // The same ID number may be used on any number of applications.
         runSql('INSERT OR IGNORE INTO application_identity(application_id,user_id,identity_encrypted,identity_hash) VALUES(?,?,?,?)',[$id,$user['id'],encryptId($idNumber),$idHash]);
         try {
-            $a=submitApplication($user,$id,['lang'=>siteLang($d['lang']??null),'salonName'=>$name,'salonCategory'=>$category,'timezone'=>$timezone,'phone'=>$phone,'plan'=>$d['plan'],
+            $a=submitApplication($user,$id,['lang'=>siteLang($d['lang']??null),'salonName'=>$name,'salonCategory'=>$category,'teamComposition'=>$team,'clientele'=>$clientele,'timezone'=>$timezone,'phone'=>$phone,'plan'=>$d['plan'],
                 'quote'=>$quote,'paymentMethod'=>$d['paymentMethod'],'idLast4'=>mb_substr($idNumber,-4)],$logo['bytes'],$logo['type']);
         } catch (Throwable $e) { supabaseFail($e); }
         sendJson(201,['application'=>$a]);
@@ -959,9 +1142,13 @@ function api(string $method,string $path,array|false $session,array|false $user)
         // Creates the salon in the Salonieer app with the purchased plan and the owner's login, then emails the customer.
         requireAdmin($user);$d=body();
         $o=[];
-        foreach (['slug'=>'slug','accessCode'=>'access_code','salonCategory'=>'salon_category','timezone'=>'timezone','ownerPhone'=>'owner_phone'] as $from=>$to)
+        // 2.41: who works there and who it serves (the applicant's answers unless corrected here); the older salon
+        // type follows the clientele in the database.
+        foreach (['slug'=>'slug','accessCode'=>'access_code','salonCategory'=>'salon_category','teamComposition'=>'team_composition','clientele'=>'clientele','timezone'=>'timezone','ownerPhone'=>'owner_phone'] as $from=>$to)
             if (is_string($d[$from]??null) && trim($d[$from])!=='') $o[$to]=mb_substr(trim($d[$from]),0,64);
         if (isset($o['salon_category']) && !in_array($o['salon_category'],SALON_CATEGORIES,true)) fail(400,'invalidCategory','salonCategory');
+        if (isset($o['team_composition']) && !in_array($o['team_composition'],TEAM_COMPOSITIONS,true)) fail(400,'invalidTeamComposition','teamComposition');
+        if (isset($o['clientele']) && !in_array($o['clientele'],CLIENTELES,true)) fail(400,'invalidClientele','clientele');
         if (isset($o['timezone']) && !validTimezone($o['timezone'])) fail(400,'invalidTimezone','timezone');
         try { $a=sbRpc('website_approve',['p_id'=>$id,'p_overrides'=>(object)$o,'p_actor'=>$user['email']]); } catch (Throwable $e) { supabaseFail($e); }
         mailWorkAfterResponse(0);
@@ -1004,6 +1191,7 @@ function api(string $method,string $path,array|false $session,array|false $user)
 // cron.php (command line only): background jobs, then stop before any HTTP handling.
 if (defined('SALONIEER_CRON')) {
     try { paddleSync(0); } catch (Throwable $e) { error_log('Salonieer cron Paddle: '.$e->getMessage()); }
+    try { fxRates(); } catch (Throwable $e) { error_log('Salonieer cron rates: '.$e->getMessage()); }
     billingWork(0, true);
     mailWork(0, true);
     exit;
@@ -1028,14 +1216,17 @@ try {
     if (!in_array($method,['GET','HEAD'],true)) fail(405,'invalidRequest');
     $route=preg_replace('~\.html$~','',$path);$route=rtrim($route,'/')?:'/';if ($route==='/index') $route='/';
     // /checkout is Paddle's default payment link (invoices, card updates, payment links): it opens checkout for ?_ptxn=.
-    $public=['/','/login','/register','/support','/privacy','/terms','/refund','/plans','/setup','/checkout'];$private=['/apply','/applications','/account','/admin'];
+    // /invite: team invitation links (https://salonieer.com/invite?code=INV-…) are opened by people without a website account.
+    $public=['/','/login','/register','/support','/privacy','/terms','/refund','/plans','/setup','/checkout','/invite'];$private=['/apply','/applications','/account','/admin'];
+    // 2.34: a salon's own link (https://salonieer.com/s/<code>), shared on Instagram / WhatsApp.
+    if (preg_match('~^/s/[A-Za-z0-9_-]{2,64}$~D',$route)) $public[]=$route;
     $adminPanel=str_starts_with($route,'/admin/');
     if ((in_array($route,$private,true)||$adminPanel)&&!$user) redirectTo('/login?next='.rawurlencode($route.(empty($_SERVER['QUERY_STRING'])?'':'?'.$_SERVER['QUERY_STRING'])));
     if (($route==='/admin'||$adminPanel)&&!$user['is_admin']) redirectTo('/applications');
     if (in_array($route,['/login','/register'],true)&&$user) redirectTo('/plans');
     if (in_array($route,array_merge($public,$private),true)||$adminPanel) {header('Content-Type: text/html; charset=utf-8');if ($method!=='HEAD') echo pageHtml();exit;}
     [$themeAttrs,$themeStyle]=themeHead();
-    http_response_code(404);header('Content-Type: text/html; charset=utf-8');echo '<!doctype html><html lang="en"'.$themeAttrs.'><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found · Salonieer</title><link rel="stylesheet" href="/assets/app.css">'.$themeStyle.'<main class="wrap empty-state"><img src="/assets/img/logo-mark-96.webp" alt="" width="64" height="64" style="margin:0 auto 24px;border-radius:18px"><h1>Page not found</h1><p>This page doesn’t exist or has moved.</p><a class="btn primary" href="/">Back to Salonieer</a></main></html>';
+    http_response_code(404);header('Content-Type: text/html; charset=utf-8');echo '<!doctype html><html lang="en"'.$themeAttrs.'><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found · Salonieer</title><link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/site.css">'.$themeStyle.'<main class="wrap empty-state"><img src="/assets/brand/Salonieer_header_for_light_1224x385.svg" alt="Salonieer" width="220" height="69" style="display:block;margin:0 auto 24px;height:auto"><h1>Page not found</h1><p>This page doesn’t exist or has moved.</p><a class="btn primary" href="/">Back to Salonieer</a></main></html>';
 } catch (HttpFailure $e) {
     if ($e->status===429) header('Retry-After: 900');
     sendJson($e->status,['error'=>$e->errorCode,'field'=>$e->field]);

@@ -220,9 +220,14 @@ function mailCopy(string $template, string $lang): array {
             'ar' => ['رسالة بخصوص طلبك', "{body}\n\n— Salonieer ({ref})\nيمكنك الرد على هذا البريد."],
             'he' => ['הודעה בנוגע לבקשה שלך', "{body}\n\n— Salonieer ({ref})\nאפשר להשיב לדוא״ל הזה."]],
         'approved' => [
-            'en' => ['Your salon is ready', "Great news — {salon} is approved and ready in the Salonieer app.\n\nSalon code: {code}\nPlan: {plan}\n\nTo manage your salon:\n1. Install Salonieer (App Store / Google Play) and add your salon with the code {code} or the QR code on your account page.\n2. Sign in with phone {phone} and the temporary password {password}\n3. Change the password from My Account after signing in.\n\nYour account page shows all your salon details and its QR code: {site}/account"],
-            'ar' => ['صالونك جاهز', "خبر سعيد — تمت الموافقة على {salon} وأصبح جاهزاً في تطبيق Salonieer.\n\nرمز الصالون: {code}\nالباقة: {plan}\n\nلإدارة صالونك:\n1. ثبّت تطبيق Salonieer وأضف صالونك بالرمز {code} أو برمز QR الموجود في صفحة حسابك.\n2. سجّل الدخول برقم الهاتف {phone} وكلمة المرور المؤقتة {password}\n3. غيّر كلمة المرور من «حسابي» بعد الدخول.\n\nتجد كل تفاصيل صالونك ورمز QR في صفحة حسابك: {site}/account"],
-            'he' => ['הסלון שלך מוכן', "חדשות טובות — {salon} אושר ומוכן ביישום Salonieer.\n\nקוד הסלון: {code}\nחבילה: {plan}\n\nכדי לנהל את הסלון:\n1. התקינו את Salonieer והוסיפו את הסלון עם הקוד {code} או קוד ה־QR בדף החשבון.\n2. התחברו עם הטלפון {phone} והסיסמה הזמנית {password}\n3. שנו את הסיסמה מ״החשבון שלי״ לאחר הכניסה.\n\nכל פרטי הסלון וקוד ה־QR בדף החשבון: {site}/account"]],
+            'en' => ['Your salon is ready', "Great news — {salon} is approved and ready in the Salonieer app.\n\nSalon code: {code}\nPlan: {plan}\n\nTo manage your salon:\n1. Install Salonieer (App Store / Google Play) and tap Log In.\n2. Sign in with phone {phone} and the temporary password {password}. Your salon appears in My Salons as yours (salon code {code}).\n3. Change the password from My Account after signing in.\nAlready have a Salonieer account with this number? Add the salon with the code {code} or the QR on your account page and enter the temporary password once to link it.\n\nYour account page shows all your salon details and its QR code: {site}/account"],
+            'ar' => ['صالونك جاهز', "خبر سعيد — تمت الموافقة على {salon} وأصبح جاهزاً في تطبيق Salonieer.\n\nرمز الصالون: {code}\nالباقة: {plan}\n\nلإدارة صالونك:\n1. ثبّت تطبيق Salonieer واضغط «تسجيل الدخول».\n2. سجّل الدخول برقم الهاتف {phone} وكلمة المرور المؤقتة {password}، فيظهر صالونك في «صالوناتي» كصالون تملكه (رمز الصالون {code}).\n3. غيّر كلمة المرور من «حسابي» بعد الدخول.\nلديك حساب Salonieer بهذا الرقم؟ أضف الصالون بالرمز {code} أو برمز QR في صفحة حسابك وأدخل كلمة المرور المؤقتة مرة واحدة لربطه.\n\nتجد كل تفاصيل صالونك ورمز QR في صفحة حسابك: {site}/account"],
+            'he' => ['הסלון שלך מוכן', "חדשות טובות — {salon} אושר ומוכן ביישום Salonieer.\n\nקוד הסלון: {code}\nחבילה: {plan}\n\nכדי לנהל את הסלון:\n1. התקינו את Salonieer ולחצו על ״התחברות״.\n2. התחברו עם הטלפון {phone} והסיסמה הזמנית {password}. הסלון יופיע ב״הסלונים שלי״ כסלון שלכם (קוד הסלון {code}).\n3. שנו את הסיסמה מ״החשבון שלי״ לאחר הכניסה.\nכבר יש לכם חשבון Salonieer עם המספר הזה? הוסיפו את הסלון עם הקוד {code} או ה־QR בדף החשבון והזינו את הסיסמה הזמנית פעם אחת כדי לקשר אותו.\n\nכל פרטי הסלון וקוד ה־QR בדף החשבון: {site}/account"]],
+        // 2.40: the owner signs in with their own Salonieer account (no temporary password).
+        'approved_account' => [
+            'en' => ['Your salon is ready', "Great news — {salon} is approved and ready in the Salonieer app.\n\nSalon code: {code}\nPlan: {plan}\n\nTo manage your salon:\n1. Install Salonieer (App Store / Google Play).\n2. Sign in with your Salonieer account using the phone number {v:phone} — no account yet? Tap Create account and use this number. (If your app asks for a salon code instead, it is an older version: enter {code} and register with this number and a password of your choice.)\n3. Your salon appears in My Salons as yours (salon code {code}). No salon password is needed.\n\nYour account page shows all your salon details and its QR code: {site}/account"],
+            'ar' => ['صالونك جاهز', "خبر سعيد — تمت الموافقة على {salon} وأصبح جاهزاً في تطبيق Salonieer.\n\nرمز الصالون: {code}\nالباقة: {plan}\n\nلإدارة صالونك:\n1. ثبّت تطبيق Salonieer.\n2. سجّل الدخول بحساب Salonieer الخاص بك برقم الهاتف {v:phone} — ليس لديك حساب؟ اضغط «إنشاء حساب» واستخدم هذا الرقم. (إذا طلب التطبيق رمز الصالون بدلاً من ذلك فهو نسخة أقدم: أدخل {code} وسجّل بهذا الرقم وبكلمة مرور تختارها.)\n3. يظهر صالونك في «صالوناتي» كصالون تملكه (رمز الصالون {code})، دون أي كلمة مرور للصالون.\n\nتجد كل تفاصيل صالونك ورمز QR في صفحة حسابك: {site}/account"],
+            'he' => ['הסלון שלך מוכן', "חדשות טובות — {salon} אושר ומוכן ביישום Salonieer.\n\nקוד הסלון: {code}\nחבילה: {plan}\n\nכדי לנהל את הסלון:\n1. התקינו את Salonieer.\n2. היכנסו עם חשבון ה־Salonieer שלכם במספר הטלפון {v:phone} — אין חשבון? לחצו על ״יצירת חשבון״ והשתמשו במספר הזה. (אם היישום מבקש קוד סלון במקום זאת, זו גרסה ישנה: הזינו {code} והירשמו עם המספר הזה וסיסמה לבחירתכם.)\n3. הסלון יופיע ב״הסלונים שלי״ כסלון שלכם (קוד הסלון {code}), בלי סיסמה לסלון.\n\nכל פרטי הסלון וקוד ה־QR בדף החשבון: {site}/account"]],
         'declined' => [
             'en' => ['About your application', "We're sorry — we can't approve the application for {salon} ({ref}) at this time.\n\n{body}\n\nIf you have questions, just reply to this email."],
             'ar' => ['بخصوص طلبك', "نأسف — لا يمكننا الموافقة على طلب صالون {salon} ({ref}) حالياً.\n\n{body}\n\nإذا كان لديك أي سؤال، رد على هذا البريد."],
@@ -316,7 +321,7 @@ Plan and payment
 Plan: {plan}
 Loyalty add-on: {loyalty}
 Extra specialists: {extra}
-Monthly total: {total}
+Total: {total}
 Payment method: {method}
 Payment status: {payment}
 
@@ -352,7 +357,8 @@ function renderMail(array $item): array {
     $vars = ['{ref}'=>$a['id'] ?? '', '{salon}'=>$a['salonName'] ?? '', '{plan}'=>ucfirst((string)($a['plan'] ?? '')), '{name}'=>$a['fullName'] ?? '',
         '{email}'=>$a['email'] ?? '', '{phone}'=>($item['template']==='approved' ? ($a['ownerPhone'] ?? '') : ($a['phone'] ?? '')),
         '{method}'=>($a['paymentMethod'] ?? '')==='card'?'card':'bank transfer', '{payment}'=>str_replace('_',' ',(string)($a['paymentStatus'] ?? '')).(!empty($item['vars']['test'])?' (TEST, no charge)':''),
-        '{total}'=>isset($q['total']) && $q['total']!==null ? $q['total'].' '.($q['currency'] ?? '') : 'by agreement', '{payline}'=>$paylines[$lang][0],
+        // A yearly quote's total is the whole year (11 × monthly); quotes from before yearly billing are monthly.
+        '{total}'=>isset($q['total']) && $q['total']!==null ? $q['total'].' '.($q['currency'] ?? '').' / '.(($q['interval'] ?? 'month')==='year' ? 'year' : 'month') : 'by agreement', '{payline}'=>$paylines[$lang][0],
         '{code}'=>$a['salon']['accessCode'] ?? '',
         '{created}'=>isset($a['createdAt']) ? gmdate('Y-m-d H:i', strtotime((string)$a['createdAt'])).' UTC' : '', '{country}'=>$a['country'] ?? '', '{lang}'=>strtoupper((string)($a['lang'] ?? '')),
         '{idlast4}'=>$a['idLast4'] ?? '', '{category}'=>ucfirst((string)($a['salonCategory'] ?? '')), '{timezone}'=>$a['timezone'] ?? '', '{logo}'=>$a['logoUrl'] ?? '',

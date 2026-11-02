@@ -377,6 +377,12 @@ main:focus{outline:none}
 @media (hover:hover) and (pointer:fine){.radio-option:hover{border-color:var(--color-text-muted)}}
 .radio-option:has(input:checked){border-color:var(--color-accent);background:color-mix(in srgb,var(--color-accent) 7%,var(--color-surface));box-shadow:0 0 0 1px var(--color-accent)}
 .radio-option input{accent-color:var(--color-accent);width:18px;height:18px;flex-shrink:0;margin:0}
+/* 2.41: the gender choice is a .field (for validation), so its tiles and radios must not take the text-field look */
+.gender-field .radio-options{grid-template-columns:1fr 1fr}
+.gender-field .radio-option{display:flex;margin:0;min-height:52px;padding:12px 16px;font-size:.95rem}
+.gender-field .radio-option input,.gender-field .radio-option input:focus,.gender-field .radio-option input[aria-invalid=true]{width:18px;height:18px;min-height:0;padding:0;border:0;background:none;box-shadow:none}
+.gender-field .radio-option:has(input:focus-visible){box-shadow:var(--ring)}
+.gender-field.is-invalid .radio-option{border-color:var(--color-error)}
 .payment-note{font-size:.86rem;line-height:1.75;margin-top:16px}
 .order-summary{position:sticky;top:100px;border:1px solid var(--color-border);border-radius:var(--radius-xl);background:var(--color-surface);padding:28px;box-shadow:var(--elev-2)}
 .order-summary h2{font-size:1.1rem;margin-bottom:20px}

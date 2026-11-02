@@ -1,10 +1,18 @@
 // Salons: the list, creating one, and each salon's page (overview + QR, details and branding, subscription and
-// features, admin accounts, notifications, danger zone). Same server functions as the app's platform console.
+// features, online payment accounts, admin accounts, notifications, danger zone). Salonieer Admin lives only here
+// since 2.29 (the app's console was retired); same server functions it used.
 import { T, esc, rpc, view, setTitle, loading, empty, pill, act, confirm, go, params, salonColor, salonMark,
   fmtDate, fmtTime, num, isOwner, qrSvg, site, errorText, actionLabel, toast } from './panel.js';
 import { tabBilling } from './billing.js';
+import { tabPayments } from './payments.js';
+import { loadPhone, toE164, countryOptions, countryForTimezone } from './phone-input.js';
 
-const CATEGORIES = ['male', 'female', 'beauty'];
+// 2.41: a salon is described by who works there and who it serves (the older salon type follows the clientele).
+const TEAMS = ['male', 'female', 'mixed'], CLIENTELES = ['men', 'women', 'both'];
+// Required for a new salon; an existing salon not classified yet can keep it empty when other details are saved.
+const choose = (name, values, current, prefix, required) => `<select name="${name}"${required ? ' required' : ''}>${current ? '' : `<option value="">${esc(site().t('chooseOne'))}</option>`}${values.map(c => `<option value="${c}"${current === c ? ' selected' : ''}>${esc(site().t(prefix + c))}</option>`).join('')}</select>`;
+// What the salon serves, for salons classified before 2.41 from their older type.
+const clienteleOf = s => s.clientele || ({ female: 'women', beauty: 'women', male: 'men' })[s.salon_category] || '';
 const STYLES = ['ivory', 'noir', 'midnight'];
 const PALETTES = [['#1a88a4', '#c6b18b'], ['#438475', '#d4c4a1'], ['#94687e', '#e0c6b9'], ['#2f3a56', '#c9a86a'], ['#7a5a3a', '#e6cfa7']];
 const field = (label, input, cls = '') => `<label class="ap-field ${cls}"><span>${esc(label)}</span>${input}</label>`;
@@ -49,7 +57,8 @@ function identityForm(s = {}, edit = false) {
     ${field(T('salonName'), `<input name="name" required maxlength="80" value="${esc(s.name || '')}">`)}
     ${field(T('slug'), `<input name="slug" dir="ltr" ${edit ? 'disabled' : 'required pattern="[a-z][a-z0-9]{1,23}" placeholder="elite"'} value="${esc(s.slug || '')}"><small>${esc(T(edit ? 'slugFixed' : 'slugHint'))}</small>`)}
     ${field(T('salonCode'), `<input name="access_code" dir="ltr" required pattern="[A-Za-z0-9_\\-]{4,32}" placeholder="ELITE-001" value="${esc(s.access_code || '')}"><small>${esc(T('codeHint'))}</small>`)}
-    ${field(T('salonType'), `<select name="salon_category">${CATEGORIES.map(c => `<option value="${c}"${(s.salon_category || 'male') === c ? ' selected' : ''}>${esc(site().t('cat_' + c))}</option>`).join('')}</select>`)}
+    ${field(site().t('teamComposition'), choose('team_composition', TEAMS, s.team_composition, 'team_', !edit))}
+    ${field(site().t('clientele'), choose('clientele', CLIENTELES, s.clientele, 'clientele_', !edit))}
     ${field(T('timezone'), `<input name="timezone" dir="ltr" required value="${esc(caps.timezone || 'Asia/Hebron')}" list="ap-tz">`)}
     <datalist id="ap-tz">${['Asia/Hebron', 'Asia/Jerusalem', 'Asia/Amman', 'Asia/Riyadh', 'Asia/Dubai', 'Africa/Cairo', 'Europe/Istanbul', 'Europe/London', 'UTC'].map(z => `<option value="${z}">`).join('')}</datalist>
     <fieldset class="ap-fieldset is-full"><legend>${esc(T('branding'))}</legend><div class="ap-brand-editor">
@@ -126,12 +135,13 @@ export async function newSalonView() {
   wireIdentity(form, (data, button) => {
     const sub = { plan_code: data.sub_plan, status: data.sub_status, starts_on: data.sub_start, expires_on: data.sub_end || null, extra_seats: Number(data.sub_seats || 0) };
     ['sub_plan', 'sub_status', 'sub_start', 'sub_end', 'sub_seats'].forEach(k => delete data[k]);
-    act(button, () => rpc('platform_create_salon', { p_data: { ...data, subscription: sub } }), T('salonCreated')).then(r => r && go('/admin/salons/' + r.slug)).catch(() => {});
+    // Next step: the owner's access by phone number (Owners & access).
+    act(button, () => rpc('platform_create_salon', { p_data: { ...data, subscription: sub } }), T('salonCreatedNext')).then(r => r && go('/admin/salons/' + r.slug + '?tab=accounts')).catch(() => {});
   });
 }
 
 // ---- One salon ----------------------------------------------------------------------------------------------------
-const TABS = [['overview', 'tabOverview'], ['billing', 'tabBilling'], ['details', 'tabDetails'], ['subscription', 'tabSubscription'], ['accounts', 'tabAccounts'], ['notifications', 'tabNotifications']];
+const TABS = [['overview', 'tabOverview'], ['billing', 'tabBilling'], ['details', 'tabDetails'], ['subscription', 'tabSubscription'], ['payments', 'tabPayments'], ['accounts', 'tabAccounts'], ['notifications', 'tabNotifications']];
 export async function salonView(slug) {
   setTitle(T('salon'), `<a class="ap-btn is-quiet" href="/admin/salons">${esc(T('allSalons'))}</a>`);
   view().innerHTML = loading();
@@ -140,19 +150,20 @@ export async function salonView(slug) {
   const tab = TABS.some(t => t[0] === params().get('tab')) ? params().get('tab') : 'overview';
   setTitle(s.name, `<a class="ap-btn is-quiet" href="/admin/salons">${esc(T('allSalons'))}</a>`);
   view().innerHTML = `<section class="ap-salon-head" style="--salon:${esc(salonColor(s))}">${salonMark(s, 72)}<div><h2>${esc(s.name)}</h2><p><span dir="ltr">${esc(s.access_code)}</span> · <span dir="ltr">${esc(s.slug)}</span></p>
-      <div class="ap-pills">${pill(s.is_active ? 'ok' : 'danger', T(s.is_active ? 'active' : 'paused'))}${pill('muted', site().t('cat_' + s.salon_category))}</div></div></section>
+      <div class="ap-pills">${pill(s.is_active ? 'ok' : 'danger', T(s.is_active ? 'active' : 'paused'))}${clienteleOf(s) ? pill('muted', site().t('clientele_' + clienteleOf(s))) : ''}${s.team_composition ? pill('muted', site().t('team_' + s.team_composition)) : ''}</div></div></section>
     <nav class="ap-tabs" role="tablist">${TABS.map(([k, label]) => `<a role="tab" class="ap-tab" href="/admin/salons/${esc(slug)}?tab=${k}" aria-selected="${k === tab}">${esc(T(label))}</a>`).join('')}</nav>
     <div id="ap-tab">${loading()}</div>`;
   const host = document.getElementById('ap-tab');
   const reload = () => salonView(slug);
-  try { await ({ overview: tabOverview, billing: tabBilling, details: tabDetails, subscription: tabSubscription, accounts: tabAccounts, notifications: tabNotifications })[tab](host, s, reload); }
+  try { await ({ overview: tabOverview, billing: tabBilling, details: tabDetails, subscription: tabSubscription, payments: tabPayments, accounts: tabAccounts, notifications: tabNotifications })[tab](host, s, reload); }
   catch (e) { host.innerHTML = empty(T('errLoad'), errorText(e)); }
 }
 
 async function tabOverview(host, s, reload) {
   const [state, audit] = await Promise.all([rpc('platform_subscription_get', { p_slug: s.slug }).catch(() => null), rpc('platform_audit_list', { p_offset: 0 }).catch(() => [])]);
   const st = state?.state, spec = st?.specialists, sub = st?.subscription;
-  const link = 'salonieer://salon/' + s.access_code;
+  // The salon's own link, as in the app (2.34): opens the salon in the app, or the store — also from a phone camera.
+  const link = location.origin + '/s/' + encodeURIComponent(s.access_code);
   const mine = audit.filter(r => r.salon_slug === s.slug);
   host.innerHTML = `<div class="ap-columns"><div class="ap-stack">
       <section class="ap-panel"><h3>${esc(T('atAGlance'))}</h3><dl class="ap-facts">
@@ -213,6 +224,7 @@ async function tabSubscription(host, s, reload) {
       ${field(T('startsOn'), `<input type="date" name="starts_on" value="${esc(sub.starts_on || '')}" ${dis}>`)}${field(T('expiresOn'), `<input type="date" name="expires_on" value="${esc(sub.expires_on || '')}" ${dis}>`)}
       ${field(T('notes'), `<textarea name="notes" rows="2" maxlength="1000" ${dis}>${esc(sub.notes || '')}</textarea>`, 'is-full')}
       ${field(T('reason'), `<input name="reason" maxlength="300" ${dis}>`, 'is-full')}
+      <div class="ap-note is-full" id="ap-impact" hidden></div>
       ${can ? `<div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit">${esc(T('saveChanges'))}</button><p class="ap-error" role="alert"></p></div>` : ''}</form></section>
     <section class="ap-panel"><h3>${esc(T('specialistSeats'))}</h3><div class="ap-meter"><div class="ap-meter-top"><b>${num(spec.active)} / ${spec.unlimited ? esc(T('unlimited')) : num(spec.limit)}</b><span>${esc(T('activeSpecialists'))}</span></div><div class="ap-bar${spec.over_limit ? ' is-over' : ''}"><i style="width:${pct}%"></i></div>
       <small class="ap-quiet">${esc(T('seatBreakdown', { plan: spec.plan_unlimited ? T('unlimited') : num(spec.included), extra: num(spec.purchased) }))}</small></div>
@@ -232,8 +244,33 @@ async function tabSubscription(host, s, reload) {
     </div></div>`;
   if (!can) return;
   const subForm = document.getElementById('ap-sub');
-  subForm.addEventListener('submit', e => { e.preventDefault(); const d = Object.fromEntries(new FormData(subForm)); d.expires_on ||= null;
-    act(subForm.querySelector('button'), () => rpc('platform_subscription_save', { p_slug: s.slug, p_data: d }), T('saved')).then(reload).catch(() => {}); });
+  // Changing the plan keeps add-ons and manual overrides as they are, unless the owner ticks a clean-up and confirms it.
+  const activeAddons = data.addons.filter(a => a.status === 'active'), overrides = Object.values(data.overrides || {}).filter(o => o.mode && o.mode !== 'inherit');
+  const impact = () => {
+    const box = document.getElementById('ap-impact'), next = cat.plans.find(p => p.code === subForm.elements.plan_code.value);
+    if (!next || next.code === sub.plan_code) { box.hidden = true; box.innerHTML = ''; return; }
+    const limit = spec.unlimited_override ? null : spec.override !== null && spec.override !== undefined ? spec.override : next.unlimited_specialists ? null : Number(next.included_specialists) + Number(spec.purchased || 0);
+    const blocked = limit !== null && limit < spec.active;
+    box.hidden = false;
+    box.innerHTML = `<b>${esc(T('planImpact', { plan: planLabel(next) }))}</b>
+      <p>${esc(T('newSeatLimit', { n: limit === null ? T('unlimited') : num(limit) }))}${blocked ? ` <span class="ap-error">${esc(T('seatBlocked', { active: num(spec.active), n: num(spec.active - limit) }))}</span>` : ''}</p>
+      <p class="ap-quiet">${esc(T('keptAsIs', { addons: num(activeAddons.length), overrides: num(overrides.length) }))}</p>
+      ${activeAddons.length || overrides.length ? `<label class="ap-check"><input type="checkbox" name="reset_overrides" ${overrides.length ? '' : 'disabled'}>${esc(T('resetOverrides', { n: num(overrides.length) }))}</label>
+      <label class="ap-check"><input type="checkbox" name="deactivate_redundant_addons" ${activeAddons.some(a => a.kind === 'feature') ? '' : 'disabled'}>${esc(T('dropIncludedAddons'))}</label>` : ''}`;
+  };
+  subForm.elements.plan_code.addEventListener('change', impact);
+  subForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const d = Object.fromEntries(new FormData(subForm)); d.expires_on ||= null;
+    const reset = !!subForm.elements.reset_overrides?.checked, drop = !!subForm.elements.deactivate_redundant_addons?.checked;
+    delete d.reset_overrides; delete d.deactivate_redundant_addons;
+    if (reset || drop) {
+      const steps = [reset && T('resetOverridesStep'), drop && T('dropAddonsStep')].filter(Boolean).join(' · ');
+      if (!(await confirm(T('confirmCleanup'), steps, { danger: true }))) return;
+      Object.assign(d, { reset_overrides: reset, deactivate_redundant_addons: drop, confirm: true });
+    }
+    act(subForm.querySelector('button[type=submit]'), () => rpc('platform_subscription_save', { p_slug: s.slug, p_data: d }), T('saved')).then(reload).catch(() => {});
+  });
   const lim = document.getElementById('ap-limit');
   lim.addEventListener('submit', e => { e.preventDefault(); const v = lim.elements.limit.value.trim();
     act(lim.querySelector('button'), () => rpc('platform_subscription_save', { p_slug: s.slug, p_data: { specialist_limit_override: v === '' ? null : Number(v), specialist_unlimited_override: lim.elements.unlimited.checked } }), T('saved')).then(reload).catch(() => {}); });
@@ -247,56 +284,135 @@ async function tabSubscription(host, s, reload) {
     act(add.querySelector('button'), () => rpc('platform_addon_save', { p_slug: s.slug, p_data: { addon_code: d.addon_code, quantity: Number(d.quantity) || 1, starts_on: new Date().toISOString().slice(0, 10), expires_on: d.expires_on || null } }), T('saved')).then(reload).catch(() => {}); });
 }
 
-// ---- Salon admin accounts (tenant functions with the platform token) ----------------------------------------------------
+// ---- Owners and access (2.40: by phone number, no passwords) ------------------------------------------------------------
+// Everyone signs in with their own Salonieer account (phone + their password). Salonieer gives a person access to a
+// salon with the phone number and a role only: at once when the number has an account, otherwise when they sign up.
+const ACCESS_ROLES = [['admin', 'accessRoleOwner'], ['manager', 'accessRoleManager'], ['specialist', 'accessRoleSpecialist'], ['other', 'accessRoleOther']];
+const roleText = r => T((ACCESS_ROLES.find(x => x[0] === r) || [null, 'accessRoleOwner'])[1]);
+
 async function tabAccounts(host, s, reload) {
-  const call = (fn, args) => rpc(s.rpc_prefix + fn, { p_token: '__platform__', ...args });
-  const rows = await call('admin_list_users', { p_limit: 50, p_offset: 0, p_search: null, p_role: 'admin' }) || [];
-  const staffWord = { male: 'roleBarber', female: 'roleStylist', beauty: 'roleSpecialist' }[s.salon_category] || 'roleBarber';
-  host.innerHTML = `<div class="ap-columns"><section class="ap-panel"><h3>${esc(T('salonAdmins'))}</h3>
-      ${rows.length ? `<ul class="ap-rows" data-paginate="salon-admins">${rows.map(u => `<li><span><b>${esc(u.full_name || T('noName'))}</b><small dir="ltr">${esc(u.phone)}</small></span>${u.is_disabled ? pill('danger', T('disabled')) : ''}
-        ${isOwner() ? `<span class="ap-row-actions"><button class="ap-link" type="button" data-reset="${esc(u.id)}" data-phone="${esc(u.phone)}">${esc(T('newPasswordShort'))}</button><button class="ap-link is-danger" type="button" data-demote="${esc(u.id)}">${esc(T('removeAdmin'))}</button></span>` : ''}</li>`).join('')}</ul>` : `<p class="ap-quiet">${esc(T('noAdmins'))}</p>`}
-      <div id="ap-credential"></div></section>
-    ${isOwner() ? `<section class="ap-panel"><h3>${esc(T('addAccount'))}</h3><p class="ap-quiet">${esc(T('addAccountHint'))}</p><form id="ap-add-user" class="ap-form-grid">
-      ${field(T('phone'), `<input name="phone" dir="ltr" inputmode="tel" required pattern="[0-9+ ]{9,20}" placeholder="0599123456">`)}${field(T('name'), `<input name="name" maxlength="60">`)}
-      ${field(T('role'), `<select name="role"><option value="admin">${esc(T('roleAdmin'))}</option><option value="barber">${esc(T(staffWord))}</option><option value="user">${esc(T('roleCustomer'))}</option></select>`, 'is-full')}
-      <div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit">${esc(T('createAccount'))}</button><p class="ap-error" role="alert"></p></div></form></section>` : ''}</div>`;
-  const showCredential = (phone, password) => {
-    document.getElementById('ap-credential').innerHTML = `<div class="ap-credential"><b>${esc(T('tempPassword'))}</b><code dir="ltr">${esc(password)}</code><small>${esc(T('credentialHint', { phone }))}</small><button class="ap-btn is-quiet" type="button" id="ap-copy">${esc(T('copy'))}</button></div>`;
-    document.getElementById('ap-copy').onclick = async () => { try { await navigator.clipboard.writeText(password); toast(T('copied')); } catch {} };
+  await loadPhone().catch(() => null);
+  const [data, team] = await Promise.all([rpc('platform_access_list', { p_slug: s.slug }),
+    rpc(s.rpc_prefix + 'admin_team_list', { p_token: '__platform__' }).catch(() => null)]);
+  const can = !!data.can_give;
+  const country = countryForTimezone(s.capabilities?.timezone) || 'PS';
+  const members = (team?.members || []).filter(m => ['active', 'accepted', 'invited'].includes(m.status));
+  const ownerRow = o => `<li><span><b>${esc(o.name || T('noName'))}</b><small dir="ltr">${esc(o.account?.phone || o.phone)}</small>
+      <small>${esc(o.account ? T('accountLinked', { name: o.account.name }) : T('accountNotLinked'))}${o.specialist ? ' · ' + esc(T('specialistToo')) : ''}${o.last_seen ? ' · ' + esc(T('lastSeen', { date: fmtDate(o.last_seen) })) : ''}</small></span>
+      ${o.disabled ? pill('danger', T('disabled')) : ''}${can ? `<button class="ap-link is-danger" type="button" data-remove="${esc(o.id)}">${esc(T('removeOwner'))}</button>` : ''}</li>`;
+  const pendingRow = g => `<li><span><b dir="ltr">${esc(g.phone)}</b><small>${esc(roleText(g.role))}${g.title ? ' · ' + esc(g.title) : ''} · ${esc(T('waitingLine', { by: g.created_by || 'Salonieer', date: fmtDate(g.created_at) }))}</small>
+      ${g.last_error ? `<small class="ap-error-inline">${esc(T('accessError', { error: errorText({ message: g.last_error }) }))}</small>` : ''}</span>${pill('warn', T('waitingShort'))}
+      ${can ? `<span class="ap-row-actions"><button class="ap-link" type="button" data-retry="${esc(g.id)}">${esc(T('retryAccess'))}</button><button class="ap-link is-danger" type="button" data-cancel="${esc(g.id)}">${esc(T('cancelAccess'))}</button></span>` : ''}</li>`;
+  const memberRow = m => `<li><span><b>${esc(m.status === 'invited' ? T('memberInvitedName') : (m.name || '—'))}</b><small>${esc(roleText(m.role))}${m.title ? ' · ' + esc(m.title) : ''}${m.phone && m.status !== 'invited' ? ` · <bdi dir="ltr">${esc(m.phone)}</bdi>` : ''}</small></span>${pill(m.status === 'active' ? 'ok' : 'info', T('member_' + m.status))}</li>`;
+  const recentRow = g => `<li><span><b dir="ltr">${esc(g.phone)}</b><small>${esc(roleText(g.role))} · ${esc(g.status !== 'applied' ? T('recentCancelled') : g.account ? T('recentApplied', { name: g.account.name }) : T('recentAppliedSignup'))}</small></span><time>${esc(fmtTime(g.applied_at || g.cancelled_at || g.created_at))}</time></li>`;
+  host.innerHTML = `<div class="ap-columns"><div class="ap-stack">
+      <section class="ap-panel"><h3>${esc(T('accessOwners'))}</h3><p class="ap-quiet">${esc(T('accessOwnersLead'))}</p>
+        ${data.owners.length ? `<ul class="ap-rows">${data.owners.map(ownerRow).join('')}</ul>` : `<p class="ap-quiet">${esc(T('noAdmins'))}</p>`}<p class="ap-error" role="alert"></p></section>
+      ${data.pending.length ? `<section class="ap-panel"><h3>${esc(T('waitingTitle'))}</h3><p class="ap-quiet">${esc(T('waitingLead'))}</p><ul class="ap-rows">${data.pending.map(pendingRow).join('')}</ul><p class="ap-error" role="alert"></p></section>` : ''}
+      <section class="ap-panel"><h3>${esc(T('teamTitle'))}</h3><p class="ap-quiet">${esc(T('teamLead'))}</p>
+        ${members.length ? `<ul class="ap-rows" data-paginate="salon-team">${members.map(memberRow).join('')}</ul>` : `<p class="ap-quiet">${esc(T('noTeam'))}</p>`}</section>
+    </div><div class="ap-stack">
+      ${can ? `<section class="ap-panel"><h3>${esc(T('giveAccess'))}</h3><p class="ap-quiet">${esc(T('giveAccessLead'))}</p><form id="ap-give" class="ap-form-grid" novalidate>
+        ${field(T('dialCode'), `<select name="country">${countryOptions(country, site().lang)}</select>`)}
+        ${field(T('phone'), `<input name="phone" dir="ltr" type="tel" inputmode="tel" autocomplete="off" required maxlength="24" placeholder="0599123456">`)}
+        ${field(T('accessRole'), `<select name="role">${ACCESS_ROLES.map(([v, k]) => `<option value="${v}">${esc(T(k))}</option>`).join('')}</select>`)}
+        ${field(T('jobTitle'), `<input name="title" maxlength="80"><small>${esc(T('jobTitleHint'))}</small>`)}
+        <p class="ap-note is-full" id="ap-who" aria-live="polite" hidden></p>
+        <div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit">${esc(T('giveAccessBtn'))}</button><p class="ap-error" role="alert"></p></div></form></section>` : ''}
+      ${data.recent.length ? `<section class="ap-panel"><h3>${esc(T('recentAccess'))}</h3><ol class="ap-feed">${data.recent.map(recentRow).join('')}</ol></section>` : ''}
+    </div></div>`;
+
+  host.querySelectorAll('[data-remove]').forEach(b => b.addEventListener('click', async () => {
+    if (!(await confirm(T('removeOwner'), T('removeOwnerConfirm'), { danger: true, confirmLabel: T('removeOwner') }))) return;
+    act(b, () => rpc('platform_access_remove_owner', { p_slug: s.slug, p_user: b.dataset.remove }), T('saved')).then(reload).catch(() => {});
+  }));
+  host.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', async () => {
+    if (!(await confirm(T('cancelAccess'), T('cancelAccessConfirm'), { danger: true }))) return;
+    act(b, () => rpc('platform_access_cancel', { p_id: b.dataset.cancel }), T('saved')).then(reload).catch(() => {});
+  }));
+  host.querySelectorAll('[data-retry]').forEach(b => b.addEventListener('click', async () => {
+    const r = await act(b, () => rpc('platform_access_retry', { p_id: b.dataset.retry })).catch(() => null);
+    if (!r) return;
+    if (r.status === 'applied') toast(T('accessApplied', { name: r.account?.name || r.salon_user?.name || '' }));
+    else toast(r.error ? T('accessError', { error: errorText({ message: r.error }) }) : T('accessStillWaiting'), r.error ? 'error' : 'success');
+    reload();
+  }));
+
+  const form = document.getElementById('ap-give');
+  if (!form) return;
+  const who = document.getElementById('ap-who');
+  const titleField = form.elements.title.closest('.ap-field');
+  const syncRole = () => { titleField.hidden = form.elements.role.value !== 'other'; };
+  syncRole();
+  form.elements.role.addEventListener('change', syncRole);
+  // Whose number is it? Shown before access is given, so Salonieer can check it is the right person.
+  let ask = 0, timer;
+  const lookup = async () => {
+    const mine = ++ask, n = toE164(form.elements.phone.value, form.elements.country.value);
+    if (!n) { who.hidden = !form.elements.phone.value.trim(); who.textContent = form.elements.phone.value.trim() ? T('invalidPhoneIntl') : ''; return; }
+    const r = await rpc('platform_access_lookup', { p_slug: s.slug, p_phone: n.e164 }).catch(() => null);
+    if (mine !== ask || !r) return;
+    const lines = [];
+    const accounts = r.accounts || [];
+    lines.push(accounts.length > 1 ? T('lookupTwo') : accounts.length ? T('lookupFound', { name: accounts[0].name, date: fmtDate(accounts[0].created_at) }) : r.signup_gets_it ? T('lookupSignupGets') : T('lookupNone'));
+    if (r.salon_row) lines.push(T('lookupRow', { name: r.salon_row.name || T('noName'), role: T('rowRole_' + r.salon_row.role), n: num(r.salon_row.bookings) }));
+    if (r.member) lines.push(T('lookupMember', { role: roleText(r.member.role), status: T('member_' + r.member.status) }));
+    if (r.pending) lines.push(T('lookupPending', { role: roleText(r.pending.role) }));
+    who.hidden = false;
+    who.innerHTML = `<b dir="ltr">${esc(r.phone)}</b><br>${lines.map(esc).join('<br>')}`;
   };
-  host.querySelectorAll('[data-reset]').forEach(b => b.addEventListener('click', async () => {
-    if (!(await confirm(T('newPasswordShort'), T('resetConfirm')))) return;
-    const r = await act(b, () => call('admin_reset_password', { p_id: b.dataset.reset })).catch(() => null);
-    if (r?.temporary_password) showCredential(b.dataset.phone, r.temporary_password);
-  }));
-  host.querySelectorAll('[data-demote]').forEach(b => b.addEventListener('click', async () => {
-    if (!(await confirm(T('removeAdmin'), T('removeAdminConfirm'), { danger: true }))) return;
-    act(b, () => call('admin_update_user', { p_id: b.dataset.demote, p_name: null, p_role: 'user', p_disabled: null, p_barber: null }), T('saved')).then(reload).catch(() => {});
-  }));
-  const form = document.getElementById('ap-add-user');
-  form?.addEventListener('submit', async e => {
+  const later = () => { clearTimeout(timer); timer = setTimeout(lookup, 350); };
+  form.elements.phone.addEventListener('input', later);
+  form.elements.country.addEventListener('change', lookup);
+  form.addEventListener('submit', async e => {
     e.preventDefault();
-    if (!form.reportValidity()) return;
-    const phone = form.elements.phone.value.replace(/\D/g, '');
-    const r = await act(form.querySelector('button'), () => call('admin_add_user', { p_phone: phone, p_name: form.elements.name.value.trim(), p_role: form.elements.role.value }), T('accountCreated')).catch(() => null);
-    if (r?.temporary_password) { form.reset(); showCredential(phone, r.temporary_password); }
+    const box = form.querySelector('.ap-error'); box.textContent = '';
+    const n = toE164(form.elements.phone.value, form.elements.country.value);
+    if (!n) { box.textContent = T('invalidPhoneIntl'); form.elements.phone.focus(); return; }
+    const role = form.elements.role.value, title = form.elements.title.value.trim();
+    if (role === 'other' && !title) { box.textContent = T('errJobTitle'); form.elements.title.focus(); return; }
+    if (!(await confirm(T('giveAccess'), T('giveAccessConfirm', { phone: n.e164, role: roleText(role) })))) return;
+    const r = await act(form.querySelector('[type=submit]'), () => rpc('platform_access_give', { p_slug: s.slug, p_phone: n.e164, p_dial: n.dial, p_role: role, p_title: title })).catch(() => null);
+    if (!r) return;
+    if (r.status === 'applied') toast(r.result?.status === 'already' ? T('accessAlready', { name: r.account?.name || r.salon_user?.name || '' }) : T('accessApplied', { name: r.account?.name || r.salon_user?.name || '' }));
+    else toast(T('accessPending', { phone: r.phone || n.e164 }));
+    reload();
   });
 }
 
 // ---- Notifications ---------------------------------------------------------------------------------------------------
-const EVENTS = { customer: ['customer_booking_created', 'customer_booking_rescheduled', 'customer_booking_confirmed', 'customer_booking_completed', 'customer_booking_cancelled', 'customer_booking_no_show', 'reminder'],
-  staff: ['barber_booking_created', 'barber_booking_rescheduled', 'barber_booking_cancelled', 'barber_booking_removed'], salon: ['owner_activity', 'announcements'] };
+const EVENTS = { customer: ['customer_booking_created', 'customer_booking_rescheduled', 'customer_booking_pending', 'customer_booking_confirmed', 'customer_booking_completed', 'customer_booking_cancelled', 'customer_booking_no_show', 'customer_booking_updated', 'reminder'],
+  staff: ['barber_booking_created', 'barber_booking_rescheduled', 'barber_booking_pending', 'barber_booking_confirmed', 'barber_booking_completed', 'barber_booking_cancelled', 'barber_booking_no_show', 'barber_booking_updated', 'barber_booking_removed'],
+  salon: ['owner_activity', 'announcements'],
+  // Business Suite and Attendance events: shown only when the server reports them.
+  business: ['biz_deposit_required', 'biz_deposit_reminder', 'biz_deposit_paid', 'biz_deposit_expired', 'biz_deposit_status', 'biz_deposit_refunded', 'biz_deposit_staff',
+    'biz_payment_received', 'biz_payment_failed', 'biz_payment_link', 'biz_refund_issued', 'biz_waitlist_offer', 'biz_low_stock',
+    'biz_attendance_in', 'biz_attendance_early', 'biz_attendance_review', 'biz_attendance_request'] };
+const LEGACY = { customer_booking_created: 'booking_created', customer_booking_rescheduled: 'rescheduled', reminder: 'reminders', owner_activity: 'owner_activity', announcements: 'announcements' };
 async function tabNotifications(host, s) {
   const data = await rpc('salonieer_admin_config_v1', { p_slug: s.slug, p_token: '__platform__' });
   const c = data.settings, sw = c.event_switches || {};
-  host.innerHTML = `<section class="ap-panel"><form id="ap-notify"><p class="ap-note">${esc(T(data.runtime?.enabled ? 'serviceOn' : 'serviceOff'))}</p>
+  // Before per-event switches existed the salon had a few broad ones; an event without its own switch follows them.
+  const legacy = k => LEGACY[k] ? c[LEGACY[k]] : k.startsWith('customer_') ? c.status_updates : k.startsWith('barber_') ? c.staff_bookings : true;
+  const on = k => (k in sw ? sw[k] : legacy(k)) !== false;
+  const groups = Object.entries(EVENTS).map(([g, keys]) => [g, g === 'business' ? keys.filter(k => k in sw) : keys]).filter(([, keys]) => keys.length);
+  const ops = (data.catalog || []).filter(f => !f.managed), canSet = !!data.can_set_features;
+  host.innerHTML = `${ops.length ? `<section class="ap-panel"><h3>${esc(T('opFeatures'))}</h3><p class="ap-quiet">${esc(T('opFeaturesLead'))}</p><form id="ap-ops" class="ap-stack">
+      ${ops.map(f => `<label class="ap-toggle"><input type="checkbox" data-op="${esc(f.key)}" ${data.features?.[f.key] ? 'checked' : ''} ${canSet ? '' : 'disabled'}><span>${esc(T('feat_' + f.key))}</span></label>`).join('')}
+      ${canSet ? `<div class="ap-actions"><button class="ap-btn" type="submit">${esc(T('saveChanges'))}</button><p class="ap-error" role="alert"></p></div>` : ''}</form></section>` : ''}
+    <section class="ap-panel"><form id="ap-notify"><p class="ap-note">${esc(T(data.runtime?.enabled ? 'serviceOn' : 'serviceOff'))}</p>
     <label class="ap-toggle"><input type="checkbox" name="enabled" ${c.enabled ? 'checked' : ''}><span>${esc(T('notifyEnabled'))}</span></label>
-    <div class="ap-columns is-three">${Object.entries(EVENTS).map(([group, keys]) => `<fieldset class="ap-fieldset"><legend>${esc(T('group_' + group))}</legend>${keys.map(k => `<label class="ap-toggle"><input type="checkbox" data-event="${k}" ${sw[k] !== false ? 'checked' : ''}><span>${esc(T('ev_' + k))}</span></label>`).join('')}</fieldset>`).join('')}</div>
+    <div class="ap-columns is-three">${groups.map(([group, keys]) => `<fieldset class="ap-fieldset"><legend>${esc(T('group_' + group))}</legend>${keys.map(k => `<label class="ap-toggle"><input type="checkbox" data-event="${k}" ${on(k) ? 'checked' : ''}><span>${esc(T('ev_' + k))}</span></label>`).join('')}</fieldset>`).join('')}</div>
     <div class="ap-form-grid">${field(T('reminders'), `<input name="reminders" dir="ltr" value="${esc((c.reminder_minutes || []).join(', '))}"><small>${esc(T('remindersHint'))}</small>`)}
       ${field(T('delayMinutes'), `<input type="number" name="delay" min="0" max="60" value="${esc(c.event_delay_minutes)}">`)}
       ${field(T('timezone'), `<input name="timezone" dir="ltr" value="${esc(c.timezone)}">`)}
       ${field(T('quietFrom'), `<input type="time" name="quiet_start" value="${esc((c.quiet_start || '').slice(0, 5))}">`)}${field(T('quietTo'), `<input type="time" name="quiet_end" value="${esc((c.quiet_end || '').slice(0, 5))}">`)}</div>
     <div class="ap-actions"><button class="ap-btn is-primary" type="submit">${esc(T('saveChanges'))}</button><p class="ap-error" role="alert"></p></div></form></section>`;
+  const opsForm = document.getElementById('ap-ops');
+  opsForm?.addEventListener('submit', e => {
+    e.preventDefault(); const f = {}; opsForm.querySelectorAll('[data-op]').forEach(x => f[x.dataset.op] = x.checked);
+    act(opsForm.querySelector('button'), () => rpc('salonieer_set_features_v1', { p_slug: s.slug, p_features: f }), T('saved')).catch(() => {});
+  });
   const form = document.getElementById('ap-notify');
   form.addEventListener('submit', e => {
     e.preventDefault();

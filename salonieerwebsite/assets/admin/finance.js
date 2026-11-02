@@ -159,14 +159,14 @@ export async function requestsView() {
       <tbody data-paginate="requests-done">${done.map(r => `<tr><td>${esc(r.salonName)}</td><td>${esc(changeText(r.approved || r.requested))}</td><td>${pill({ charged: 'ok', failed: 'danger', rejected: 'muted', cancelled: 'muted' }[r.status] || 'muted', T('req_' + r.status))}</td><td>${esc(r.decidedBy || '')}</td><td>${esc(fmtDate(r.decidedAt || r.createdAt))}</td></tr>`).join('')}</tbody></table></div></section>` : ''}`;
   bindChangeEditors(view(), requestsView);
 }
-const changeText = c => c ? [PLAN_NAMES[c.plan] || c.plan, c.extraSpecialists ? `+${c.extraSpecialists} ${T('specialistsShort')}` : '', c.loyalty ? T('loyaltyShort') : '', c.interval === 'year' ? T('yearly') : T('intervalMonthly')].filter(Boolean).join(' · ') : '';
+const changeText = c => c ? [PLAN_NAMES[c.plan] || c.plan, c.extraSpecialists ? `+${c.extraSpecialists} ${T('specialistsShort')}` : '', c.loyalty ? T(c.option === 'smart_waitlist' ? 'optWaitlistAdmin' : 'loyaltyShort') : '', c.interval === 'year' ? T('yearly') : T('intervalMonthly')].filter(Boolean).join(' · ') : '';
 export function changeEditor(app, init, requestId = null) {
   const c = init || {};
   return `<form class="ap-change" data-change="${esc(app)}"${requestId ? ` data-request="${requestId}"` : ''} novalidate><div class="ap-form-grid">
-    <label class="ap-field"><span>${esc(T('plan'))}</span><select name="plan">${['basic', 'pro', 'business'].map(p => `<option value="${p}"${c.plan === p ? ' selected' : ''}>${PLAN_NAMES[p]}</option>`).join('')}</select></label>
+    <label class="ap-field"><span>${esc(T('plan'))}</span><select name="plan">${(c.plan === 'business' ? ['basic', 'pro', 'business'] : ['basic', 'pro']).map(p => `<option value="${p}"${c.plan === p ? ' selected' : ''}>${PLAN_NAMES[p]}</option>`).join('')}</select></label>
     <label class="ap-field"><span>${esc(T('billingInterval'))}</span><select name="interval"><option value="month"${c.interval !== 'year' ? ' selected' : ''}>${esc(T('intervalMonthly'))}</option><option value="year"${c.interval === 'year' ? ' selected' : ''}>${esc(T('yearly'))}</option></select></label>
     <label class="ap-field"><span>${esc(T('extraSpecialists'))}</span><input name="extraSpecialists" type="number" min="0" max="50" value="${Number(c.extraSpecialists || 0)}" dir="ltr"></label>
-    <label class="ap-check"><input type="checkbox" name="loyalty"${c.loyalty ? ' checked' : ''}> <span>${esc(T('loyaltyAddon'))}</span></label>
+    <label class="ap-field"><span>${esc(T('basicOptionAdmin'))}</span><select name="basicOption">${['', 'loyalty', 'smart_waitlist'].map(v => `<option value="${v}"${(c.loyalty ? (c.option || 'loyalty') : '') === v ? ' selected' : ''}>${esc(T(v === 'loyalty' ? 'optLoyaltyAdmin' : v === 'smart_waitlist' ? 'optWaitlistAdmin' : 'optNoneAdmin'))}</option>`).join('')}</select></label>
     <label class="ap-field is-wide"><span>${esc(T('noteToOwner'))}</span><input name="note" maxlength="1000"></label></div>
     <div class="ap-preview" aria-live="polite"></div><p class="ap-error" role="alert"></p>
     <div class="ap-actions"><button class="ap-btn" type="button" data-preview>${esc(T('previewCharge'))}</button><button class="ap-btn is-primary" type="submit" disabled>${esc(T('approveCharge'))}</button>${requestId ? `<button class="ap-btn is-quiet is-danger" type="button" data-reject>${esc(T('reject'))}</button>` : ''}</div></form>`;
@@ -179,7 +179,7 @@ function changeCard(r) {
 }
 // Preview asks Paddle what the change costs now; approving charges exactly that (prorated) and applies the new plan.
 export function bindChangeEditors(root, reload) {
-  const read = form => ({ plan: form.elements.plan.value, interval: form.elements.interval.value, extraSpecialists: Number(form.elements.extraSpecialists.value || 0), loyalty: form.elements.loyalty.checked });
+  const read = form => ({ plan: form.elements.plan.value, interval: form.elements.interval.value, extraSpecialists: Number(form.elements.extraSpecialists.value || 0), loyalty: !!form.elements.basicOption.value && form.elements.plan.value === 'basic', option: form.elements.basicOption.value || 'loyalty' });
   bindOnce(root, 'changeBound', reload, reloadNow => {
   root.addEventListener('input', e => { const form = e.target.closest('form[data-change]'); if (form && e.target.name !== 'note') { form.querySelector('[type=submit]').disabled = true; form.querySelector('.ap-preview').innerHTML = ''; } });
   root.addEventListener('click', async e => {

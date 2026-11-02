@@ -69,7 +69,7 @@ function paddleItemsFor(string $tier, string $interval, string $plan, int $extra
     $planId = $set[$plan] ?? null;
     if (!$planId) throw new HttpFailure(400, 'checkoutUnavailable', 'plan');
     $items = [['price_id'=>$planId, 'quantity'=>1]];
-    if ($loyalty && in_array($plan, ['basic','pro'], true)) $items[] = ['price_id'=>$set['loyalty'], 'quantity'=>1];
+    if ($loyalty && $plan === 'basic') $items[] = ['price_id'=>$set['loyalty'], 'quantity'=>1];
     if ($extra > 0 && $plan !== 'enterprise') $items[] = ['price_id'=>$set['specialist'], 'quantity'=>min(50, $extra)];
     return $items;
 }
@@ -264,9 +264,18 @@ function billingPaymentTransaction(array $b): string {
     if (empty($t['id'])) fail(502, 'billingUnavailable');
     return $t['id'];
 }
+// The price list a subscription is on. A Paddle subscription can't change currency, so a salon that subscribed on an
+// older list (the October 2026 shekel prices) keeps changing within it; new subscriptions are on the current USD list.
+function subscriptionTier(array $b): string {
+    foreach ($b['items'] ?? [] as $i) {
+        $info = paddlePriceInfo((string)($i['priceId'] ?? ''));
+        if ($info && in_array($info['item'], ['basic','pro','business'], true) && isset(PADDLE_CATALOG[$info['tier']]['month']['pro'])) return $info['tier'];
+    }
+    return PRICE_TIER;
+}
 // What a change would cost right now (prorated) and from the next renewal, straight from Paddle.
 function billingPreview(string $app, array $b, array $change, array $owner): array {
-    $tier = $owner['country'] === 'PS' ? 'west_bank' : 'standard';
+    $tier = subscriptionTier($b);
     $items = paddleItemsFor($tier, $change['interval'], $change['plan'], $change['extraSpecialists'], $change['loyalty']);
     $check = sbRpc('website_change_check', ['p_app'=>$app, 'p_approved'=>$change]);
     $p = paddleApi('PATCH', '/subscriptions/'.$b['subscriptionId'].'/preview', ['items'=>$items, 'proration_billing_mode'=>'prorated_immediately'])['data'] ?? [];
@@ -279,11 +288,11 @@ function billingPreview(string $app, array $b, array $change, array $owner): arr
 }
 function cleanChange(array $d): array {
     $plan = $d['plan'] ?? null; $interval = $d['interval'] ?? 'month'; $extra = $d['extraSpecialists'] ?? 0;
-    if (!in_array($plan, PLANS, true)) fail(400, 'invalidPlan', 'plan');
+    if (!in_array($plan, OFFERED_PLANS, true)) fail(400, 'invalidPlan', 'plan');
     if ($plan === 'enterprise') fail(400, 'enterpriseByAgreement', 'plan');
     if (!in_array($interval, ['month','year'], true)) fail(400, 'invalidInterval', 'interval');
     if (!is_int($extra) || $extra < 0 || $extra > 50) fail(400, 'invalidAddons', 'extraSpecialists');
-    return ['plan'=>$plan, 'interval'=>$interval, 'extraSpecialists'=>$extra, 'loyalty'=>($d['loyalty'] ?? false) === true && in_array($plan, ['basic','pro'], true)];
+    return ['plan'=>$plan, 'interval'=>$interval, 'extraSpecialists'=>$extra, 'loyalty'=>($d['loyalty'] ?? false) === true && $plan === 'basic', 'option'=>in_array($d['option'] ?? 'loyalty', BASIC_OPTIONS, true) ? ($d['option'] ?? 'loyalty') : 'loyalty'];
 }
 function applicationOwner(string $app): array {
     $a = sbRpc('website_application', ['p_id'=>$app, 'p_user'=>null]);
@@ -340,10 +349,11 @@ function cleanDate(mixed $v, string $field): ?string {
 // Plan for admin billing: like an owner's change, but Enterprise is allowed (priced by agreement, cash only).
 function cleanAdminPlan(array $d): array {
     $plan = $d['plan'] ?? null; $interval = $d['interval'] ?? 'month'; $extra = $d['extraSpecialists'] ?? 0;
+    // Admins may keep Business for a salon already on it (it is no longer offered to new salons).
     if (!in_array($plan, PLANS, true)) fail(400, 'invalidPlan', 'plan');
     if (!in_array($interval, ['month','year'], true)) fail(400, 'invalidInterval', 'interval');
     if (!is_int($extra) || $extra < 0 || $extra > 50) fail(400, 'invalidAddons', 'extraSpecialists');
-    return ['plan'=>$plan, 'interval'=>$interval, 'extraSpecialists'=>$plan === 'enterprise' ? 0 : $extra, 'loyalty'=>($d['loyalty'] ?? false) === true && in_array($plan, ['basic','pro'], true)];
+    return ['plan'=>$plan, 'interval'=>$interval, 'extraSpecialists'=>$plan === 'enterprise' ? 0 : $extra, 'loyalty'=>($d['loyalty'] ?? false) === true && $plan === 'basic', 'option'=>in_array($d['option'] ?? 'loyalty', BASIC_OPTIONS, true) ? ($d['option'] ?? 'loyalty') : 'loyalty'];
 }
 // The salon owner's contact for billing emails, linked to their website account when one has this email.
 function cleanBillingOwner(mixed $o): array {
@@ -356,9 +366,9 @@ function cleanBillingOwner(mixed $o): array {
     return ['email'=>$email, 'name'=>$name !== '' ? $name : (string)($user['full_name'] ?? ''), 'lang'=>siteLang($o['lang'] ?? 'ar'),
         'country'=>$country !== '' ? $country : (string)($user['country'] ?? ''), 'websiteUserId'=>$user ? (int)$user['id'] : 0];
 }
+// One price list for everyone since October 2026: card links always use it.
 function cleanTier(mixed $v, string $country): string {
-    if (in_array($v, ['standard','west_bank'], true)) return $v;
-    return $country === 'PS' ? 'west_bank' : 'standard';
+    return PRICE_TIER;
 }
 function adminBillingGet(string $slug): array {
     $r = sbRpc('website_billing_admin_get', ['p_slug'=>$slug]);

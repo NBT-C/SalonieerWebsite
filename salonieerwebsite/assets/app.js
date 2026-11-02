@@ -4,44 +4,77 @@ import { policy } from './policy.js';
 import { terms, refund } from './legal.js';
 import { initFx, killFx } from './fx/scroll.js';
 import { initInteract } from './fx/interact.js';
+import { initShowcase, tourTab } from './fx/showcase.js';
 import * as V from './validate.js';
 import { countryPicker, bindCountryPicker } from './country-picker.js';
 import { confirmDialog, toast, setBusy, solveChallenge } from './ui.js';
 import './qr.js';
 import { adminShell, bindAdmin, isAdminRoute, refresh as refreshAdmin } from './admin/panel.js';
 import { installPager } from './pager.js';
+import { PLAN_FEATURES, PLAN_SUMMARY } from './plans-data.js';
+import { planFinder, bindPlanFinder, finderLink } from './plan-finder.js';
 
 const app = document.getElementById('app');
 let storedLanguage;
 try { storedLanguage = localStorage.getItem('salonieer_lang'); } catch {}
+// A link from the app ("Join as a Salon") says which language the person uses: ?lang=ar|en|he.
+try { const fromLink = new URLSearchParams(location.search).get('lang'); if (languages.includes(fromLink)) { storedLanguage = fromLink; localStorage.setItem('salonieer_lang', fromLink); } } catch {}
 let lang = languages.includes(storedLanguage) ? storedLanguage : (languages.includes(navigator.language.slice(0,2)) ? navigator.language.slice(0,2) : 'en');
-const routeOf = pathname => { const r = pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/'; return r === '/index' ? '/' : r; };
+// 2.34: /s/<code> (a salon's own link) is one page whatever the code.
+const routeOf = pathname => { const r = pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/'; if (/^\/s\/[A-Za-z0-9_-]{2,64}$/.test(r)) return '/s'; return r === '/index' ? '/' : r; };
 let route = routeOf(location.pathname);
 let routeKey = '';
 const privateRoutes = ['/apply','/applications','/account','/admin'];
 // Every /admin/... address belongs to the admin panel (assets/admin/panel.js), which has its own sub-pages.
 const isPrivate = r => privateRoutes.includes(r) || r.startsWith('/admin/');
 const knownRoute = r => r in pages || isAdminRoute(r);
-const CURRENCIES = ['USD','ILS'];
+// November 2026: one price list in US dollars for everyone, and every payment is in USD. Visitors can also see roughly
+// what a price is in their own currency (display only), from the checked rates the server sends with the plans.
+const CURRENCIES = ['USD'];
 const SYMBOLS = { USD:'$', ILS:'₪' };
-let storedCurrency;
-try { storedCurrency = localStorage.getItem('salonieer_currency'); } catch {}
+let storedDisplay;
+try { storedDisplay = localStorage.getItem('salonieer_display_currency'); } catch {}
 let storedInterval;
 try { storedInterval = localStorage.getItem('salonieer_interval'); } catch {}
-const state = { interval: storedInterval === 'year' ? 'year' : 'month', invoices: [], currency: CURRENCIES.includes(storedCurrency) ? storedCurrency : 'USD', user: null, csrf: '', catalog: null, applications: [], logo: '', logoName: '', submissionKey: crypto.randomUUID(), receipt: null, filter: 'all', billing: null, checkout: null, paid: false, salons: [] };
+const state = { interval: storedInterval === 'year' ? 'year' : 'month', invoices: [], currency: 'USD', displayCurrency: /^[A-Z]{3}$/.test(storedDisplay || '') ? storedDisplay : '', user: null, csrf: '', catalog: null, applications: [], logo: '', logoName: '', submissionKey: crypto.randomUUID(), receipt: null, filter: 'all', billing: null, checkout: null, paid: false, salons: [] };
 const drafts = {};
 const t = (key,vars) => translate(key,lang,vars);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Whole amounts show as "39"; amounts with cents always show both digits, as "19.50".
 const amountText = value => Number(value).toLocaleString('en-US',{minimumFractionDigits:Number.isInteger(Number(value))?0:2,maximumFractionDigits:2});
-const money = (value,currency=state.currency) => value === null || value === undefined ? t('byAgreement') : (SYMBOLS[currency] || '₪') + amountText(value);
+const money = (value,currency=state.currency) => value === null || value === undefined ? t('byAgreement') : (SYMBOLS[currency] ?? currency + ' ') + amountText(value);
 const priceOf = prices => prices ? prices[state.currency] ?? null : null;
-function setCurrency(value) {
-  state.currency = CURRENCIES.includes(value) ? value : 'USD';
-  try { localStorage.setItem('salonieer_currency',state.currency); } catch {}
+// The currency prices are shown in: the visitor's choice, else their country's, when the server has a rate for it.
+const fxRate = cur => state.catalog?.fx?.rates?.[cur] || null;
+const displayCurrency = () => { const c = state.displayCurrency || state.catalog?.fx?.local || 'USD'; return c !== 'USD' && fxRate(c) ? c : 'USD'; };
+function setDisplayCurrency(value) {
+  state.displayCurrency = /^[A-Z]{3}$/.test(value) ? value : '';
+  try { localStorage.setItem('salonieer_display_currency', state.displayCurrency); } catch {}
 }
-// Monthly or yearly billing (yearly = yearlyMonths × monthly, i.e. a month free), remembered like the currency.
+const currencyName = c => { try { return new Intl.DisplayNames([lang], {type:'currency'}).of(c); } catch { return c; } };
+// An approximate local amount: whole units, or cents under 10 ("≈ €2.69"); same digits and symbols in every language.
+function localAmount(usd, cur) {
+  const v = Number(usd) * fxRate(cur);
+  try { return new Intl.NumberFormat('en', {style:'currency', currency:cur, currencyDisplay:'narrowSymbol', minimumFractionDigits:0, maximumFractionDigits: v < 10 ? 2 : 0}).format(v); }
+  catch { return cur + ' ' + Math.round(v); }
+}
+// A price on the plan pages: "$40", or "≈ ₪125" with the USD amount that is actually charged under it.
+// `after` (the period) goes right after the main amount.
+function shownPrice(usd, after='') {
+  if (usd === null || usd === undefined) return esc(t('byAgreement'));
+  const cur = displayCurrency();
+  if (cur === 'USD') return `<bdi>${money(usd,'USD')}</bdi>${after}`;
+  return `<bdi class="px-local" dir="ltr">≈ ${localAmount(usd,cur)}</bdi>${after}<small class="px-usd" title="${esc(t('fxCharged'))}"><bdi dir="ltr">${money(usd,'USD')} USD</bdi></small>`;
+}
+// The same as plain text (for <option> labels).
+const shownPriceText = usd => usd === null || usd === undefined ? t('byAgreement') : displayCurrency() === 'USD' ? money(usd,'USD') : `≈ ${localAmount(usd,displayCurrency())} (${money(usd,'USD')})`;
+// Under an exact USD total: what it is roughly in the shown currency.
+const approxLine = usd => usd === null || usd === undefined || displayCurrency() === 'USD' ? '' : `<p class="small-note px-approx"><bdi dir="ltr">≈ ${localAmount(usd,displayCurrency())}</bdi> · ${t('fxApprox')}</p>`;
+// Monthly or yearly billing (yearly = yearlyMonths × monthly), remembered like the currency.
 const yearMonths = () => state.catalog?.yearlyMonths || state.checkout?.yearlyMonths || 11;
+// The yearly saving as a percentage of twelve monthly payments (11 of 12 → 8.3%), never rounded up. Shown as a discount,
+// not as "a month free", so nobody reads it as nothing to pay.
+const yearlySaving = () => { const p = Math.floor((12 - yearMonths()) / 12 * 1000) / 10; return Number.isInteger(p) ? String(p) : p.toFixed(1); };
 const perPeriod = (value, interval=state.interval) => value === null || value === undefined ? value : value * (interval === 'year' ? yearMonths() : 1);
 const periodKey = (interval=state.interval) => interval === 'year' ? 'perYear' : 'perMonth';
 const totalKey = (interval=state.interval) => interval === 'year' ? 'yearlyTotal' : 'monthlyTotal';
@@ -50,17 +83,27 @@ function setInterval_(value) {
   try { localStorage.setItem('salonieer_interval', state.interval); } catch {}
 }
 function intervalSwitch() {
-  return `<div class="currency-switch interval-switch" role="radiogroup" aria-label="${t('billingPeriod')}">${['month','year'].map(i=>`<button type="button" role="radio" class="currency-option${state.interval===i?' active':''}" data-interval="${i}" aria-checked="${state.interval===i}">${t(i==='year'?'yearly':'monthly')}${i==='year'?` <span class="save-tag">${t('monthFree')}</span>`:''}</button>`).join('')}</div>`;
+  return `<div class="currency-switch interval-switch" role="radiogroup" aria-label="${t('billingPeriod')}">${['month','year'].map(i=>`<button type="button" role="radio" class="currency-option${state.interval===i?' active':''}" data-interval="${i}" aria-checked="${state.interval===i}">${t(i==='year'?'yearly':'monthly')}${i==='year'&&yearMonths()<12?` <span class="save-tag" dir="${lang==='en'?'ltr':'rtl'}">${t('yearlyOff',{pct:`<bdi dir="ltr">${yearlySaving()}%</bdi>`})}</span>`:''}</button>`).join('')}</div>`;
 }
 // The 14-day trial (card required) is offered on the trial plans to accounts that never had a subscription.
 const trialShown = planId => (state.catalog?.trialPlans || state.checkout?.trialPlans || []).includes(planId) && (!state.user || !!state.checkout?.trialEligible);
 const trialDays = () => state.catalog?.trialDays || 14;
-function currencySwitch(id='currency') {
-  return `<div class="currency-switch" role="radiogroup" aria-label="${t('currency')}">${CURRENCIES.map(c=>`<button type="button" role="radio" class="currency-option${state.currency===c?' active':''}" data-currency="${c}" aria-checked="${state.currency===c}" title="${t('currency'+c)}"><span aria-hidden="true">${SYMBOLS[c]}</span> ${c}</button>`).join('')}</div>`;
+// The "Show prices in" picker: US dollars, the visitor's own currency, then every other currency with a rate.
+// Without rates (the server couldn't get checked ones) prices are in US dollars only and there is no picker.
+function currencySwitch() {
+  const fx = state.catalog?.fx;
+  if (!fx?.rates) return '';
+  const cur = displayCurrency();
+  const list = [...new Set(['USD', fx.local, cur, ...Object.keys(fx.rates)])].filter(c => c && fx.rates[c]);
+  return `<label class="currency-pick"><span>${t('showPricesIn')}</span><select data-display-currency dir="ltr">${list.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c} · ${esc(currencyName(c))}</option>`).join('')}</select></label>`;
 }
+// Said wherever prices are shown: local amounts are approximate, payments are always in USD.
+const fxNote = () => `<p class="fx-note">${displayCurrency()==='USD' ? t('fxUsdOnly') : t('fxNote',{cur:`<bdi>${displayCurrency()}</bdi>`, date:state.catalog?.fx?.asOf ? date(state.catalog.fx.asOf) : ''})}</p>`;
 const date = value => new Intl.DateTimeFormat(lang, { dateStyle:'medium' }).format(new Date(value));
 const statusNames = ['pending','in_review','needs_info','approved','declined'];
 const CATEGORIES = ['male','female','beauty'];
+const TEAM_COMPOSITIONS = ['male','female','mixed'];
+const CLIENTELES = ['men','women','both'];
 // Common salon time zones; the account country's zone is preselected (the server accepts any valid zone).
 const TIMEZONES = ['Asia/Hebron','Asia/Gaza','Asia/Jerusalem','Asia/Amman','Asia/Riyadh','Asia/Dubai','Asia/Qatar','Asia/Kuwait','Asia/Bahrain','Asia/Muscat','Asia/Baghdad','Asia/Beirut','Asia/Damascus','Africa/Cairo','Africa/Casablanca','Africa/Tunis','Africa/Algiers','Europe/Istanbul','Europe/London','Europe/Berlin','Europe/Paris','America/New_York','America/Chicago','America/Los_Angeles','UTC'];
 // Where each listed zone is (its main city, from the IANA zone table), to order the list by distance from the device.
@@ -134,7 +177,7 @@ function header() {
   const link = (path,key) => `<a href="${path}"${route===path?' aria-current="page"':''}>${t(key)}</a>`;
   const item = (path,key) => `<li>${link(path,key)}</li>`;
   return `<a class="skip" href="#main">${t('skip')}</a><header class="topbar"><div class="nav">
-    <a href="/" class="brand" aria-label="Salonieer"><img class="brand-mark" src="/assets/img/logo-mark-96.webp" alt="" width="34" height="34"><span class="wordmark">Salonieer</span></a>
+    <a href="/" class="brand" aria-label="Salonieer"><img class="brand-logo brand-logo-light" src="/assets/brand/Salonieer_header_for_light_1224x385.svg" alt="Salonieer" width="160" height="50"><img class="brand-logo brand-logo-dark" src="/assets/brand/Salonieer_header_for_dark_1224x385.svg" alt="" width="160" height="50"></a>
     <nav class="bar-links" aria-label="${t('menu')}">${link('/plans','plans')}${link('/support','support')}${state.user?link('/account','account'):link('/login','login')}</nav>
     ${state.user?`<button class="btn small bar-logout" id="logout" type="button">${t('logout')}</button>`:''}
     <select id="language" class="language-select" aria-label="${t('language')}"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="ar" ${lang==='ar'?'selected':''}>العربية</option><option value="he" ${lang==='he'?'selected':''}>עברית</option></select>
@@ -144,7 +187,7 @@ function header() {
   </div></header>`;
 }
 function footer() {
-  return `<footer class="site-footer"><div class="wrap"><div class="footer-grid"><div><p>${t('footerTagline')}</p></div>
+  return `<footer class="site-footer"><div class="wrap"><div class="footer-grid"><div><img class="footer-logo" src="/assets/brand/Salonieer_footer_for_dark_1224x385.svg" alt="Salonieer" width="200" height="63" loading="lazy"><p>${t('footerTagline')}</p></div>
     <nav aria-label="${t('footerProduct')}"><h3>${t('footerProduct')}</h3><div class="footer-links"><a href="/">${t('home')}</a><a href="/plans">${t('plans')}</a>${state.user?`<a href="/account">${t('account')}</a>`:`<a href="/register">${t('register')}</a>`}</div></nav>
     <nav aria-label="${t('legal')}"><h3>${t('legal')}</h3><div class="footer-links"><a href="/terms">${t('termsTitle')}</a><a href="/privacy">${t('privacyPolicy')}</a><a href="/refund">${t('refundTitle')}</a></div></nav>
     <div><h3>${t('footerContact')}</h3><div class="footer-links"><a href="/support">${t('support')}</a><a href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a></div></div></div>
@@ -154,7 +197,7 @@ function titleBlock(eyebrow,title,lead,center=false,extra='') {
   return `<div class="page-heading${center?' center':''}"><h1>${t(title)}</h1>${lead?`<p>${t(lead)}</p>`:''}${extra}</div>`;
 }
 function priceHTML(value,currency=state.currency) {
-  return value === null || value === undefined ? `<div class="price"><span class="agreement">${t('byAgreement')}</span></div>` : `<div class="price"><span class="currency">${SYMBOLS[currency] || '₪'}</span><span class="amount">${amountText(value)}</span></div>`;
+  return value === null || value === undefined ? `<div class="price"><span class="agreement">${t('byAgreement')}</span></div>` : `<div class="price"><span class="currency">${SYMBOLS[currency] ?? currency + ' '}</span><span class="amount">${amountText(value)}</span></div>`;
 }
 function field(name,label,{type='text',hint='',required=true,autocomplete='',minlength='',maxlength='',placeholder='',extra='',full=false}={}) {
   const password = type === 'password';
@@ -162,40 +205,105 @@ function field(name,label,{type='text',hint='',required=true,autocomplete='',min
 }
 function formErrorBox() { return '<div id="form-error" class="notice" role="alert" tabindex="-1" hidden></div>'; }
 function authIntro(title,lead) {
-  return `<aside class="auth-art ink"><svg class="ribbon" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-60 260 C 120 120, 260 420, 420 300 S 640 140, 700 230 L 700 300 C 600 220, 520 420, 400 380 S 120 230, -60 340 Z" fill="#D98A5F"/><path d="M-60 430 C 140 330, 300 560, 470 470 S 640 380, 700 420 L 700 470 C 620 430, 520 560, 440 530 S 150 410, -60 500 Z" fill="#C9D1D6" opacity=".55"/><path d="M560 0 V800" stroke="#F2DC4B" stroke-width="2" stroke-dasharray="2 10"/></svg><h1>${t(title)}</h1><p>${t(lead)}</p></aside>`;
+  return `<aside class="auth-art ink"><svg class="ribbon" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-60 260 C 120 120, 260 420, 420 300 S 640 140, 700 230 L 700 300 C 600 220, 520 420, 400 380 S 120 230, -60 340 Z" fill="#4286D7"/><path d="M-60 430 C 140 330, 300 560, 470 470 S 640 380, 700 420 L 700 470 C 620 430, 520 560, 440 530 S 150 410, -60 500 Z" fill="#88D6FD" opacity=".45"/><path d="M560 0 V800" stroke="#E8C588" stroke-width="2" stroke-dasharray="2 10"/></svg><h1>${t(title)}</h1><p>${t(lead)}</p></aside>`;
 }
 const checkSvg = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
-// Real screens from the Salonieer app (Arabic), captured at phone size.
-const shot = (name,alt,extra='') => `<img src="/assets/img/${name}.webp" srcset="/assets/img/${name}-sm.webp 390w, /assets/img/${name}.webp 780w" sizes="(max-width: 900px) 260px, 300px" alt="${alt}" width="780" height="1688" decoding="async" ${extra}>`;
-// The home page, kept plain on purpose: what Salonieer is, how to start, what is in the app, the prices and where to
-// get help. No scroll scenes or moving parts, so every visitor can read it top to bottom and find the next step.
+// ---- Home -------------------------------------------------------------------------------------------------------
+// What Salonieer is, how a booking works, a tour of the real app, the rest of the features, the prices and how to
+// start. Every picture is a real screen of the app in the site's language, made offline by tools/showcase from
+// example salons (assets/img/showcase/<screen>-<lang>-<width>.webp), so switching the language switches the screens.
+const ico = (paths, size = 22) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+const ICONS = {
+  grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-4 4.2-6 7.5-6s6.3 2 7.5 6"/>',
+  users: '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.9-3.6 3.6-5.5 6.5-5.5s5.6 1.9 6.5 5.5M15.5 5.2a3.5 3.5 0 0 1 0 6.6M17.5 14.8c2 .7 3.4 2.4 4 5.2"/>',
+  chart: '<path d="M3.5 20.5h17M6.5 17v-5M11 17V7M15.5 17v-8M19.5 17v-3.5"/>',
+  scissors: '<circle cx="6" cy="6.5" r="2.5"/><circle cx="6" cy="17.5" r="2.5"/><path d="M8 8.2 20 18M8 15.8 20 6"/>',
+  bell: '<path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21h4"/>',
+  compass: '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  star: '<path d="m12 3.8 2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z"/>',
+  layers: '<path d="m12 3.5 8.5 4.5-8.5 4.5L3.5 8z"/><path d="m3.5 12 8.5 4.5 8.5-4.5M3.5 16l8.5 4.5 8.5-4.5"/>',
+  receipt: '<path d="M6 3.5h12v17l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3-2 1.3z"/><path d="M9 8h6M9 11.5h6M9 15h3.5"/>',
+  trend: '<path d="M3.5 17.5 9 12l3.5 3.5 8-8"/><path d="M15 7.5h5.5V13"/>',
+  wallet: '<path d="M4 7.5h14.5a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5.5A1.5 1.5 0 0 1 4 18z"/><path d="M4 7.5 15.5 4v3.5"/><circle cx="16" cy="13.5" r="1.2"/>',
+  attend: '<circle cx="11" cy="11" r="7.5"/><path d="M11 7v4.2l2.6 1.6M15.5 19l2 2 3.5-4"/>',
+  box: '<path d="m12 3.5 8 4v9l-8 4-8-4v-9z"/><path d="m4 7.5 8 4 8-4M12 11.5v9"/>',
+  shield: '<path d="M12 3.5 19 6v5.5c0 4.4-3 7.8-7 9-4-1.2-7-4.6-7-9V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
+  ticket: '<path d="M3.5 8.5v-2a1 1 0 0 1 1-1h15a1 1 0 0 1 1 1v2a2.5 2.5 0 0 0 0 5v2a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-2a2.5 2.5 0 0 0 0-5z"/><path d="m9.5 14.5 5-5"/>',
+  zoom: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M10.5 7.5v6M7.5 10.5h6"/>',
+};
+// The tour's sections (screen = tab id) and the other features, in the order shown; their words come from plans-data.js.
+const TOUR = [['dashboard', 'grid'], ['schedule', 'calendar'], ['clients', 'user'], ['team', 'users'], ['stats', 'chart'], ['specialist', 'scissors']];
+const MORE = [['notifications', 'bell'], ['discover', 'compass'], ['smart_waitlist', 'clock'], ['loyalty', 'star'], ['service_packages', 'layers'], ['smart_checkout', 'receipt'],
+  ['financial_management', 'trend'], ['employee_earnings', 'wallet'], ['attendance', 'attend'], ['inventory', 'box'], ['deposits', 'shield'], ['coupons', 'ticket']];
+// A screen in its device: a phone (390×844) or an iPad in landscape (1180×820). Tapping it opens the large picture.
+// priority: 'high' for the hero, 'low' for pictures loaded at once but after it (the phone's sideways steps, which
+// lazy loading would only fetch mid-swipe), none = lazy.
+function framed(id, alt, { tablet = false, priority, sizes } = {}) {
+  const f = `/assets/img/showcase/${id}-${lang}`, widths = tablet ? [640, 1280, 1920] : [360, 720], [w, h] = tablet ? [640, 445] : [360, 779];
+  return `<button type="button" class="sc-device ${tablet ? 'sc-tablet' : 'sc-phone'}" data-zoom="${f}-${widths.at(-1)}.webp" data-kind="${tablet ? 'tablet' : 'phone'}" data-alt="${esc(alt)}" aria-label="${esc(t('sc_zoom') + ': ' + alt)}">`
+    + `<span class="sc-bezel"><span class="sc-screen"><img src="${f}-${widths[tablet ? 1 : 0]}.webp" srcset="${widths.map(x => `${f}-${x}.webp ${x}w`).join(', ')}" sizes="${sizes}" width="${w}" height="${h}" alt="${esc(alt)}" decoding="async"${priority ? ` fetchpriority="${priority}"` : ' loading="lazy"'}></span></span>`
+    + `<span class="sc-zoom-hint" aria-hidden="true">${ico(ICONS.zoom, 16)}</span></button>`;
+}
 function home() {
   const start = state.user ? `<a class="btn primary" href="/plans">${t('explorePlans')}</a>` : `<a class="btn primary" href="/register">${t('register')}</a>`;
   const c = state.catalog;
-  const second = state.user ? `<a class="btn" href="/applications">${t('applications')}</a>` : `<a class="btn" href="${c?'#prices':'/plans'}">${t('hm_prices')}</a>`;
-  const feature = (k, img) => `<article class="hm-feature"><figure>${shot(img, t('st_'+k+'_alt'), 'loading="lazy"')}</figure><h3>${t('hm_for_'+k)}</h3><p>${t('st_'+k+'_text')}</p>
-    <ul class="check-list">${[1,2,3].map(i=>`<li><span class="ck">${checkSvg}</span><span>${t('st_'+k+'_p'+i)}</span></li>`).join('')}</ul></article>`;
+  const active = tourTab();
+  const steps = [['book', 1], ['requested', 2], ['confirm', 3], ['confirmed', 4]].map(([id, n]) => `<li class="sc-step sc-reveal" data-r="how-${n}">
+    <div class="sc-step-shot">${framed(id, t('sc_alt_' + id), { priority: 'low', sizes: '(max-width: 640px) 56vw, (max-width: 1100px) 30vw, 230px' })}</div>
+    <span class="sc-step-num" aria-hidden="true">${n}</span><h3>${t('sc_how' + n)}</h3><p>${t('sc_how' + n + '_text')}</p></li>`).join('');
+  const tabs = `<div class="sc-tabs" role="tablist" aria-label="${t('sc_tour_label')}" data-tour-tabs>${TOUR.map(([id, icon]) => `<button type="button" role="tab" class="sc-tab" id="tab-${id}" data-tab="${id}" aria-controls="tour-${id}" aria-selected="${id === active}" tabindex="${id === active ? 0 : -1}">${ico(ICONS[icon], 18)}<span>${t('sc_t_' + id)}</span></button>`).join('')}</div>`;
+  const panels = `<div class="sc-panels">${TOUR.map(([id]) => `<div class="sc-panel${id === active ? ' is-active' : ''}" id="tour-${id}" role="tabpanel" aria-labelledby="tab-${id}">
+    <div class="sc-panel-shot">${framed(id, t('sc_' + id + '_alt'), { sizes: '(max-width: 900px) 64vw, 280px' })}</div>
+    <div class="sc-panel-copy"><h3>${t('sc_' + id + '_h')}</h3><p>${t('sc_' + id + '_p')}</p>
+      <ul class="check-list">${[1, 2, 3].map(i => `<li><span class="ck">${checkSvg}</span><span>${t('sc_' + id + '_' + i)}</span></li>`).join('')}</ul></div></div>`).join('')}</div>`;
+  const features = MORE.map(([key, icon]) => {
+    const f = PLAN_FEATURES.find(x => x.key === key); if (!f) return '';
+    const tag = f.included === 'all' ? 'all' : f.included === 'option' ? 'option' : 'pro';
+    return `<li class="sc-feat sc-reveal" data-r="feat-${key}"><span class="sc-feat-icon">${ico(ICONS[icon])}</span><h3>${esc(f.t[lang] || f.t.en)}</h3><p>${esc(f.d[lang] || f.d.en)}</p><span class="sc-feat-tag is-${tag}">${t('sc_tag_' + tag)}</span></li>`;
+  }).join('');
   const prices = c ? `<section class="hm-section hm-tint" id="prices" aria-labelledby="prices-title"><div class="wrap"><div class="hm-head"><h2 id="prices-title">${t('bd_title')}</h2><p>${t('bd_lead')}</p></div>
     <div class="hm-currency">${currencySwitch()}</div>
     <ul class="hm-plans">${c.plans.map(p=>{ const price = priceOf(p.prices); return `<li class="hm-plan${p.id==='pro'?' is-popular':''}"><div class="hm-plan-top"><h3>${esc(p.name)}</h3>${p.id==='pro'?`<span class="tag">${t('popular')}</span>`:''}</div>
-      <p class="hm-price">${price===null?t('byAgreement'):`<bdi>${money(price)}</bdi> <small>${t('monthly')}</small>`}</p><p class="hm-plan-desc">${t(p.id+'Desc')}</p>
+      <p class="hm-price">${price===null?t('byAgreement'):shownPrice(price, ` <small>${t('monthly')}</small>`)}</p><p class="hm-plan-desc">${t(p.id+'Desc')}</p>
       <a class="btn${p.id==='pro'?' primary':''} full" href="/apply?plan=${p.id}" aria-label="${t(p.id==='enterprise'?'contactUs':'startNow')} · ${esc(p.name)}">${t(p.id==='enterprise'?'contactUs':'startNow')}</a></li>`; }).join('')}</ul>
-    <p class="hm-note">${t('pricesNote')} <a class="text-link" href="/plans">${t('bd_all')}</a></p></div></section>` : '';
-  return `<div class="home">
-  <section class="hm-hero" aria-labelledby="hm-title"><div class="wrap hm-hero-grid"><div>
-    <h1 id="hm-title">${t('hm_title')}</h1><p class="hm-lead">${t('hm_lead')}</p>
-    <div class="hero-actions">${start}${second}</div>
-    <ul class="hm-points">${[1,2,3].map(i=>`<li><span class="ck">${checkSvg}</span>${t('hm_point'+i)}</li>`).join('')}</ul></div>
-    <figure class="hm-shot">${shot('app-home', t('hm_hero_alt'), 'fetchpriority="high"')}</figure></div></section>
+    ${fxNote()}<p class="hm-note">${t('pricesNote')} <a class="text-link" href="/plans">${t('bd_all')}</a> · <a class="text-link" href="/plans#finder">${esc(finderLink(lang))}</a></p></div></section>` : '';
+  return `<div class="home sc-home">
+  <section class="sc-hero" aria-labelledby="hm-title"><div class="wrap sc-hero-grid">
+    <div class="sc-hero-copy sc-reveal" data-r="hero-copy">
+      <p class="sc-kicker">${t('sc_kicker')}</p>
+      <h1 id="hm-title">${t('sc_title')}</h1><p class="sc-lead">${t('sc_lead')}</p>
+      <div class="hero-actions">${start}<a class="btn" href="#how">${t('sc_cta_how')}</a></div>
+      <ul class="hm-points">${[1,2,3].map(i=>`<li><span class="ck">${checkSvg}</span>${t('hm_point'+i)}</li>`).join('')}</ul></div>
+    <figure class="sc-hero-visual sc-reveal" data-r="hero-visual">
+      <div class="sc-stage">${framed('tablet-dashboard', t('sc_alt_tablet_dashboard'), { tablet: true, priority: 'high', sizes: '(max-width: 900px) 84vw, 640px' })}${framed('requested', t('sc_alt_requested'), { priority: 'high', sizes: '(max-width: 900px) 25vw, 180px' })}</div>
+      <figcaption class="sc-note">${t('sc_note')}</figcaption></figure></div></section>
+  <section class="hm-section sc-how" id="how" aria-labelledby="how-title"><div class="wrap">
+    <div class="hm-head sc-reveal" data-r="how-head"><h2 id="how-title">${t('sc_how_title')}</h2><p>${t('sc_how_lead')}</p></div>
+    <ol class="sc-steps">${steps}</ol></div></section>
+  <section class="hm-section hm-tint sc-tour" id="tour" aria-labelledby="tour-title"><div class="wrap">
+    <div class="hm-head sc-reveal" data-r="tour-head"><h2 id="tour-title">${t('sc_tour_title')}</h2><p>${t('sc_tour_lead')}</p></div>
+    <div class="sc-reveal" data-r="tour-body">${tabs}${panels}</div>
+    <div class="sc-tour-cta">${start}<a class="text-link" href="${c ? '#prices' : '/plans'}">${t('hm_prices')}</a></div></div></section>
+  <section class="hm-section sc-ipad" aria-labelledby="ipad-title"><div class="wrap sc-ipad-grid">
+    <div class="sc-reveal" data-r="ipad-copy"><h2 id="ipad-title">${t('sc_ipad_title')}</h2><p>${t('sc_ipad_text')}</p></div>
+    <div class="sc-reveal" data-r="ipad-shot">${framed('tablet-schedule', t('sc_ipad_alt'), { tablet: true, sizes: '(max-width: 900px) 92vw, 820px' })}</div></div></section>
+  <section class="hm-section hm-tint sc-more" aria-labelledby="more-title"><div class="wrap">
+    <div class="hm-head sc-reveal" data-r="more-head"><h2 id="more-title">${t('sc_more_title')}</h2><p>${t('sc_more_lead')}</p></div>
+    <ul class="sc-feats">${features}</ul>
+    <p class="hm-note"><a class="text-link" href="/plans">${t('sc_more_all')}</a></p></div></section>
+  <section class="sc-band ink" aria-labelledby="band-title"><div class="wrap sc-band-grid">
+    <div><h2 id="band-title">${t('sc_band_title')}</h2><p>${t('hm_ready_text')}</p></div>
+    <div class="hero-actions">${start}<a class="btn" href="${c ? '#prices' : '/plans'}">${t('hm_prices')}</a></div></div></section>
+  ${prices}
   <section class="hm-section" aria-labelledby="steps-title"><div class="wrap"><div class="hm-head"><h2 id="steps-title">${t('hm_steps_title')}</h2></div>
     <ol class="hm-steps">${[1,2,3].map(n=>`<li><span class="hm-num" aria-hidden="true">${n}</span><h3>${t('hm_s'+n)}</h3><p>${t('hm_s'+n+'_text')}</p></li>`).join('')}</ol></div></section>
-  <section class="hm-section hm-tint" aria-labelledby="app-title"><div class="wrap"><div class="hm-head"><h2 id="app-title">${t('hm_app_title')}</h2></div>
-    <div class="hm-features">${feature('c','app-booking')}${feature('s','app-specialist')}${feature('o','app-owner')}</div></div></section>
-  ${prices}
-  <section class="hm-section" aria-label="${t('hm_ready')}"><div class="wrap hm-end">
-    <div class="hm-box"><h2>${t('hm_ready')}</h2><p>${t('hm_ready_text')}</p><div class="hero-actions">${start}</div></div>
-    <div class="hm-box"><h2>${t('hm_help_title')}</h2><p>${t('hm_help_text')}</p><div class="hero-actions"><a class="btn" href="/support">${t('support')}</a><a class="text-link" href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a></div></div>
-  </div></section>
+  <section class="hm-section sc-help" aria-labelledby="help-title"><div class="wrap"><div class="hm-box sc-help-box">
+    <div><h2 id="help-title">${t('hm_help_title')}</h2><p>${t('hm_help_text')}</p></div>
+    <div class="hero-actions"><a class="btn" href="/support">${t('support')}</a><a class="text-link" href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a></div></div></div></section>
+  <dialog class="sc-lightbox" id="sc-lightbox" aria-label="${t('sc_zoom')}"><button type="button" class="sc-lb-close" data-close aria-label="${t('sc_close')}">${ico('<path d="M6 6l12 12M18 6 6 18"/>', 22)}</button><img alt=""></dialog>
 </div>`;
 }
 function login() {
@@ -213,8 +321,12 @@ function pickerOptions(extra) { return { t, esc, lang, countryName, dialCodeOf, 
 function phoneField(country) {
   return `<div class="field full-span"><label for="phone">${t('phone')}</label><div class="phone-field">${countryPicker(pickerOptions({name:'phoneCountry',mode:'dial',value:dialCodeOf(country)?country:(dialCodeOf(dialGuess())?dialGuess():''),label:t('countryCode')}))}<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="24" required aria-describedby="phone-hint phone-error" dir="ltr"></div><small id="phone-hint">${t('salonPhoneHint')}</small><small id="phone-error" class="field-error" aria-live="polite"></small></div>`;
 }
+// The person's gender (male / female); it describes the account holder, not a salon.
+function genderField(value='') {
+  return `<fieldset class="field full-span gender-field"><legend>${t('gender')}</legend><div class="radio-options">${['male','female'].map(g=>`<label class="radio-option"><input type="radio" name="gender" value="${g}" required aria-describedby="gender-error"${value===g?' checked':''}><span>${t('gender_'+g)}</span></label>`).join('')}</div><small id="gender-error" class="field-error" aria-live="polite"></small></fieldset>`;
+}
 function accountFields(prefix='') {
-  return `${prefix}<div class="form-section"><h2>${t('accountDetails')}</h2><div class="form-grid">${field('fullName','fullName',{autocomplete:'name',maxlength:100,full:true})}${field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com',full:true,extra:'spellcheck="false" autocapitalize="off" inputmode="email"'})}
+  return `${prefix}<div class="form-section"><h2>${t('accountDetails')}</h2><div class="form-grid">${field('fullName','fullName',{autocomplete:'name',maxlength:100,full:true,placeholder:t('fullName')})}${genderField()}${field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com',full:true,extra:'spellcheck="false" autocapitalize="off" inputmode="email"'})}
   ${field('password','password',{type:'password',autocomplete:'new-password',maxlength:128,hint:'passwordHint'})}${field('passwordConfirm','passwordConfirm',{type:'password',autocomplete:'new-password',maxlength:128})}<div class="pw-meter full-span" id="pw-meter" data-score="0" aria-hidden="true"><i></i><i></i><i></i><i></i><span></span></div></div>
   <div class="field" style="margin-top:20px"><label for="country-btn">${t('country')}</label>${countryPicker(pickerOptions({name:'country',mode:'country',value:'',label:t('country'),describedBy:'country-hint country-error'}))}<small id="country-hint">${t('countryLockedHint')}</small><small id="country-error" class="field-error" aria-live="polite"></small></div></div>
   <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>`;
@@ -226,37 +338,50 @@ function setup() {
   if (!state.setupAvailable) return `<div class="wrap empty-state"><h1>${t('setupDone')}</h1><p>${t('setupDoneText')}</p><a class="btn primary" href="${state.user?'/admin':'/login'}">${t(state.user?'inbox':'login')}</a></div>`;
   return `<div class="auth-split">${authIntro('setupTitle','setupLead')}<div class="auth-form"><section class="auth-card"><h2>${t('setupTitle')}</h2><form id="setup-form" novalidate>${formErrorBox()}${accountFields(`<div class="form-section">${field('setupKey','setupKey',{maxlength:64,autocomplete:'off',hint:'setupKeyHint',extra:'data-ltr spellcheck="false" autocapitalize="off"'})}</div>`)}<button class="btn primary full" type="submit">${t('setupSubmit')}</button></form></section></div></div>`;
 }
+// What the Plan Finder (assets/plan-finder.js) needs from the page: the live price list and the same price display.
+const finderContext = () => ({ lang, esc, t, catalog: state.catalog, interval: state.interval, yearMonths, yearlySaving, shownPrice, shownPriceText, money, trialShown, trialDays });
 function plans() {
   const c = state.catalog;
-  return `<div class="plans-page ink"><div class="wrap page-top">${titleBlock('plansEyebrow','plansTitle','plansLead',false,`<div class="pricing-controls">${intervalSwitch()}${currencySwitch()}</div>`)}
+  const finder = planFinder(finderContext());
+  return `<div class="plans-page"><div class="wrap page-top">${titleBlock('plansEyebrow','plansTitle','plansLead',false,`<div class="pricing-controls">${intervalSwitch()}${currencySwitch()}</div>${finder?`<a class="text-link pf-jump" href="#finder">${esc(finderLink(lang))}</a>`:''}`)}
   <ol class="menu-rows plan-rows" aria-label="${t('plans')}">${c.plans.map(p=>{ const price = perPeriod(priceOf(p.prices)); return `<li class="menu-row" id="plan-${p.id}"><div class="name"><h3>${esc(p.name)}</h3>${p.id==='pro'?`<span class="tag">${t('popular')}</span>`:''}${trialShown(p.id)?`<span class="trial-badge">${t('trialBadge',{n:trialDays()})}</span>`:''}<span class="leader" aria-hidden="true"></span></div>
-    <div class="price">${price===null?t('requestQuote'):`<bdi>${money(price)}</bdi><small>${t(state.interval==='year'?'billedYearly':'monthly')}</small>`}</div>
+    <div class="price">${price===null?t('requestQuote'):shownPrice(price, `<small>${t(state.interval==='year'?'billedYearly':'monthly')}</small>`)}</div>
     <p class="desc">${t(p.id+'Desc')}</p><ul class="features">${p.features.map(f=>`<li>${t(f)}</li>`).join('')}</ul>
     <div class="actions"><a class="btn ${p.id==='pro'?'primary magnetic':''}" href="/apply?plan=${p.id}" aria-label="${t(p.id==='enterprise'?'contactUs':'startNow')} · ${esc(p.name)}">${t(p.id==='enterprise'?'contactUs':'startNow')}</a></div></li>`; }).join('')}</ol>
-  <section class="extras" aria-labelledby="extras-title"><h2 id="extras-title">${t('optionalAddons')}</h2><ol class="menu-rows">${[['loyalty','loyaltyText',priceOf(c.addons.loyalty)],['specialist','specialistText',priceOf(c.addons.specialist)]].map(([name,description,price])=>`<li class="menu-row"><div class="name"><h3>${t(name)}</h3><span class="leader" aria-hidden="true"></span></div><div class="price"><bdi>${money(perPeriod(price))}</bdi><small>${t(periodKey())}</small></div><p class="desc">${t(description)}</p></li>`).join('')}</ol></section>
-  ${compareTable()}
-  <p class="payment-footnote">${t('pricesNote')} <a class="text-link" href="/terms">${t('termsTitle')}</a> · <a class="text-link" href="/refund">${t('refundTitle')}</a></p></div></div>`;
+  ${finder}
+  <section class="extras" aria-labelledby="extras-title"><h2 id="extras-title">${t('optionalAddons')}</h2><ol class="menu-rows">${[['loyalty','loyaltyText',priceOf(c.addons.loyalty)],['specialist','specialistText',priceOf(c.addons.specialist)]].map(([name,description,price])=>`<li class="menu-row"><div class="name"><h3>${t(name)}</h3><span class="leader" aria-hidden="true"></span></div><div class="price">${shownPrice(perPeriod(price), `<small>${t(periodKey())}</small>`)}</div><p class="desc">${t(description)}</p></li>`).join('')}</ol></section>
+  ${planCompare(c)}
+  ${fxNote()}<p class="payment-footnote">${t('pricesNote')} <a class="text-link" href="/terms">${t('termsTitle')}</a> · <a class="text-link" href="/refund">${t('refundTitle')}</a></p></div></div>`;
 }
-// What each plan includes, feature by feature (the same defaults Salonieer applies to a salon on that plan).
-// 1 = included, 0 = not included, '+' = paid add-on, 'soon' = coming, text = shown as is. Plans: Basic, Pro, Business, Enterprise.
-const COMPARE = [
-  ['cmpEssentials', [['cmpBookings', [1, 1, 1, 1]], ['cmpServices', [1, 1, 1, 1]], ['cmpReminders', [1, 1, 1, 1]], ['cmpSpecialists', ['1', '7', '16', '∞']], ['cmpExtraSeats', ['+', '+', '+', 0]]]],
-  ['cmpGrow', [['cmpProducts', [0, 1, 1, 1]], ['cmpAnalytics', [0, 1, 1, 1]], ['cmpLoyalty', ['+', '+', 1, 1]]]],
-  ['cmpBusiness', [['cmpFinance', [0, 1, 1, 1]], ['cmpCheckout', [0, 1, 1, 1]], ['cmpInventory', [0, 1, 1, 1]], ['cmpCoupons', [0, 1, 1, 1]],
-    ['cmpCommissions', [0, 0, 1, 1]], ['cmpDeposits', [0, 0, 1, 1]], ['cmpWaitlist', [0, 0, 1, 1]], ['cmpRetention', [0, 0, 1, 1]], ['cmpPackages', [0, 0, 1, 1]],
-    ['cmpOnline', [0, 0, 'soon', 'soon']]]],
-];
-function compareTable() {
-  const plans = state.catalog?.plans || [];
-  if (plans.length !== 4) return '';
-  const cell = v => v === 1 ? `<span class="cmp-yes" role="img" aria-label="${t('cmpIncluded')}">✓</span>`
-    : v === 0 ? `<span class="cmp-no" role="img" aria-label="${t('cmpNotIncluded')}">—</span>`
-    : v === '+' ? `<span class="cmp-tag">${t('cmpAddon')}</span>` : v === 'soon' ? `<span class="cmp-tag is-soon">${t('cmpSoon')}</span>` : `<b>${esc(v)}</b>`;
-  const col = p => p.id === 'pro' ? ' class="is-popular"' : '';
-  return `<section class="compare" aria-labelledby="compare-title"><h2 id="compare-title">${t('cmpTitle')}</h2><p class="compare-lead">${t('cmpLead')}</p>
-    <div class="compare-wrap"><table class="compare-table"><thead><tr><th scope="col"><span class="sr-only">${t('cmpFeature')}</span></th>${plans.map(p => `<th scope="col"${col(p)}>${esc(p.name)}</th>`).join('')}</tr></thead>
-    ${COMPARE.map(([group, rows]) => `<tbody><tr class="compare-group"><th scope="rowgroup" colspan="${plans.length + 1}">${t(group)}</th></tr>${rows.map(([key, values]) => `<tr><th scope="row"><span>${t(key)}</span><small>${t(key + 'Desc')}</small></th>${plans.map((p, i) => `<td${col(p)}>${cell(values[i])}</td>`).join('')}</tr>`).join('')}</tbody>`).join('')}
-    </table></div><p class="small-note compare-note">${t('cmpNote')}</p></section>`;
+// 2.32: every feature side by side, each with "Show more" — what it does and how it helps a salon,
+// in plain words (shared with the app: assets/plans-data.js is generated from the app's plans.js).
+function planCompare(c) {
+  const L3 = o => (o && (o[lang] || o.en)) || '';
+  const W = { title:{ar:'قارن الباقات بالتفصيل',en:'Compare the plans in detail',he:'השוואה מפורטת בין החבילות'},
+    lead:{ar:'كل ميزة وماذا تفعل لصالونك. اضغط «عرض المزيد» لشرح ومثال.',en:'Every feature and what it does for your salon. Tap “Show more” for an explanation and an example.',he:'כל פיצ׳ר ומה הוא עושה לסלון. הקישו ״הצג עוד״ להסבר ודוגמה.'},
+    feature:{ar:'الميزة',en:'Feature',he:'פיצ׳ר'}, more:{ar:'عرض المزيد',en:'Show more',he:'הצג עוד'}, price:{ar:'السعر',en:'Price',he:'מחיר'},
+    incl:{ar:'مشمولة',en:'Included',he:'כלול'}, no:{ar:'غير مشمولة',en:'Not included',he:'לא כלול'}, opt:{ar:'إضافة اختيارية',en:'Optional add-on',he:'תוספת אופציונלית'},
+    custom:{ar:'حسب الاتفاق',en:'Custom',he:'בהתאמה אישית'}, popular:{ar:'الأكثر اختياراً',en:'Most chosen',he:'הנבחר ביותר'},
+    noteOpt:{ar:'إضافة Basic الاختيارية: ميزة واحدة — نقاط الولاء أو قائمة الانتظار الذكية',en:'Basic optional add-on: one feature — Loyalty Coins or the Smart waitlist',he:'תוספת אופציונלית ל־Basic: פיצ׳ר אחד — מטבעות נאמנות או רשימת המתנה חכמה'},
+    noteSpec:{ar:'مختص إضافي فوق المشمول في Basic وPro',en:'Each specialist above what Basic and Pro include',he:'כל מומחה נוסף מעבר לכלול ב־Basic וב־Pro'} };
+  const plans = c.plans.map(p => p.id).filter(id => ['basic','pro','enterprise'].includes(id));
+  const cell = (f, plan) => {
+    if (f.limit && f.limit[plan]) return `<span class="cmp-lim">${esc(L3(f.limit[plan]))}</span>`;
+    if (f.limit && plan === 'enterprise') return `<span class="cmp-yes" aria-label="${esc(L3(W.incl))}">✓</span>`;
+    if (f.included === 'all' || plan !== 'basic') return `<span class="cmp-yes" aria-label="${esc(L3(W.incl))}">✓</span>`;
+    if (f.included === 'option') return `<span class="cmp-lim">${esc(L3(W.opt))}</span>`;
+    return `<span class="cmp-no" aria-label="${esc(L3(W.no))}">—</span>`;
+  };
+  const priceCell = id => { const p = c.plans.find(x => x.id === id); const v = p ? perPeriod(priceOf(p.prices)) : null;
+    return v === null ? `<span class="cmp-lim">${esc(L3(W.custom))}</span>` : `<b>${shownPrice(v)}</b><small>${t(state.interval==='year'?'billedYearly':'monthly')}</small>`; };
+  return `<section class="plan-compare" aria-labelledby="cmp-title"><h2 id="cmp-title">${esc(L3(W.title))}</h2><p class="cmp-lead">${esc(L3(W.lead))}</p>
+    <div class="cmp-cards">${plans.map(id => `<article class="cmp-card${id==='pro'?' is-popular':''}">${id==='pro'?`<span class="tag">${esc(L3(W.popular))}</span>`:''}<h3>${esc(c.plans.find(x=>x.id===id).name)}</h3><p>${esc(L3(PLAN_SUMMARY[id]))}</p></article>`).join('')}</div>
+    <div class="cmp-wrap"><table class="cmp-table"><thead><tr><th scope="col">${esc(L3(W.feature))}</th>${plans.map(id => `<th scope="col">${esc(c.plans.find(x=>x.id===id).name)}</th>`).join('')}</tr></thead><tbody>
+      <tr class="cmp-price"><th scope="row">${esc(L3(W.price))}</th>${plans.map(id => `<td data-label="${esc(c.plans.find(x=>x.id===id).name)}">${priceCell(id)}</td>`).join('')}</tr>
+      ${PLAN_FEATURES.map(f => `<tr><th scope="row">${esc(L3(f.t))}<details class="cmp-more"><summary>${esc(L3(W.more))}</summary><p>${esc(L3(f.d))}${f.x?`<em>${esc(L3(f.x))}</em>`:''}</p></details></th>${plans.map(id => `<td data-label="${esc(c.plans.find(x=>x.id===id).name)}">${cell(f, id)}</td>`).join('')}</tr>`).join('')}
+    </tbody></table></div>
+    <ul class="cmp-notes"><li>${esc(L3(W.noteOpt))}: <b><bdi>${esc(shownPriceText(perPeriod(priceOf(c.addons.loyalty))))}</bdi></b> <small>${t(periodKey())}</small></li><li>${esc(L3(W.noteSpec))}: <b><bdi>${esc(shownPriceText(perPeriod(priceOf(c.addons.specialist))))}</bdi></b> <small>${t(periodKey())}</small></li></ul>
+  </section>`;
 }
 // ---- Paddle checkout ----------------------------------------------------------
 // Card applications for plans with a Paddle price pay the plan's first month in Paddle's overlay checkout.
@@ -367,26 +492,27 @@ async function openCheckout(a) {
 const payButton = a => canPayOnline(a) ? `<button class="btn primary full" type="button" data-pay="${esc(a.id)}">${t('payByCard')}</button><p class="small-note" data-pay-feedback="${esc(a.id)}" role="status"></p>` : '';
 function apply() {
   if (state.receipt) return receipt();
-  return `<div class="wrap">${titleBlock('selectedPlan','applyTitle','applyLead')}<div class="steps" aria-label="${t('applications')}"><div class="step"><span aria-hidden="true">✓</span>${t('stepPlan')}</div><div class="line"></div><div class="step active" aria-current="step"><span>2</span>${t('stepDetails')}</div><div class="line"></div><div class="step"><span>3</span>${t('stepReview')}</div></div><div class="application-layout"><form id="application-form" class="application-form" novalidate>${formErrorBox()}<section class="form-panel"><h2>${t('stepDetails')}</h2><div class="form-grid">${field('identityNumber','identityNumber',{maxlength:64,autocomplete:'off',hint:'idHint',extra:'data-ltr spellcheck="false" inputmode="numeric"'})}${field('salonName','salonName',{minlength:2,maxlength:100,autocomplete:'organization'})}<div class="field"><label for="salonCategory">${t('salonCategory')}</label><select id="salonCategory" name="salonCategory" required>${CATEGORIES.map(c=>`<option value="${c}">${t('cat_'+c)}</option>`).join('')}</select><small>${t('salonCategoryHint')}</small></div><div class="field"><label for="timezone">${t('timezone')}</label><select id="timezone" name="timezone" required dir="ltr">${timezoneOptions('', state.user.country)}</select><small>${t('timezoneHint')}</small></div>${phoneField(state.user.country)}</div><div class="field"><label for="logo">${t('logo')}</label><div class="upload"><span id="upload-symbol" class="upload-symbol" aria-hidden="true"${state.logo?' hidden':''}>＋</span><img id="logo-preview" class="logo-preview" alt="${t('logo')}"${state.logo?` src="${state.logo}"`:' hidden'}><div class="upload-text"><strong id="upload-title">${t(state.logo?'replaceLogo':'uploadTitle')}</strong><small>${t('uploadHint')}</small><small id="logo-filename" class="upload-filename">${esc(state.logoName)}</small></div><input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="logo-error"></div><small id="logo-error" class="field-error"></small></div></section><section class="form-panel"><div class="panel-head"><h2>${t('selectedPlan')}</h2>${currencySwitch()}</div><div class="field"><label for="plan">${t('plans')}</label><select id="plan" name="plan" required>${state.catalog.plans.map(p=>`<option value="${p.id}">${p.name} · ${money(perPeriod(priceOf(p.prices)))}${priceOf(p.prices)===null?'':' '+t(periodKey())}</option>`).join('')}</select></div><div class="field"><span class="field-label" id="interval-label">${t('billingPeriod')}</span>${intervalSwitch()}</div><p class="included-note" id="included-loyalty" hidden><span aria-hidden="true">✓</span>${t('loyaltyIncluded')}</p><div class="addon-control" id="loyalty-control"><input type="checkbox" id="loyalty" name="loyalty"><label for="loyalty">${t('loyalty')}</label><span class="amount"><bdi>${money(perPeriod(priceOf(state.catalog.addons.loyalty)))}</bdi> <small>${t(periodKey())}</small></span></div><div class="quantity-field" id="specialist-control"><label for="extraSpecialists">${t('extraSpecialists')}<br><small class="muted"><bdi>${money(perPeriod(priceOf(state.catalog.addons.specialist)))}</bdi> ${t(periodKey())}</small></label><input id="extraSpecialists" name="extraSpecialists" type="number" min="0" max="50" step="1" value="0" inputmode="numeric"></div><p class="included-note" id="unlimited-note" hidden><span aria-hidden="true">✓</span>${t('unlimitedSpecialists')}</p></section><section class="form-panel"><fieldset><legend>${t('payment')}</legend><div class="radio-options"><label class="radio-option"><input type="radio" name="paymentMethod" value="card" required><span>${t('card')}</span></label><label class="radio-option"><input type="radio" name="paymentMethod" value="bank_transfer" required><span>${t('bank_transfer')}</span></label></div><p class="payment-note" id="payment-note">${t('noCharge')}</p><label class="trial-option" id="trial-control" hidden><input type="checkbox" id="trial" name="trial"><span><b id="trial-title">${t('trialOptIn',{n:trialDays()})}</b><small>${t('trialOptInHint',{n:trialDays()})}</small></span></label></fieldset></section><p class="privacy-note">${t('privacyNote')} <a href="/privacy" target="_blank" rel="noopener" class="text-link">${t('privacyPolicy')}</a>.</p><p class="privacy-note">${t('agreeNote')} <a href="/terms" target="_blank" rel="noopener" class="text-link">${t('termsTitle')}</a> · <a href="/refund" target="_blank" rel="noopener" class="text-link">${t('refundTitle')}</a>.</p><button class="btn primary full form-submit" type="submit">${t('submit')}</button></form><aside class="order-summary" id="order-summary" aria-live="polite"></aside></div></div>`;
+  return `<div class="wrap">${titleBlock('selectedPlan','applyTitle','applyLead')}<div class="steps" aria-label="${t('applications')}"><div class="step"><span aria-hidden="true">✓</span>${t('stepPlan')}</div><div class="line"></div><div class="step active" aria-current="step"><span>2</span>${t('stepDetails')}</div><div class="line"></div><div class="step"><span>3</span>${t('stepReview')}</div></div><div class="application-layout"><form id="application-form" class="application-form" novalidate>${formErrorBox()}<section class="form-panel"><h2>${t('stepDetails')}</h2><div class="form-grid">${field('identityNumber','identityNumber',{maxlength:64,autocomplete:'off',hint:'idHint',extra:'data-ltr spellcheck="false" inputmode="numeric"'})}${field('salonName','salonName',{minlength:2,maxlength:100,autocomplete:'organization'})}<div class="field"><label for="teamComposition">${t('teamComposition')}</label><select id="teamComposition" name="teamComposition" required><option value="">${t('chooseOne')}</option>${TEAM_COMPOSITIONS.map(c=>`<option value="${c}">${t('team_'+c)}</option>`).join('')}</select></div><div class="field"><label for="clientele">${t('clientele')}</label><select id="clientele" name="clientele" required><option value="">${t('chooseOne')}</option>${CLIENTELES.map(c=>`<option value="${c}">${t('clientele_'+c)}</option>`).join('')}</select><small>${t('salonCategoryHint')}</small></div><div class="field"><label for="timezone">${t('timezone')}</label><select id="timezone" name="timezone" required dir="ltr">${timezoneOptions('', state.user.country)}</select><small>${t('timezoneHint')}</small></div>${phoneField(state.user.country)}</div><div class="field"><label for="logo">${t('logo')}</label><div class="upload"><span id="upload-symbol" class="upload-symbol" aria-hidden="true"${state.logo?' hidden':''}>＋</span><img id="logo-preview" class="logo-preview" alt="${t('logo')}"${state.logo?` src="${state.logo}"`:' hidden'}><div class="upload-text"><strong id="upload-title">${t(state.logo?'replaceLogo':'uploadTitle')}</strong><small>${t('uploadHint')}</small><small id="logo-filename" class="upload-filename">${esc(state.logoName)}</small></div><input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="logo-error"></div><small id="logo-error" class="field-error"></small></div></section><section class="form-panel"><div class="panel-head"><h2>${t('selectedPlan')}</h2>${currencySwitch()}</div><div class="field"><label for="plan">${t('plans')}</label><select id="plan" name="plan" required>${state.catalog.plans.map(p=>`<option value="${p.id}">${p.name} · ${esc(shownPriceText(perPeriod(priceOf(p.prices))))}${priceOf(p.prices)===null?'':' '+t(periodKey())}</option>`).join('')}</select></div><div class="field"><span class="field-label" id="interval-label">${t('billingPeriod')}</span>${intervalSwitch()}</div><p class="included-note" id="included-loyalty" hidden><span aria-hidden="true">✓</span>${t('everyFeatureIncluded')}</p><div class="field" id="loyalty-control"><label for="basicOption">${t('basicOption')} <small class="muted">· <bdi>${esc(shownPriceText(perPeriod(priceOf(state.catalog.addons.loyalty))))}</bdi> ${t(periodKey())}</small></label><select id="basicOption" name="basicOption"><option value="">${t('optNone')}</option><option value="loyalty">${t('optLoyalty')}</option><option value="smart_waitlist">${t('optWaitlist')}</option></select><small>${t('basicOptionHint')}</small></div><div class="quantity-field" id="specialist-control"><label for="extraSpecialists">${t('extraSpecialists')}<br><small class="muted"><bdi>${esc(shownPriceText(perPeriod(priceOf(state.catalog.addons.specialist))))}</bdi> ${t(periodKey())}</small></label><input id="extraSpecialists" name="extraSpecialists" type="number" min="0" max="50" step="1" value="0" inputmode="numeric"></div><p class="included-note" id="unlimited-note" hidden><span aria-hidden="true">✓</span>${t('unlimitedSpecialists')}</p></section><section class="form-panel"><fieldset><legend>${t('payment')}</legend><div class="radio-options"><label class="radio-option"><input type="radio" name="paymentMethod" value="card" required><span>${t('card')}</span></label><label class="radio-option"><input type="radio" name="paymentMethod" value="bank_transfer" required><span>${t('bank_transfer')}</span></label></div><p class="payment-note" id="payment-note">${t('noCharge')}</p><label class="trial-option" id="trial-control" hidden><input type="checkbox" id="trial" name="trial"><span><b id="trial-title">${t('trialOptIn',{n:trialDays()})}</b><small>${t('trialOptInHint',{n:trialDays()})}</small></span></label></fieldset></section><p class="privacy-note">${t('privacyNote')} <a href="/privacy" target="_blank" rel="noopener" class="text-link">${t('privacyPolicy')}</a>.</p><p class="privacy-note">${t('agreeNote')} <a href="/terms" target="_blank" rel="noopener" class="text-link">${t('termsTitle')}</a> · <a href="/refund" target="_blank" rel="noopener" class="text-link">${t('refundTitle')}</a>.</p><button class="btn primary full form-submit" type="submit">${t('submit')}</button></form><aside class="order-summary" id="order-summary" aria-live="polite"></aside></div></div>`;
 }
 function selectedQuote() {
   const form = document.getElementById('application-form');
   const plan = state.catalog.plans.find(p=>p.id===form.elements.plan.value);
-  const includes = ['business','enterprise'].includes(plan.id);
-  const loyalty = !includes && form.elements.loyalty.checked;
+  const includes = plan.id !== 'basic';
+  const option = includes ? '' : form.elements.basicOption.value;
+  const loyalty = !!option;
   const count = plan.id === 'enterprise' ? 0 : Math.max(0,Math.min(50,Number(form.elements.extraSpecialists.value)||0));
   const base = perPeriod(priceOf(plan.prices)), loyaltyPrice = perPeriod(priceOf(state.catalog.addons.loyalty)), specialistPrice = perPeriod(priceOf(state.catalog.addons.specialist));
-  return { plan, base, loyalty, count, loyaltyPrice, specialistPrice, total:base===null?null:base+(loyalty?loyaltyPrice:0)+count*specialistPrice };
+  return { plan, base, loyalty, option, count, loyaltyPrice, specialistPrice, total:base===null?null:base+(loyalty?loyaltyPrice:0)+count*specialistPrice };
 }
 function syncApplication() {
   const form = document.getElementById('application-form');
   if (!form) return;
   const plan = form.elements.plan.value;
-  const includes = ['business','enterprise'].includes(plan);
+  const includes = plan !== 'basic';
   document.getElementById('loyalty-control').hidden = includes;
   document.getElementById('included-loyalty').hidden = !includes;
-  form.elements.loyalty.disabled = includes;
-  if (includes) form.elements.loyalty.checked = false;
+  form.elements.basicOption.disabled = includes;
+  if (includes) form.elements.basicOption.value = '';
   form.elements.extraSpecialists.disabled = plan === 'enterprise';
   if (plan === 'enterprise') form.elements.extraSpecialists.value = 0;
   document.getElementById('specialist-control').hidden = plan === 'enterprise';
@@ -401,7 +527,7 @@ function syncApplication() {
   if (!trialOffered) form.elements.trial.checked = false;
   const trial = trialOffered && form.elements.trial.checked;
   document.getElementById('payment-note').textContent = t(payment==='card'?(online?'cardNote':'cardLaterNote'):payment==='bank_transfer'?'bankNote':'noCharge');
-  document.getElementById('order-summary').innerHTML = `<h2>${t('summary')}</h2><div class="summary-plan"><h3>${q.plan.name}</h3><a href="/plans" class="text-link">${t('backPlans')}</a></div><div class="summary-row"><span>${q.plan.name}</span><span><bdi>${money(q.base)}</bdi></span></div>${q.loyalty?`<div class="summary-row"><span>${t('loyalty')}</span><span><bdi>${money(q.loyaltyPrice)}</bdi></span></div>`:''}${q.count?`<div class="summary-row"><span>${t('extraSpecialists')} × ${q.count}</span><span><bdi>${money(q.count*q.specialistPrice)}</bdi></span></div>`:''}<div class="summary-total"><span class="label">${q.total===null?t('requestQuote'):t(totalKey())}</span>${priceHTML(q.total)}${q.total===null?'':`<p class="small-note">${t(periodKey())}</p>`}</div>${trial?`<p class="notice success trial-note">${t('trialSummary',{n:trialDays()})}</p>`:''}<p class="summary-contact">${t('contactDetails')}<br><strong class="ltr">${esc(state.user.email)}</strong></p><div class="section-divider"></div><p class="small-note">${online?t('checkoutPriceNote')+((q.loyalty&&!addonPrice('loyalty',state.interval))||(q.count&&!addonPrice('specialist',state.interval))?' '+t('addonsLaterNote'):''):t('noCharge')}</p>`;
+  document.getElementById('order-summary').innerHTML = `<h2>${t('summary')}</h2><div class="summary-plan"><h3>${q.plan.name}</h3><a href="/plans" class="text-link">${t('backPlans')}</a></div><div class="summary-row"><span>${q.plan.name}</span><span><bdi>${money(q.base)}</bdi></span></div>${q.loyalty?`<div class="summary-row"><span>${t(q.option==='smart_waitlist'?'optWaitlist':'optLoyalty')}</span><span><bdi>${money(q.loyaltyPrice)}</bdi></span></div>`:''}${q.count?`<div class="summary-row"><span>${t('extraSpecialists')} × ${q.count}</span><span><bdi>${money(q.count*q.specialistPrice)}</bdi></span></div>`:''}<div class="summary-total"><span class="label">${q.total===null?t('requestQuote'):t(totalKey())}</span>${priceHTML(q.total)}${q.total===null?'':`<p class="small-note">${t(periodKey())} · ${t('fxCharged')}</p>${approxLine(q.total)}`}</div>${trial?`<p class="notice success trial-note">${t('trialSummary',{n:trialDays()})}</p>`:''}<p class="summary-contact">${t('contactDetails')}<br><strong class="ltr">${esc(state.user.email)}</strong></p><div class="section-divider"></div><p class="small-note">${online?t('checkoutPriceNote')+((q.loyalty&&!addonPrice('loyalty',state.interval))||(q.count&&!addonPrice('specialist',state.interval))?' '+t('addonsLaterNote'):''):t('noCharge')}</p>`;
 }
 // Payment and approval state, in the customer's words: paid or not, and "awaiting approval (within a day)" once paid.
 function paymentBadge(a) {
@@ -441,12 +567,12 @@ function adminActions(a) {
       <div class="admin-row"><button class="btn small" type="submit" data-action="message">${t('sendMessage')}</button><button class="btn small" type="submit" data-action="needs_info">${t('askInfo')}</button><button class="btn small" type="submit" data-action="in_review">${t('in_review')}</button><button class="btn small danger" type="submit" data-action="declined">${t('decline')}</button></div><span class="status-feedback" role="status"></span></form>
     <details class="approve-box"${paid?' open':''}><summary>${t('approveCreate')}</summary>${paid?'':`<p class="notice warning">${t('approveNeedsPayment')}</p>`}
       <form class="approve-form form-grid" data-approve="${esc(a.id)}"><div class="field"><label for="slug-${esc(a.id)}">${t('slug')}</label><input id="slug-${esc(a.id)}" name="slug" dir="ltr" pattern="[a-z][a-z0-9]{1,23}" value="${esc(a.proposedSlug||'')}" placeholder="${t('auto')}"></div><div class="field"><label for="code-${esc(a.id)}">${t('salonCode')}</label><input id="code-${esc(a.id)}" name="accessCode" dir="ltr" pattern="[A-Za-z0-9_-]{4,32}" value="${esc(a.proposedCode||'')}" placeholder="${t('auto')}"></div>
-      <div class="field"><label for="cat-${esc(a.id)}">${t('salonCategory')}</label><select id="cat-${esc(a.id)}" name="salonCategory">${CATEGORIES.map(c=>`<option value="${c}"${a.salonCategory===c?' selected':''}>${t('cat_'+c)}</option>`).join('')}</select></div><div class="field"><label for="tz-${esc(a.id)}">${t('timezone')}</label><input id="tz-${esc(a.id)}" name="timezone" dir="ltr" value="${esc(a.timezone||'')}"></div>
+      <div class="field"><label for="team-${esc(a.id)}">${t('teamComposition')}</label><select id="team-${esc(a.id)}" name="teamComposition" required>${a.teamComposition?'':`<option value="">${t('chooseOne')}</option>`}${TEAM_COMPOSITIONS.map(c=>`<option value="${c}"${a.teamComposition===c?' selected':''}>${t('team_'+c)}</option>`).join('')}</select></div><div class="field"><label for="clientele-${esc(a.id)}">${t('clientele')}</label><select id="clientele-${esc(a.id)}" name="clientele" required>${a.clientele?'':`<option value="">${t('chooseOne')}</option>`}${CLIENTELES.map(c=>`<option value="${c}"${a.clientele===c?' selected':''}>${t('clientele_'+c)}</option>`).join('')}</select></div><div class="field"><label for="tz-${esc(a.id)}">${t('timezone')}</label><input id="tz-${esc(a.id)}" name="timezone" dir="ltr" value="${esc(a.timezone||'')}"></div>
       <div class="field full-span"><label for="owner-${esc(a.id)}">${t('ownerLoginPhone')}</label><input id="owner-${esc(a.id)}" name="ownerPhone" dir="ltr" inputmode="tel" value="${esc(a.ownerPhone||'')}"><small>${t('ownerLoginPhoneHint')}</small></div>
       <button class="btn primary full full-span" type="submit"${paid?'':' disabled'}>${t('approveCreate')}</button><span class="status-feedback full-span" role="status"></span></form></details></div>`;
 }
 function applicationCard(a,admin=false) {
-  return `<article class="application-card" id="app-${esc(a.id)}"><div class="application-card-top"><img src="${esc(a.logoUrl)}" alt="${t('logo')}: ${esc(a.salonName)}" class="logo-preview"><div><h2>${esc(a.salonName)}</h2><span class="ref"><bdi>${esc(a.id)}</bdi></span></div><div class="badges">${statusBadge(a)}${paymentBadge(a)}</div></div><dl class="application-meta"><div><dt>${t('selectedPlan')}</dt><dd>${esc(a.plan[0].toUpperCase()+a.plan.slice(1))}</dd></div><div><dt>${t(totalKey(a.quote.interval))}</dt><dd class="price-value"><bdi>${money(a.quote.total,a.quote.currency||'ILS')}</bdi></dd></div><div><dt>${t('payment')}</dt><dd>${t(a.paymentMethod)}</dd></div><div><dt>${t('submittedOn')}</dt><dd>${date(a.createdAt)}</dd></div></dl>${a.quote.loyalty||a.quote.extraSpecialists?`<p class="small-note">${t('optionalAddons')}: ${[a.quote.loyalty?t('loyalty'):'',a.quote.extraSpecialists?`${t('extraSpecialists')} × ${a.quote.extraSpecialists}`:''].filter(Boolean).join(' · ')}</p>`:''}${admin?'':stateNote(a)+payButton(a)+testPayButton(a)}${admin?`<div class="admin-details"><dl><div><dt>${t('fullName')}</dt><dd>${esc(a.fullName)}</dd></div><div><dt>${t('email')}</dt><dd><a class="text-link ltr" href="mailto:${esc(a.email)}">${esc(a.email)}</a></dd></div><div><dt>${t('phone')}</dt><dd><a class="text-link ltr" href="tel:${esc(a.phone)}">${esc(a.phone)}</a></dd></div><div><dt>${t('location')}</dt><dd>${esc(countryName(a.country))}</dd></div><div><dt>${t('identityNumber')}</dt><dd><bdi>${esc(a.identityNumber||('••'+a.idLast4))}</bdi></dd></div><div><dt>${t('yourPricing')}</dt><dd>${t(a.quote.region==='west_bank'?'westBankPricing':'standardPricing')}</dd></div><div><dt>${t('salonCategory')}</dt><dd>${t('cat_'+a.salonCategory)}</dd></div><div><dt>${t('timezone')}</dt><dd dir="ltr">${esc(a.timezone)}</dd></div>${a.paymentReference?`<div><dt>${t('paymentRef')}</dt><dd dir="ltr">${esc(a.paymentReference)}</dd></div>`:''}</dl>${adminActions(a)}</div>`:''}${thread(a,admin)}</article>`;
+  return `<article class="application-card" id="app-${esc(a.id)}"><div class="application-card-top"><img src="${esc(a.logoUrl)}" alt="${t('logo')}: ${esc(a.salonName)}" class="logo-preview"><div><h2>${esc(a.salonName)}</h2><span class="ref"><bdi>${esc(a.id)}</bdi></span></div><div class="badges">${statusBadge(a)}${paymentBadge(a)}</div></div><dl class="application-meta"><div><dt>${t('selectedPlan')}</dt><dd>${esc(a.plan[0].toUpperCase()+a.plan.slice(1))}</dd></div><div><dt>${t(totalKey(a.quote.interval))}</dt><dd class="price-value"><bdi>${money(a.quote.total,a.quote.currency||'ILS')}</bdi></dd></div><div><dt>${t('payment')}</dt><dd>${t(a.paymentMethod)}</dd></div><div><dt>${t('submittedOn')}</dt><dd>${date(a.createdAt)}</dd></div></dl>${a.quote.loyalty||a.quote.extraSpecialists?`<p class="small-note">${t('optionalAddons')}: ${[a.quote.loyalty?t(a.quote.option==='smart_waitlist'?'optWaitlist':'optLoyalty'):'',a.quote.extraSpecialists?`${t('extraSpecialists')} × ${a.quote.extraSpecialists}`:''].filter(Boolean).join(' · ')}</p>`:''}${admin?'':stateNote(a)+payButton(a)+testPayButton(a)}${admin?`<div class="admin-details"><dl><div><dt>${t('fullName')}</dt><dd>${esc(a.fullName)}</dd></div><div><dt>${t('email')}</dt><dd><a class="text-link ltr" href="mailto:${esc(a.email)}">${esc(a.email)}</a></dd></div><div><dt>${t('phone')}</dt><dd><a class="text-link ltr" href="tel:${esc(a.phone)}">${esc(a.phone)}</a></dd></div><div><dt>${t('location')}</dt><dd>${esc(countryName(a.country))}</dd></div><div><dt>${t('identityNumber')}</dt><dd><bdi>${esc(a.identityNumber||('••'+a.idLast4))}</bdi></dd></div><div><dt>${t('yourPricing')}</dt><dd>${t(a.quote.region==='west_bank'?'westBankPricing':'standardPricing')}</dd></div>${a.teamComposition?`<div><dt>${t('teamComposition')}</dt><dd>${t('team_'+a.teamComposition)}</dd></div>`:''}${a.clientele?`<div><dt>${t('clientele')}</dt><dd>${t('clientele_'+a.clientele)}</dd></div>`:''}${a.clientele?'':`<div><dt>${t('salonCategory')}</dt><dd>${t('cat_'+a.salonCategory)}</dd></div>`}<div><dt>${t('timezone')}</dt><dd dir="ltr">${esc(a.timezone)}</dd></div>${a.paymentReference?`<div><dt>${t('paymentRef')}</dt><dd dir="ltr">${esc(a.paymentReference)}</dd></div>`:''}</dl>${adminActions(a)}</div>`:''}${thread(a,admin)}</article>`;
 }
 function applications(admin=false) {
   const filters = ['awaiting','all',...statusNames];
@@ -457,19 +583,28 @@ const subscriptionTone = status => ({active:'approved',trialing:'approved',cance
 // One salon created from an approved application: everything the owner needs to start, including the QR code.
 function salonCard(s) {
   const sub = s.subscription || {}, spec = s.specialists || {};
-  const qr = window.SalonQR ? window.SalonQR.svg(s.deepLink) : '';
+  // The salon's own link, as in the app (2.34): opens the salon in the app, or the store — also from a phone camera.
+  const link = location.origin + '/s/' + encodeURIComponent(s.accessCode);
+  const qr = window.SalonQR ? window.SalonQR.svg(link) : '';
   const features = Object.values(s.features||{}).map(f=>`<li class="${f.enabled?'on':'off'}"><span aria-hidden="true">${f.enabled?'✓':'–'}</span>${esc(lang==='ar'?f.labelAr:f.labelEn)}</li>`).join('');
   const limit = spec.unlimited ? t('unlimited') : `${spec.active ?? 0} / ${spec.limit ?? 0}`;
   const live = s.isActive && sub.good_standing !== false;
   const planName = s.plan?.code==='full_access' ? 'Enterprise' : (lang==='ar' ? s.plan?.nameAr : s.plan?.nameEn) || '';
   return `<article class="application-card salon-card"><div class="application-card-top">${s.logoUrl?`<img src="${esc(s.logoUrl)}" alt="" class="logo-preview">`:''}<div><h2>${esc(s.name)}</h2><span class="ref"><bdi>${esc(s.applicationId)}</bdi></span></div><div class="badges"><span class="status ${live?'approved':'declined'}">${t(live?'salonActive':'salonPaused')}</span></div></div>
     <div class="salon-grid"><figure class="salon-qr">${qr}<figcaption><b dir="ltr">${esc(s.accessCode)}</b><small>${t('scanToAdd')}</small></figcaption></figure>
-    <dl class="application-meta salon-meta"><div><dt>${t('salonCode')}</dt><dd dir="ltr">${esc(s.accessCode)}</dd></div><div><dt>${t('selectedPlan')}</dt><dd>${esc(planName)}</dd></div><div><dt>${t('specialists')}</dt><dd>${limit}</dd></div><div><dt>${t('salonCategory')}</dt><dd>${t('cat_'+s.category)}</dd></div><div><dt>${t('timezone')}</dt><dd dir="ltr">${esc(s.timezone||'')}</dd></div><div><dt>${t('startDate')}</dt><dd>${sub.starts_on?date(sub.starts_on):''}</dd></div>${sub.expires_on?`<div><dt>${t('periodEnds')}</dt><dd>${date(sub.expires_on)}</dd></div>`:''}<div><dt>${t('appLink')}</dt><dd dir="ltr"><a class="text-link" href="${esc(s.deepLink)}">${esc(s.deepLink)}</a></dd></div></dl></div>
+    <dl class="application-meta salon-meta"><div><dt>${t('salonCode')}</dt><dd dir="ltr">${esc(s.accessCode)}</dd></div><div><dt>${t('selectedPlan')}</dt><dd>${esc(planName)}</dd></div><div><dt>${t('specialists')}</dt><dd>${limit}</dd></div>${s.teamComposition?`<div><dt>${t('teamComposition')}</dt><dd>${t('team_'+s.teamComposition)}</dd></div>`:''}${s.clientele?`<div><dt>${t('clientele')}</dt><dd>${t('clientele_'+s.clientele)}</dd></div>`:`<div><dt>${t('salonCategory')}</dt><dd>${t('cat_'+s.category)}</dd></div>`}<div><dt>${t('timezone')}</dt><dd dir="ltr">${esc(s.timezone||'')}</dd></div><div><dt>${t('startDate')}</dt><dd>${sub.starts_on?date(sub.starts_on):''}</dd></div>${sub.expires_on?`<div><dt>${t('periodEnds')}</dt><dd>${date(sub.expires_on)}</dd></div>`:''}<div><dt>${t('appLink')}</dt><dd dir="ltr"><a class="text-link" href="${esc(link)}">${esc(link)}</a></dd></div></dl></div>
     ${features?`<ul class="salon-features" aria-label="${t('features')}">${features}</ul>`:''}
     ${billingSection(s)}
     ${live ? reportSection(s) : ''}
-    <section class="owner-login"><h3>${t('ownerLogin')}</h3><p class="small-note">${t('ownerLoginHint')}</p><dl class="application-meta"><div><dt>${t('phone')}</dt><dd dir="ltr">${esc(s.owner.phone)}</dd></div>${s.owner.temporaryPassword?`<div><dt>${t('tempPassword')}</dt><dd dir="ltr"><code>${esc(s.owner.temporaryPassword)}</code></dd></div>`:''}</dl>
-      ${s.owner.temporaryPassword?`<p class="notice warning">${t('tempPasswordNote')}</p><button class="btn small" type="button" data-password-saved="${esc(s.applicationId)}">${t('passwordSaved')}</button>`:`<p class="small-note">${t('passwordHidden')}</p>`}</section></article>`;
+    ${ownerSection(s)}</article>`;
+}
+// 2.40: the owner signs in with their own Salonieer account (this number) — no salon password. A salon approved before
+// keeps its old card (temporary password) until the owner hides it.
+function ownerSection(s) {
+  const o = s.owner || {};
+  if (o.access) return `<section class="owner-login"><h3>${t('ownerLogin')}</h3><p class="small-note">${t(o.access==='applied'?'ownerAccessLinked':'ownerAccessHow')}</p><dl class="application-meta"><div><dt>${t('phone')}</dt><dd dir="ltr">${esc(o.phone)}</dd></div>${o.accountName?`<div><dt>${t('ownerAccount')}</dt><dd>${esc(o.accountName)}</dd></div>`:''}</dl></section>`;
+  return `<section class="owner-login"><h3>${t('ownerLogin')}</h3><p class="small-note">${t('ownerLoginHint')}</p><dl class="application-meta"><div><dt>${t('phone')}</dt><dd dir="ltr">${esc(o.phone)}</dd></div>${o.temporaryPassword?`<div><dt>${t('tempPassword')}</dt><dd dir="ltr"><code>${esc(o.temporaryPassword)}</code></dd></div>`:''}</dl>
+      ${o.temporaryPassword?`<p class="notice warning">${t('tempPasswordNote')}</p><button class="btn small" type="button" data-password-saved="${esc(s.applicationId)}">${t('passwordSaved')}</button>`:`<p class="small-note">${t('passwordHidden')}</p>`}</section>`;
 }
 // Only shown for a salon that is open with a subscription in good standing; the server checks the same again.
 const REPORT_CATEGORIES = ['bug','booking','billing','account','other'];
@@ -489,10 +624,10 @@ const PLAN_NAMES = { basic:'Basic', pro:'Pro', business:'Business' };
 function currentChange(b) {
   const items = b.items || [];
   const plan = items.find(i=>PLAN_NAMES[i.item])?.item || 'basic';
-  return { plan, interval: b.interval==='year'?'year':'month', extraSpecialists: items.filter(i=>i.item==='specialist').reduce((n,i)=>n+(Number(i.quantity)||0),0), loyalty: items.some(i=>i.item==='loyalty') };
+  return { plan, interval: b.interval==='year'?'year':'month', extraSpecialists: items.filter(i=>i.item==='specialist').reduce((n,i)=>n+(Number(i.quantity)||0),0), loyalty: items.some(i=>i.item==='loyalty'), option: b.option || 'loyalty' };
 }
 function changeText(c) {
-  return [PLAN_NAMES[c.plan] || c.plan, t(c.interval==='year'?'yearly':'monthly'), c.extraSpecialists ? `+${c.extraSpecialists} ${t('specialists')}` : '', c.loyalty ? t('loyalty') : ''].filter(Boolean).join(' · ');
+  return [PLAN_NAMES[c.plan] || c.plan, t(c.interval==='year'?'yearly':'monthly'), c.extraSpecialists ? `+${c.extraSpecialists} ${t('specialists')}` : '', c.loyalty ? t(c.option==='smart_waitlist'?'optWaitlist':'optLoyalty') : ''].filter(Boolean).join(' · ');
 }
 const daysUntil = value => Math.max(0, Math.ceil((new Date(value) - Date.now()) / 86400000));
 function billingNotice(b) {
@@ -510,10 +645,10 @@ function changeForm(s, b) {
   const c = currentChange(b), app = esc(s.applicationId);
   const options = (list, value, label) => list.map(v=>`<option value="${v}"${v===value?' selected':''}>${esc(label(v))}</option>`).join('');
   return `<form class="change-form" data-change-form="${app}" hidden novalidate><h4>${t('requestChange')}</h4><p class="small-note">${t('requestChangeLead')}</p>
-    <div class="form-grid"><div class="field"><label for="cp-${app}">${t('plans')}</label><select id="cp-${app}" name="plan">${options(['basic','pro','business'], c.plan, v=>PLAN_NAMES[v])}</select></div>
+    <div class="form-grid"><div class="field"><label for="cp-${app}">${t('plans')}</label><select id="cp-${app}" name="plan">${options(c.plan==='business'?['basic','pro','business']:['basic','pro'], c.plan, v=>PLAN_NAMES[v])}</select></div>
     <div class="field"><label for="ci-${app}">${t('billingPeriod')}</label><select id="ci-${app}" name="interval">${options(['month','year'], c.interval, v=>t(v==='year'?'yearly':'monthly'))}</select></div>
     <div class="field"><label for="cs-${app}">${t('extraSpecialists')}</label><input id="cs-${app}" name="extraSpecialists" type="number" min="0" max="50" step="1" inputmode="numeric" value="${c.extraSpecialists}"></div>
-    <div class="field check-field" data-loyalty-field><label class="check-row"><input type="checkbox" name="loyalty"${c.loyalty?' checked':''}> <span>${t('loyalty')}</span></label></div>
+    <div class="field" data-loyalty-field><label for="co-${app}">${t('basicOption')}</label><select id="co-${app}" name="basicOption">${options(['','loyalty','smart_waitlist'], c.loyalty ? c.option : '', v=>t(v==='loyalty'?'optLoyalty':v==='smart_waitlist'?'optWaitlist':'optNone'))}</select></div>
     <div class="field full-span"><label for="cn-${app}">${t('noteOptional')}</label><textarea id="cn-${app}" name="note" rows="2" maxlength="1000"></textarea></div></div>
     <div class="change-preview" data-change-preview aria-live="polite"></div>
     <div class="button-row"><button class="btn small" type="button" data-change-preview-btn>${t('seePrice')}</button><button class="btn small primary" type="submit">${t('sendRequest')}</button><button class="btn small quiet" type="button" data-change-close>${t('tm_cancel')}</button></div></form>`;
@@ -581,8 +716,8 @@ function accountSettings() {
       <label class="check-row delete-check"><input type="checkbox" name="understand"> <span>${t('deleteUnderstand')}</span></label>
       <button class="btn danger" type="submit">${t('deleteAccountForever')}</button></form>`;
   return `<section class="settings-panel" aria-labelledby="settings-title"><h2 class="section-label" id="settings-title">${t('accountSettings')}</h2>
-    <div class="settings-grid"><form id="profile-form" class="settings-card" novalidate><h3>${t('profileTitle')}</h3>${formErrorBox()}${field('fullName','fullName',{autocomplete:'name',maxlength:100})}
-      <p class="small-note">${t('signInEmail')}: <bdi>${esc(u.email)}</bdi></p><button class="btn small primary" type="submit">${t('saveName')}</button></form>
+    <div class="settings-grid"><form id="profile-form" class="settings-card" novalidate><h3>${t('profileTitle')}</h3>${formErrorBox()}${field('fullName','fullName',{autocomplete:'name',maxlength:100,placeholder:t('fullName')})}${genderField(u.gender||'')}
+      <p class="small-note">${t('signInEmail')}: <bdi>${esc(u.email)}</bdi></p><button class="btn small primary" type="submit">${t('saveProfile')}</button></form>
     <form id="password-form" class="settings-card" novalidate><h3>${t('changePassword')}</h3>${formErrorBox()}${field('currentPassword','currentPassword',{type:'password',autocomplete:'current-password'})}
       ${field('newPassword','newPassword',{type:'password',autocomplete:'new-password',hint:'passwordHint'})}${field('newPasswordConfirm','passwordConfirm',{type:'password',autocomplete:'new-password'})}
       <p class="small-note">${t('passwordChangeNote')}</p><button class="btn small primary" type="submit">${t('changePassword')}</button></form></div>
@@ -590,6 +725,90 @@ function accountSettings() {
 }
 function support() {
   return `<div class="wrap">${titleBlock('support','helpTitle','helpLead')}<div class="support-layout"><section class="support-contact"><h2>${t('contactUs')}</h2><a class="email-address" href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a><a class="btn primary" href="mailto:salonieer1st@gmail.com?subject=Salonieer%20Support">${t('emailSupport')}</a><button type="button" class="btn" id="copy-email">${t('copyEmail')}</button><p id="copy-feedback" role="status"></p></section><section class="faq-list"><h2>${t('faq')}</h2>${[['faqLoginQ','faqLoginA','account'],['faqPriceQ','faqPriceA','pricing'],['faqPayQ','faqPayA','payment'],['faqNotificationsQ','faqNotificationsA','notifications'],['faqSalonQ','faqSalonA','salon']].map(([q,a,id])=>`<details id="${id}"${location.hash==='#'+id?' open':''}><summary>${t(q)}</summary><p>${t(a)}</p></details>`).join('')}</section></div></div>`;
+}
+// 2.33: a salon team invitation (shared by the owner from the app). The link
+// carries only the code; the app opens it (salonieer://salon/INV-…) or the
+// person pastes the code in the app's salon-code box. Nothing is stored here.
+function invite() {
+  const W = {
+    eyebrow:{ar:'دعوة للفريق',en:'Team invitation',he:'הזמנה לצוות'},
+    title:{ar:'تمت دعوتك للانضمام إلى فريق صالون',en:'You are invited to join a salon team',he:'הוזמנת להצטרף לצוות של סלון'},
+    lead:{ar:'افتح الدعوة في تطبيق Salonieer وسجّل الدخول بحسابك أو أنشئ حساباً، ثم اقبلها. يفعّلك الصالون بعد التحقق منك.',en:'Open the invitation in the Salonieer app, sign in or create your account, then accept. The salon activates you after checking.',he:'פתחו את ההזמנה באפליקציית Salonieer, התחברו או צרו חשבון, ואז אשרו. הסלון יפעיל אותך אחרי בדיקה.'},
+    open:{ar:'افتح في تطبيق Salonieer',en:'Open in the Salonieer app',he:'פתיחה באפליקציית Salonieer'},
+    copy:{ar:'نسخ رمز الدعوة',en:'Copy the invitation code',he:'העתקת קוד ההזמנה'},
+    copied:{ar:'تم نسخ الرمز',en:'Code copied',he:'הקוד הועתק'},
+    s1:{ar:'ثبّت تطبيق Salonieer من App Store أو Google Play إن لم يكن لديك.',en:'Install the Salonieer app from the App Store or Google Play if you do not have it.',he:'התקינו את אפליקציית Salonieer מ-App Store או מ-Google Play אם עדיין אין לכם.'},
+    s2:{ar:'اضغط «افتح في تطبيق Salonieer»، أو الصق رمز الدعوة في خانة «رمز الصالون» داخل التطبيق.',en:'Tap “Open in the Salonieer app”, or paste the invitation code in the app’s “Salon code” box.',he:'הקישו „פתיחה באפליקציית Salonieer”, או הדביקו את קוד ההזמנה בתיבת „קוד הסלון” באפליקציה.'},
+    s3:{ar:'سجّل الدخول بحسابك أو أنشئ حساباً جديداً، ثم اقبل الدعوة.',en:'Sign in or create a new account, then accept the invitation.',he:'התחברו או צרו חשבון חדש, ואז אשרו את ההזמנה.'},
+    note:{ar:'الدعوة شخصية وتصلح لمرة واحدة. لا تشاركها مع غيرك.',en:'The invitation is personal and works once. Do not share it.',he:'ההזמנה אישית ותקפה לשימוש אחד. אל תשתפו אותה.'},
+    bad:{ar:'رابط الدعوة غير مكتمل. اطلب من الصالون رابطاً جديداً.',en:'This invitation link is incomplete. Ask the salon for a new link.',he:'קישור ההזמנה אינו שלם. בקשו מהסלון קישור חדש.'},
+  };
+  const L3 = o => o[lang] || o.en;
+  const code = new URLSearchParams(location.search).get('code') || '';
+  const valid = /^INV-[A-Za-z0-9_-]{32}$/.test(code);
+  return `<div class="narrow invite-page"><header class="title-block"><p class="eyebrow">${esc(L3(W.eyebrow))}</p><h1>${esc(L3(W.title))}</h1><p class="lead">${esc(L3(W.lead))}</p></header>
+    ${valid ? `<section class="invite-card"><a class="btn primary" href="salonieer://salon/${esc(code)}">${esc(L3(W.open))}</a>
+      <div class="invite-code" dir="ltr"><code id="invite-code">${esc(code)}</code><button type="button" class="btn small" id="copy-invite" data-copied="${esc(L3(W.copied))}">${esc(L3(W.copy))}</button></div>
+      <ol class="invite-steps"><li>${esc(L3(W.s1))}</li><li>${esc(L3(W.s2))}</li><li>${esc(L3(W.s3))}</li></ol>
+      <p class="small-note">${esc(L3(W.note))}</p></section>`
+    : `<section class="invite-card"><p>${esc(L3(W.bad))}</p></section>`}</div>`;
+}
+// 2.34: a salon's own link (https://salonieer.com/s/<code>). With the app
+// installed the link opens the app directly (App Links / Universal Links);
+// this page is what people see without it, or inside an in-app browser
+// (Instagram, WhatsApp) that does not open apps by itself. The salon's code is
+// the only thing in the link; the app applies the salon's own rules (approval,
+// sign-in before booking). Nothing is stored here.
+const STORE = { android: 'https://play.google.com/store/apps/details?id=com.salonieer.app', ios: 'https://apps.apple.com/app/id6813588408' };
+const device = () => /android/i.test(navigator.userAgent) ? 'android' : (/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) ? 'ios' : 'desktop';
+function salonCodeFromPath() { const m = location.pathname.match(/^\/s\/([A-Za-z0-9_-]{2,64})\/?$/); return m ? m[1] : ''; }
+function salonLink() {
+  const W = {
+    eyebrow:{ar:'رابط صالون',en:'Salon link',he:'קישור לסלון'},
+    title:{ar:'احجز موعدك عبر تطبيق Salonieer',en:'Book your appointment in the Salonieer app',he:'קבעו תור באפליקציית Salonieer'},
+    lead:{ar:'تصفح الخدمات والمختصين والمواعيد المتاحة في التطبيق. سجّل الدخول أو أنشئ حساباً عند تأكيد الحجز.',en:'Browse the services, specialists and free times in the app. Sign in or create an account when you confirm a booking.',he:'עיינו בשירותים, באנשי המקצוע ובזמנים הפנויים באפליקציה. התחברו או צרו חשבון כשאתם מאשרים תור.'},
+    open:{ar:'افتح الصالون في التطبيق',en:'Open the salon in the app',he:'פתיחת הסלון באפליקציה'},
+    play:{ar:'تحميل من Google Play',en:'Get it on Google Play',he:'הורדה מ-Google Play'},
+    store:{ar:'تحميل من App Store',en:'Download on the App Store',he:'הורדה מ-App Store'},
+    androidNote:{ar:'إن لم يكن التطبيق مثبتاً يفتح متجر Google Play، وبعد التثبيت يفتح الصالون تلقائياً.',en:'Without the app, Google Play opens; after installing, the app opens this salon by itself.',he:'בלי האפליקציה ייפתח Google Play; אחרי ההתקנה האפליקציה תפתח את הסלון בעצמה.'},
+    iosNote:{ar:'بعد تثبيت التطبيق ارجع إلى هذه الصفحة واضغط «افتح الصالون في التطبيق»، أو أدخل رمز الصالون في التطبيق.',en:'After installing the app, come back to this page and tap “Open the salon in the app”, or enter the salon code in the app.',he:'אחרי התקנת האפליקציה חזרו לדף הזה והקישו „פתיחת הסלון באפליקציה”, או הזינו את קוד הסלון באפליקציה.'},
+    desktop:{ar:'افتح هذا الرابط على هاتفك، أو امسح الرمز بكاميرا الهاتف.',en:'Open this link on your phone, or scan the code with the phone camera.',he:'פתחו את הקישור בטלפון, או סרקו את הקוד במצלמת הטלפון.'},
+    code:{ar:'رمز الصالون',en:'Salon code',he:'קוד הסלון'},
+    copy:{ar:'نسخ الرمز',en:'Copy the code',he:'העתקת הקוד'},
+    copied:{ar:'تم نسخ الرمز',en:'Code copied',he:'הקוד הועתק'},
+    bad:{ar:'رابط الصالون غير صحيح. اطلب من الصالون رابطه من جديد.',en:'This salon link is not valid. Ask the salon for its link again.',he:'קישור הסלון אינו תקין. בקשו מהסלון את הקישור שוב.'},
+  };
+  const L3 = o => o[lang] || o.en;
+  const code = salonCodeFromPath(), dev = device();
+  if (!code) return `<div class="narrow invite-page"><section class="invite-card"><p>${esc(L3(W.bad))}</p></section></div>`;
+  const play = STORE.android + '&referrer=' + encodeURIComponent('salon=' + code);
+  // Android: opens the app when installed, else Google Play (which passes the salon on).
+  const android = `intent://salon/${encodeURIComponent(code)}#Intent;scheme=salonieer;package=com.salonieer.app;S.browser_fallback_url=${encodeURIComponent(play)};end`;
+  const openHref = dev === 'android' ? android : `salonieer://salon/${encodeURIComponent(code)}`;
+  return `<div class="narrow invite-page salon-link-page"><header class="title-block"><p class="eyebrow">${esc(L3(W.eyebrow))}</p>
+      <div class="salon-link-brand" id="salon-link-brand" hidden><img id="salon-link-logo" alt="" hidden><h2 id="salon-link-name"></h2></div>
+      <h1>${esc(L3(W.title))}</h1><p class="lead">${esc(L3(W.lead))}</p></header>
+    <section class="invite-card">
+      ${dev === 'desktop' ? `<p>${esc(L3(W.desktop))}</p><div class="salon-link-qr" id="salon-link-qr"></div>` : `<a class="btn primary" href="${esc(openHref)}" id="salon-open">${esc(L3(W.open))}</a>`}
+      <div class="store-row">${dev !== 'ios' ? `<a class="btn" href="${esc(play)}" rel="noopener">${esc(L3(W.play))}</a>` : ''}${dev !== 'android' ? `<a class="btn" href="${esc(STORE.ios)}" rel="noopener">${esc(L3(W.store))}</a>` : ''}</div>
+      <p class="small-note">${esc(L3(dev === 'android' ? W.androidNote : W.iosNote))}</p>
+      <div class="invite-code" dir="ltr"><span>${esc(L3(W.code))}</span><code id="salon-code">${esc(code)}</code><button type="button" class="btn small" id="copy-salon-code" data-copied="${esc(L3(W.copied))}">${esc(L3(W.copy))}</button></div>
+    </section></div>`;
+}
+async function bindSalonLink() {
+  const code = salonCodeFromPath(); if (!code) return;
+  document.getElementById('copy-salon-code')?.addEventListener('click', async e => { const b = e.currentTarget; try { await navigator.clipboard.writeText(code); toast(b.dataset.copied, 'success'); } catch {} });
+  const qr = document.getElementById('salon-link-qr');
+  if (qr && window.SalonQR?.svg) { try { qr.innerHTML = window.SalonQR.svg(location.href); } catch {} }
+  try {
+    const r = await fetch('/api/salon-link?code=' + encodeURIComponent(code), { headers: { accept: 'application/json' } });
+    const d = r.ok ? await r.json() : null;
+    if (!d?.salon?.name || route !== '/s') return;
+    const brand = document.getElementById('salon-link-brand'); if (!brand) return;
+    document.getElementById('salon-link-name').textContent = d.salon.name;
+    if (d.salon.logo_url) { const img = document.getElementById('salon-link-logo'); img.src = d.salon.logo_url; img.hidden = false; }
+    brand.hidden = false; document.title = d.salon.name + ' · Salonieer';
+  } catch {}
 }
 function legalPage(eyebrow,title,content) {
   return `<div class="narrow">${titleBlock(eyebrow,title,'lastUpdated')}<nav class="legal-tabs" aria-label="${t('legal')}">${[['/terms','termsTitle'],['/privacy','privacyPolicy'],['/refund','refundTitle']].map(([path,key])=>`<a href="${path}"${route===path?' aria-current="page"':''}>${t(key)}</a>`).join('')}</nav><article class="policy">${content[lang] || content.en}</article></div>`;
@@ -641,6 +860,7 @@ function rulesFor(form) {
   if (form.id === 'register-form' || form.id === 'setup-form') return {
     ...(form.id === 'setup-form' ? { setupKey: v => V.clean(v).length >= 6 ? null : 'invalidSetupKey' } : {}),
     fullName: V.fullName,
+    gender: v => v ? null : 'requiredGender',
     email: V.email,
     password: v => V.password(v, el('email').value),
     passwordConfirm: v => !v ? 'requiredPassword' : v === el('password').value ? null : 'passwordMismatch',
@@ -658,7 +878,7 @@ function rulesFor(form) {
   return {};
 }
 // The visible control for a field (country pickers keep their value in a hidden input).
-const controlOf = (form, name) => form.querySelector(`#${name}-btn`) || form.elements[name];
+const controlOf = (form, name) => { const c = form.querySelector(`#${name}-btn`) || form.elements[name]; return c instanceof RadioNodeList ? c[0] : c; };
 function setFieldState(form, name, code) {
   const control = controlOf(form, name); if (!control) return;
   const wrap = control.closest('.field'), message = document.getElementById(name + '-error');
@@ -732,7 +952,7 @@ async function submitForm(event, path) {
     if (!state.logo) return showError(form, {code:'invalidLogo', field:'logo'});
     if (!form.elements.paymentMethod.value) return showError(form, {code:'invalidPayment'});
     const q = selectedQuote();
-    Object.assign(data, {phone:phoneE164(data.phone, data.phoneCountry)?.number || data.phone, identityNumber:V.normalizeId(data.identityNumber), salonName:V.clean(data.salonName), salonCategory:form.elements.salonCategory.value, timezone:form.elements.timezone.value, lang, currency:state.currency, interval:state.interval, plan:q.plan.id, loyalty:q.loyalty, trial:!document.getElementById('trial-control').hidden && form.elements.trial.checked, extraSpecialists:Number(form.elements.extraSpecialists.value)||0, logo:state.logo, submissionKey:state.submissionKey});
+    Object.assign(data, {phone:phoneE164(data.phone, data.phoneCountry)?.number || data.phone, identityNumber:V.normalizeId(data.identityNumber), salonName:V.clean(data.salonName), teamComposition:form.elements.teamComposition.value, clientele:form.elements.clientele.value, timezone:form.elements.timezone.value, lang, currency:state.currency, interval:state.interval, plan:q.plan.id, loyalty:q.loyalty, option:q.option||'loyalty', trial:!document.getElementById('trial-control').hidden && form.elements.trial.checked, extraSpecialists:Number(form.elements.extraSpecialists.value)||0, logo:state.logo, submissionKey:state.submissionKey});
   }
   const submit = form.querySelector('button[type=submit]');
   const busyLabel = t({'/api/applications':'submitting','/api/login':'signingIn','/api/register':'creatingAccount','/api/setup':'creatingAccount'}[path] || 'processing');
@@ -874,8 +1094,15 @@ function bind() {
   if (registerForm) bindAccountForm(registerForm);
   const applicationForm = document.getElementById('application-form');
   if (applicationForm) {
-    if (!drafts[route]) applicationForm.elements.plan.value = new URLSearchParams(location.search).get('plan') || 'basic';
-    for (const name of ['plan','loyalty','extraSpecialists','paymentMethod','trial']) {
+    if (!drafts[route]) {
+      // The plan from the link; the Plan Finder's link also brings the Basic option and the extra specialists.
+      const q = new URLSearchParams(location.search);
+      applicationForm.elements.plan.value = q.get('plan') || 'basic';
+      if (['loyalty','smart_waitlist'].includes(q.get('option'))) applicationForm.elements.basicOption.value = q.get('option');
+      const extra = /^\d{1,2}$/.test(q.get('extra') || '') ? Number(q.get('extra')) : 0;
+      if (extra > 0 && extra <= 50) applicationForm.elements.extraSpecialists.value = String(extra);
+    }
+    for (const name of ['plan','basicOption','extraSpecialists','paymentMethod','trial']) {
       applicationForm.querySelectorAll(`[name="${name}"]`).forEach(el=>el.addEventListener('input',syncApplication));
     }
     bindPhoneField(applicationForm);
@@ -903,14 +1130,16 @@ function bind() {
     try { openPaymentLinkCheckout(await loadPaddle()); }
     catch (error) { document.getElementById('checkout-status').textContent = t(error.code || 'checkoutUnavailable'); }
   });
+  document.getElementById('copy-invite')?.addEventListener('click',async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(document.getElementById('invite-code').textContent);toast(b.dataset.copied,'success');}catch{}});
+  if (route === '/s') bindSalonLink();
   document.getElementById('copy-email')?.addEventListener('click',async()=>{
     try { await navigator.clipboard.writeText('salonieer1st@gmail.com');document.getElementById('copy-feedback').textContent=t('copied'); }
     catch { document.getElementById('copy-feedback').textContent=t('copyFailed'); }
   });
-  document.querySelectorAll('[data-currency]').forEach(button=>button.addEventListener('click',()=>{
-    if (button.dataset.currency===state.currency) return;
-    captureDraft();setCurrency(button.dataset.currency);paint();
-    document.querySelector(`[data-currency="${state.currency}"]`)?.focus();
+  document.querySelectorAll('[data-display-currency]').forEach(select=>select.addEventListener('change',()=>{
+    const all = [...document.querySelectorAll('[data-display-currency]')], at = all.indexOf(select);
+    captureDraft();setDisplayCurrency(select.value);paint();
+    document.querySelectorAll('[data-display-currency]')[at]?.focus();
   }));
   document.querySelectorAll('[data-interval]').forEach(button=>button.addEventListener('click',()=>{
     if (button.dataset.interval===state.interval) return;
@@ -918,6 +1147,7 @@ function bind() {
     document.querySelector(`[data-interval="${state.interval}"]`)?.focus();
   }));
   document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{state.filter=button.dataset.filter;paint();}));
+  if (route === '/plans') bindPlanFinder(finderContext());
   bindApplicationActions();
   bindBilling();
   bindAccountSettings();
@@ -945,8 +1175,8 @@ function bindAccountSettings() {
       const button = profile.querySelector('[type=submit]');
       setBusy(button, true, t('processing'));
       try {
-        const result = await api('/api/account', {method:'PATCH', body:JSON.stringify({fullName:V.clean(profile.elements.fullName.value)})});
-        state.user = result.user; delete drafts[route]; toast(t('nameSaved'), 'success'); render();
+        const result = await api('/api/account', {method:'PATCH', body:JSON.stringify({fullName:V.clean(profile.elements.fullName.value), gender:profile.elements.gender.value||undefined})});
+        state.user = result.user; delete drafts[route]; toast(t('profileSaved'), 'success'); render();
       } catch (error) { showError(profile, error); }
       finally { if (button.isConnected) setBusy(button, false); }
     });
@@ -987,7 +1217,7 @@ async function billingAction(button, path, data={}) {
   catch (error) { toast(t(error.code || 'serverError'), 'error'); return null; }
   finally { if (button.isConnected) setBusy(button, false); }
 }
-const changeData = form => ({ plan:form.elements.plan.value, interval:form.elements.interval.value, extraSpecialists:Math.max(0,Math.min(50,parseInt(form.elements.extraSpecialists.value,10)||0)), loyalty:form.elements.loyalty.checked && form.elements.plan.value!=='business' });
+const changeData = form => ({ plan:form.elements.plan.value, interval:form.elements.interval.value, extraSpecialists:Math.max(0,Math.min(50,parseInt(form.elements.extraSpecialists.value,10)||0)), loyalty:!!form.elements.basicOption.value && form.elements.plan.value==='basic', option:form.elements.basicOption.value||'loyalty' });
 function bindBilling() {
   document.querySelectorAll('[data-bill-cancel]').forEach(button=>button.addEventListener('click',async()=>{
     const until = button.dataset.until ? date(button.dataset.until) : '';
@@ -1015,7 +1245,7 @@ function bindBilling() {
   }));
   document.querySelectorAll('[data-change-form]').forEach(form=>{
     const app = form.dataset.changeForm, box = form.querySelector('[data-change-preview]');
-    const syncLoyalty = () => { form.querySelector('[data-loyalty-field]').hidden = form.elements.plan.value==='business'; box.innerHTML=''; };
+    const syncLoyalty = () => { form.querySelector('[data-loyalty-field]').hidden = form.elements.plan.value!=='basic'; box.innerHTML=''; };
     form.elements.plan.addEventListener('change', syncLoyalty); syncLoyalty();
     form.addEventListener('input', event => { if (event.target.name !== 'note') box.innerHTML = ''; });
     form.querySelector('[data-change-close]').addEventListener('click',()=>{ form.hidden = true; const open = document.querySelector(`[data-change-open="${CSS.escape(app)}"]`); if (open) { open.hidden = false; open.focus(); } });
@@ -1099,18 +1329,23 @@ function bindApplicationActions() {
     catch (error) { toast(t(error.code || 'serverError'), 'error'); }
   }));
 }
-const pages = {'/':home,'/login':login,'/register':register,'/plans':plans,'/apply':apply,'/applications':()=>applications(false),'/admin':()=>applications(true),'/account':account,'/support':support,'/privacy':privacy,'/terms':termsPage,'/refund':refundPage,'/setup':setup,'/checkout':paymentLink};
+const pages = {'/':home,'/login':login,'/register':register,'/plans':plans,'/apply':apply,'/applications':()=>applications(false),'/admin':()=>applications(true),'/account':account,'/support':support,'/privacy':privacy,'/terms':termsPage,'/refund':refundPage,'/setup':setup,'/checkout':paymentLink,'/invite':invite,'/s':salonLink};
 const titles = {'/checkout':'payByCard','/':'tagline','/login':'login','/register':'register','/plans':'plans','/apply':'applyTitle','/applications':'applications','/admin':'inbox','/account':'account','/support':'support','/privacy':'privacyPolicy','/terms':'termsTitle','/refund':'refundTitle','/setup':'setupTitle'};
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.effects === 'off';
 // What the admin panel needs from the website: its session, API helpers, dialogs and language.
 const adminContext = () => ({ lang, t, state, api, toast, confirmDialog, setBusy, go,
   post: (path, data) => post(path, data, null, t('processing')),
   setLanguage: value => { setLanguage(value); render(); } });
-function paint() {
+// `place` (from the router) puts the page where it should be — the top, an #anchor, or where the reader was — BEFORE the
+// scroll effects start: ScrollTrigger records the scroll position when they start and puts it back after its first
+// refresh, so scrolling afterwards left a new page at the previous page's position (e.g. home scrolled to the prices →
+// "All plans" opened /plans near its bottom; a /plans#finder link missed the finder).
+function paint(place) {
   if (isAdminRoute(route)) {
     setLanguage(lang); killFx();
     app.innerHTML = adminShell(adminContext());
     bindAdmin(adminContext());
+    place?.();
     return;
   }
   setLanguage(lang);
@@ -1120,13 +1355,15 @@ function paint() {
   document.body.dataset.scene = scene;
   app.innerHTML = header()+`<main id="main" tabindex="-1" class="${scene}">${(pages[route] || home)()}</main>`+footer();
   restoreDraft();bind();
+  place?.();
   initFx(route);
   initInteract(app, t);
+  initShowcase(app);
 }
 // A new page fades in once its data is ready. Plain CSS on <main> only, so the header stays put and clicks are never
 // blocked mid-animation.
-function render({transition=false}={}) {
-  paint();
+function render({transition=false, place}={}) {
+  paint(place);
   if (transition && !reduceMotion()) document.getElementById('main')?.classList.add('page-enter');
 }
 async function browserCountry() {
@@ -1182,16 +1419,19 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
     // A new page (not a re-render of the same one) starts with a fresh application form.
     if (key !== routeKey) { state.receipt = null; state.logo = ''; state.logoName = ''; state.submissionKey = crypto.randomUUID(); }
     if (next==='/apply') await loadPhoneLib();
-    if (next==='/') { try { state.catalog = await api('/api/plans'); } catch { state.catalog = null; } }
-    if (['/plans','/apply'].includes(next)) {
+    if (['/','/plans','/apply'].includes(next)) {
+      // The visitor's country picks the currency approximate prices are shown in (payments are always in USD).
       let tz = '';
       try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
-      state.catalog = await api('/api/plans?tz='+encodeURIComponent(tz));
-      if (state.catalog.source==='default') {
-        // The server couldn't locate this visitor (some hosts block outgoing lookups), so ask from the browser.
-        const cc = await browserCountry();
-        if (cc) { try { state.catalog = await api('/api/plans?tz='+encodeURIComponent(tz)+'&cc='+cc); } catch {} }
-      }
+      try {
+        state.catalog = await api('/api/plans?tz='+encodeURIComponent(tz));
+        if (state.catalog.source==='default') {
+          // The server couldn't locate this visitor (some hosts block outgoing lookups): ask from the browser, else
+          // go by the device's time zone.
+          const cc = (next==='/' ? '' : await browserCountry()) || dialGuess();
+          if (cc) { try { state.catalog = await api('/api/plans?tz='+encodeURIComponent(tz)+'&cc='+cc); } catch {} }
+        }
+      } catch (error) { if (next!=='/') throw error; state.catalog = null; }
     }
     if (next==='/setup') state.setupAvailable=(await api('/api/setup')).available;
     if (next==='/apply') {
@@ -1212,10 +1452,13 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
     // A quiet refresh never wipes what someone is typing (a reply, an admin note).
     if (quiet && !afterAction && [...document.querySelectorAll('#main textarea, #main input')].some(el => el.value && el.type !== 'hidden' && el.type !== 'radio' && el.type !== 'checkbox' && !el.readOnly && el.closest('form') && !el.closest('.approve-form'))) return;
     const y = window.scrollY;
-    await render({transition: transition && !quiet});
-    if (quiet) { window.scrollTo({top:y, behavior:'instant'}); return; }
-    if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
-    else if (scroll) window.scrollTo({top:0, behavior:'instant'});
+    const place = () => {
+      if (quiet) return window.scrollTo({top:y, behavior:'instant'});
+      const anchor = location.hash ? document.getElementById(location.hash.slice(1)) : null;
+      if (anchor) anchor.scrollIntoView(); else if (scroll) window.scrollTo({top:0, behavior:'instant'});
+    };
+    await render({transition: transition && !quiet, place});
+    if (quiet) return;
     if (transition) document.getElementById('main')?.focus({preventScroll:true});
     if (route==='/checkout') startPaymentLink();
   } catch(error) {
