@@ -606,7 +606,7 @@ function submitApplication(array $user, string $id, array $f, string $logoBytes,
     $phone = (string)($f['phone'] ?? $user['phone'] ?? '');
     $logoUrl = sbUploadLogo('applications/'.$id.'-'.substr(hash('sha256', $logoBytes), 0, 10).'.'.logoExtension($logoType), $logoBytes, $logoType);
     return sbRpc('website_submit_application', ['p_data'=>[
-        'id'=>$id, 'websiteUserId'=>(int)$user['id'], 'fullName'=>$user['full_name'], 'email'=>$user['email'], 'phone'=>$phone, 'country'=>$user['country'],
+        'id'=>$id, 'websiteUserId'=>(int)$user['id'], 'fullName'=>$user['full_name'], 'email'=>$user['email'], 'phone'=>$phone, 'country'=>$f['country'] ?? $user['country'],
         'lang'=>$f['lang'], 'salonName'=>$f['salonName'], 'salonCategory'=>$f['salonCategory'], 'teamComposition'=>$f['teamComposition']??null, 'clientele'=>$f['clientele']??null, 'timezone'=>$f['timezone'], 'logoUrl'=>$logoUrl,
         'plan'=>$f['plan'], 'quote'=>$f['quote'], 'paymentMethod'=>$f['paymentMethod'], 'idLast4'=>$f['idLast4'], 'ownerPhone'=>$phone === '' ? '' : localPhone($phone),
     ] + $extra]);
@@ -1079,11 +1079,18 @@ function api(string $method,string $path,array|false $session,array|false $user)
         rateLimit('application-user',20,3600,(string)$user['id']);
         $name=cleanText($d['salonName']??null);
         if (mb_strlen($name)<2||mb_strlen($name)>100||!preg_match('/[\p{L}\p{N}]/u',$name)||preg_match('/[\x00-\x1f<>{}]/u',$name)) fail(400,'invalidSalonName','salonName');
-        // Normalized first, so "123-456-789" and "123 456 789" are the same ID.
-        $rawId=normalizeIdNumber($d['identityNumber']??null);
-        $idNumber=canonicalIdNumber($rawId,$user['country']);
-        if ($idNumber===null) fail(400,ctype_digit($rawId)&&strlen($rawId)>=ID_MIN_DIGITS&&strlen($rawId)<=ID_MAX_CHARS?'fakeId':'invalidId','identityNumber');
-        $idHash=idFingerprint($idNumber,$user['country']);
+        // The salon's country, chosen on the form (an older page sends none: the account's country is used).
+        $country=array_key_exists('country',$d)?$d['country']:$user['country'];
+        if (!is_string($country)||!in_array($country,countryList(),true)) fail(400,'invalidCountry','country');
+        // An ID number is asked only for salons in Israel or Palestine; any other country sends none and none is kept.
+        $idNumber='';$idHash='';
+        if (in_array($country,ID_COUNTRIES,true)) {
+            // Normalized first, so "123-456-789" and "123 456 789" are the same ID.
+            $rawId=normalizeIdNumber($d['identityNumber']??null);
+            $idNumber=canonicalIdNumber($rawId,$country);
+            if ($idNumber===null) fail(400,ctype_digit($rawId)&&strlen($rawId)>=ID_MIN_DIGITS&&strlen($rawId)<=ID_MAX_CHARS?'fakeId':'invalidId','identityNumber');
+            $idHash=idFingerprint($idNumber,$country);
+        }
         if (!in_array($d['plan']??null,OFFERED_PLANS,true)) fail(400,'invalidPlan','plan');
         if (!in_array($d['paymentMethod']??null,['card','bank_transfer'],true)) fail(400,'invalidPayment','paymentMethod');
         if (array_key_exists('option',$d) && !in_array($d['option'],BASIC_OPTIONS,true)) fail(400,'invalidAddons');
@@ -1098,9 +1105,9 @@ function api(string $method,string $path,array|false $session,array|false $user)
         $team=$d['teamComposition']??null;if (!in_array($team,TEAM_COMPOSITIONS,true)) fail(400,'invalidTeamComposition','teamComposition');
         $clientele=$d['clientele']??null;if (!in_array($clientele,CLIENTELES,true)) fail(400,'invalidClientele','clientele');
         $category=$clientele==='women'?'female':'male';
-        $timezone=$d['timezone']??defaultTimezone($user['country']);if (!validTimezone($timezone)) fail(400,'invalidTimezone','timezone');
+        $timezone=$d['timezone']??defaultTimezone($country);if (!validTimezone($timezone)) fail(400,'invalidTimezone','timezone');
         // The salon's contact and owner sign-in number; the same number may be used on any number of applications.
-        $dial=is_string($d['phoneCountry']??null)&&in_array($d['phoneCountry'],countryList(),true)?$d['phoneCountry']:$user['country'];
+        $dial=is_string($d['phoneCountry']??null)&&in_array($d['phoneCountry'],countryList(),true)?$d['phoneCountry']:$country;
         $phone=normalizePhone($d['phone']??null,$dial);if ($phone===null) fail(400,'invalidPhone','phone');
         if (!supabaseReady()) fail(503,'serviceUnavailable');
         // The same submission (a retried click) always maps to the same reference, so it is saved once.
@@ -1109,10 +1116,10 @@ function api(string $method,string $path,array|false $session,array|false $user)
         // The ID number is saved first (keyed by the reference, so a retry reuses the row). No database lock is held
         // during the logo upload and the Supabase call, so a slow network can't block other requests or time this one out.
         // The same ID number may be used on any number of applications.
-        runSql('INSERT OR IGNORE INTO application_identity(application_id,user_id,identity_encrypted,identity_hash) VALUES(?,?,?,?)',[$id,$user['id'],encryptId($idNumber),$idHash]);
+        if ($idNumber!=='') runSql('INSERT OR IGNORE INTO application_identity(application_id,user_id,identity_encrypted,identity_hash) VALUES(?,?,?,?)',[$id,$user['id'],encryptId($idNumber),$idHash]);
         try {
-            $a=submitApplication($user,$id,['lang'=>siteLang($d['lang']??null),'salonName'=>$name,'salonCategory'=>$category,'teamComposition'=>$team,'clientele'=>$clientele,'timezone'=>$timezone,'phone'=>$phone,'plan'=>$d['plan'],
-                'quote'=>$quote,'paymentMethod'=>$d['paymentMethod'],'idLast4'=>mb_substr($idNumber,-4)],$logo['bytes'],$logo['type']);
+            $a=submitApplication($user,$id,['lang'=>siteLang($d['lang']??null),'country'=>$country,'salonName'=>$name,'salonCategory'=>$category,'teamComposition'=>$team,'clientele'=>$clientele,'timezone'=>$timezone,'phone'=>$phone,'plan'=>$d['plan'],
+                'quote'=>$quote,'paymentMethod'=>$d['paymentMethod'],'idLast4'=>$idNumber===''?'':mb_substr($idNumber,-4)],$logo['bytes'],$logo['type']);
         } catch (Throwable $e) { supabaseFail($e); }
         sendJson(201,['application'=>$a]);
     }

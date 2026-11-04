@@ -59,8 +59,9 @@ function passwordProblem(mixed $password, string $email = '', string $username =
 }
 
 // ---- Identity numbers ------------------------------------------------------------------------------------------------
-// One rule for every country: digits only, at least 5 of them, and not an obvious made-up number. This proves a number
-// is plausible, not that it belongs to the applicant; there is no authoritative lookup behind it.
+// Asked only for salons in these countries. The rule: digits only, at least 5 of them, and not an obvious made-up
+// number. This proves a number is plausible, not that it belongs to the applicant; there is no authoritative lookup.
+const ID_COUNTRIES = ['IL', 'PS'];
 const ID_MIN_DIGITS = 5;
 const ID_MAX_CHARS = 64; // storage safety only, not a format rule
 function normalizeIdNumber(mixed $raw): string {

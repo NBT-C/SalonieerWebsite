@@ -361,7 +361,7 @@ function renderMail(array $item): array {
         '{total}'=>isset($q['total']) && $q['total']!==null ? $q['total'].' '.($q['currency'] ?? '').' / '.(($q['interval'] ?? 'month')==='year' ? 'year' : 'month') : 'by agreement', '{payline}'=>$paylines[$lang][0],
         '{code}'=>$a['salon']['accessCode'] ?? '',
         '{created}'=>isset($a['createdAt']) ? gmdate('Y-m-d H:i', strtotime((string)$a['createdAt'])).' UTC' : '', '{country}'=>$a['country'] ?? '', '{lang}'=>strtoupper((string)($a['lang'] ?? '')),
-        '{idlast4}'=>$a['idLast4'] ?? '', '{category}'=>ucfirst((string)($a['salonCategory'] ?? '')), '{timezone}'=>$a['timezone'] ?? '', '{logo}'=>$a['logoUrl'] ?? '',
+        '{idlast4}'=>($a['idLast4'] ?? '') !== '' ? $a['idLast4'] : 'not asked (salon outside Israel/Palestine)', '{category}'=>ucfirst((string)($a['salonCategory'] ?? '')), '{timezone}'=>$a['timezone'] ?? '', '{logo}'=>$a['logoUrl'] ?? '',
         '{loyalty}'=>!empty($q['loyalty']) ? 'yes' : (in_array($a['plan'] ?? '', ['business','enterprise'], true) ? 'included' : 'no'), '{extra}'=>(string)(int)($q['extraSpecialists'] ?? 0), '{password}'=>(string)($item['vars']['password'] ?? ''), '{body}'=>(string)($item['vars']['body'] ?? ''), '{site}'=>siteUrl()];
     $vars += billingMailVars($item, $lang);
     // {v:name} = a value queued with the email itself (problem reports, cleanup notices).
