@@ -67,7 +67,7 @@ const L = {
   branding: ['Branding', 'الهوية', 'מיתוג'], primaryColor: ['Main colour', 'اللون الأساسي', 'צבע ראשי'], detailColor: ['Detail colour', 'لون التفاصيل', 'צבע משני'], appearance: ['Appearance', 'المظهر', 'מראה'],
   style_ivory: ['Ivory (light)', 'عاجي (فاتح)', 'שנהב (בהיר)'], style_noir: ['Charcoal (dark)', 'فحمي (داكن)', 'פחם (כהה)'], style_midnight: ['Midnight blue', 'أزرق ليلي', 'כחול לילה'],
   motion: ['Motion', 'الحركة', 'תנועה'], motionFull: ['Fade and slide', 'تلاشي وانزلاق', 'דהייה והחלקה'], motionSubtle: ['Fade only', 'تلاشي فقط', 'דהייה בלבד'], palettes: ['Suggested palettes', 'لوحات مقترحة', 'פלטות מוצעות'],
-  previewService: ['Haircut and styling', 'قص وتصفيف', 'תספורת ועיצוב'], previewBook: ['Book', 'احجز', 'הזמנה'], logo: ['Logo', 'الشعار', 'לוגו'], chooseLogo: ['Choose an image', 'اختيار صورة', 'בחירת תמונה'],
+  previewService: ['First consultation', 'استشارة أولى', 'ייעוץ ראשוני'], previewBook: ['Book', 'احجز', 'הזמנה'], logo: ['Logo', 'الشعار', 'לוגו'], chooseLogo: ['Choose an image', 'اختيار صورة', 'בחירת תמונה'],
   removeLogo: ['Remove logo', 'إزالة الشعار', 'הסרת הלוגו'], logoHint: ['Square images look best. Large images are resized for you.', 'الصور المربعة أفضل. تُصغَّر الصور الكبيرة تلقائياً.', 'תמונות ריבועיות נראות הכי טוב. תמונות גדולות מוקטנות אוטומטית.'], noLogo: ['No logo', 'بدون شعار', 'ללא לוגו'],
   internalNote: ['Internal note', 'ملاحظة داخلية', 'הערה פנימית'], advanced: ['Advanced', 'متقدم', 'מתקדם'], customCss: ["Custom CSS for this business", "CSS خاص بهذه المنشأة", "CSS מותאם לעסק"],
   createSalon: ["Create business", "إنشاء المنشأة", "יצירת עסק"], subscription: ['Subscription', 'الاشتراك', 'מנוי'], subStatus: ['Subscription status', 'حالة الاشتراك', 'סטטוס מנוי'],

@@ -8,33 +8,33 @@ export const PASSWORD = 'Showcase-2026';
 
 export const DATA = {
   ar: {
-    slug: 'lamsa', code: 'LAMSA-1', name: 'صالون لمسة', tz: 'Asia/Hebron', iso: 'PS', cc: '970', prefix: '0599',
+    slug: 'lamsa', code: 'SHIFA-1', name: 'مركز شفاء للعلاج الطبيعي', tz: 'Asia/Hebron', iso: 'PS', cc: '970', prefix: '0599',
     owner: 'ليلى منصور',
-    services: [['قص وسشوار', 45, 80], ['صبغة شعر', 90, 220], ['هايلايت', 120, 300], ['مكياج سهرة', 60, 180],
-      ['مانيكير', 30, 60], ['باديكير', 45, 80], ['تشكيل حواجب', 20, 40], ['تنظيف بشرة', 60, 150]],
-    team: [['رنا', 'شعر وصبغات', [0, 1, 2]], ['سلمى', 'مكياج وحواجب', [3, 6]], ['دانة', 'أظافر وعناية', [4, 5]], ['لين', 'بشرة وحواجب', [7, 6]]],
+    services: [['جلسة علاج طبيعي', 45, 80], ['مساج رياضي', 60, 120], ['استشارة أولى', 30, 60], ['زيارة متابعة', 20, 40],
+      ['خطة تغذية', 60, 150], ['علاج آلام الظهر', 45, 90], ['تقييم الحركة', 30, 60], ['جلسة تعافٍ', 60, 120]],
+    team: [['د. ريم', 'علاج طبيعي', [0, 5, 6]], ['عمر', 'مساج رياضي', [1, 7]], ['لين', 'استشارات ومتابعة', [2, 3]], ['آدم', 'تغذية علاجية', [4, 2]]],
     booker: 'سما حداد',
     customers: ['ريم خليل', 'هبة ناصر', 'نور عودة', 'لينا جابر', 'ميس داود', 'رهف سالم', 'جنى عيسى', 'تالا زيد', 'يارا شاهين', 'سلام حمدان',
       'دينا قاسم', 'روان يوسف', 'ليان عمر', 'مرام سعيد', 'آية حسن', 'نادين خوري', 'شهد بكر', 'ريتال منصور', 'غدير عواد', 'سارة عبد الله',
       'ملك الأحمد', 'بيان زكي', 'هالة سمعان', 'رنيم صالح', 'جود عيّاد', 'لمى حمّاد', 'تسنيم نعيم', 'إسراء قطيط', 'وعد مرعي', 'دانا الخطيب'],
   },
   en: {
-    slug: 'velvet', code: 'VELVET-1', name: 'Velvet Beauty Studio', tz: 'Asia/Hebron', iso: 'PS', cc: '970', prefix: '0598',
+    slug: 'velvet', code: 'NOVA-1', name: 'Nova Physio & Wellness', tz: 'Asia/Hebron', iso: 'PS', cc: '970', prefix: '0598',
     owner: 'Nadia Hart',
-    services: [['Cut & blow-dry', 45, 80], ['Hair color', 90, 220], ['Highlights', 120, 300], ['Evening makeup', 60, 180],
-      ['Manicure', 30, 60], ['Pedicure', 45, 80], ['Brow shaping', 20, 40], ['Facial', 60, 150]],
-    team: [['Mia', 'Hair & color', [0, 1, 2]], ['Sofia', 'Makeup & brows', [3, 6]], ['Lena', 'Nails & care', [4, 5]], ['Ava', 'Skin & brows', [7, 6]]],
+    services: [['Physiotherapy session', 45, 80], ['Sports massage', 60, 120], ['First consultation', 30, 60], ['Follow-up visit', 20, 40],
+      ['Nutrition plan', 60, 150], ['Back pain therapy', 45, 90], ['Mobility assessment', 30, 60], ['Recovery session', 60, 120]],
+    team: [['Dr. Mia', 'Physiotherapy', [0, 5, 6]], ['Omar', 'Sports massage', [1, 7]], ['Lena', 'Consultations', [2, 3]], ['Adam', 'Nutrition', [4, 2]]],
     booker: 'Emma Brooks',
     customers: ['Olivia Hayes', 'Chloe Bennett', 'Grace Turner', 'Ella Morgan', 'Zoe Parker', 'Lily Foster', 'Hannah Reed', 'Nora Collins', 'Ruby Ward', 'Sophie Hughes',
       'Amelia Price', 'Isla Cooper', 'Mila Russell', 'Leah Barnes', 'Ivy Sanders', 'Maya Bell', 'Clara Jenkins', 'Alice Ross', 'Sara Kim', 'Julia Webb',
       'Rose Palmer', 'Lucy Grant', 'Eva Shaw', 'Holly Lane', 'Freya Wells', 'Daisy Cole', 'Nina Ford', 'Tessa Blake', 'Iris Hale', 'Megan Doyle'],
   },
   he: {
-    slug: 'katifa', code: 'KATIFA-1', name: 'סטודיו קטיפה', tz: 'Asia/Jerusalem', iso: 'IL', cc: '972', prefix: '0546',
+    slug: 'katifa', code: 'MARPE-1', name: 'מרכז מרפא לפיזיותרפיה', tz: 'Asia/Jerusalem', iso: 'IL', cc: '972', prefix: '0546',
     owner: 'מיכל אורן',
-    services: [['תספורת ופן', 45, 80], ['צבע לשיער', 90, 220], ['גוונים', 120, 300], ['איפור ערב', 60, 180],
-      ['מניקור', 30, 60], ['פדיקור', 45, 80], ['עיצוב גבות', 20, 40], ['טיפול פנים', 60, 150]],
-    team: [['נועה', 'שיער וצבע', [0, 1, 2]], ['מאיה', 'איפור וגבות', [3, 6]], ['שירה', 'ציפורניים וטיפוח', [4, 5]], ['טל', 'עור וגבות', [7, 6]]],
+    services: [['טיפול פיזיותרפיה', 45, 80], ['עיסוי ספורטאים', 60, 120], ['ייעוץ ראשוני', 30, 60], ['ביקור מעקב', 20, 40],
+      ['תוכנית תזונה', 60, 150], ['טיפול בכאבי גב', 45, 90], ['הערכת תנועה', 30, 60], ['טיפול התאוששות', 60, 120]],
+    team: [['ד"ר נועה', 'פיזיותרפיה', [0, 5, 6]], ['עומר', 'עיסוי ספורטאים', [1, 7]], ['שירה', 'ייעוץ ומעקב', [2, 3]], ['אדם', 'תזונה', [4, 2]]],
     booker: 'יעל מזרחי',
     customers: ['מאיה לוי', 'שירה פרץ', 'תמר ביטון', 'אביגיל דהן', 'רוני אברהם', 'הילה פרידמן', 'ליאור שפירא', 'עדי גולן', 'אור רוזן', 'דנה קפלן',
       'ענבל ברק', 'מיכל אזולאי', 'גלי חדד', 'ליה שלום', 'רותם בן דוד', 'אלה כץ', 'שני עמר', 'טליה סויסה', 'נגה אלון', 'הדר גבאי',
@@ -53,7 +53,7 @@ export async function seedSalon({ db, one, call }, lang) {
   // The look every salon gets when Salonieer approves it from the website (website_app_approve): the brand colours
   // and the light "ivory" style.
   await call('platform_create_salon', [{ slug: S, name: L.name, access_code: L.code, primary_color: '#1a88a4', secondary_color: '#c6b18b',
-    timezone: L.tz, style_preset: 'ivory', motion: 'full', team_composition: 'female', clientele: 'women', subscription: { plan_code: 'pro' } }]);
+    timezone: L.tz, style_preset: 'ivory', motion: 'full', team_composition: 'mixed', clientele: 'both', subscription: { plan_code: 'pro' } }]);
   const today = (await one(`select (now() at time zone $1)::date::text d`, [L.tz])).d;
   const nowMin = (await one(`select extract(hour from now() at time zone $1)::int * 60 + extract(minute from now() at time zone $1)::int m`, [L.tz])).m;
   const day = n => one(`select ((now() at time zone $1)::date + $2::int)::text d`, [L.tz, n]).then(r => r.d);

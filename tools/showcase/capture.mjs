@@ -46,7 +46,7 @@ const bridge = H.rpcBridge(dbx.db);
 const rpcErrors = [];
 
 // Each salon's logo: a monogram drawn here (no real brand).
-const LOGO_LETTER = { lamsa: 'ل', velvet: 'V', katifa: 'ק' };
+const LOGO_LETTER = { lamsa: 'ش', velvet: 'N', katifa: 'מ' };   // METON demo: a physiotherapy and wellness centre per language
 const logos = {};
 {
   const pg = await browser.newPage({ viewport: { width: 256, height: 256 } });
@@ -106,7 +106,7 @@ const go = async (pg, hash, ms = 1500) => { await pg.evaluate(h => { location.ha
 async function foreign(pg, lang, clip) {
   return pg.evaluate(({ lang, clip }) => {
     const re = lang === 'ar' ? /[֐-׿]|\b[A-Za-z]{3,}\b/ : lang === 'he' ? /[؀-ۿ]|\b[A-Za-z]{3,}\b/ : /[؀-ۿ֐-׿]/;
-    const allowed = /^(Salonieer|SALONIEER|Pro|Basic|QR|PIN|Excel|iPhone|Android|WhatsApp|Instagram|AM|PM)$/;
+    const allowed = /^(METON|Salonieer|SALONIEER|Pro|Basic|QR|PIN|Excel|iPhone|Android|WhatsApp|Instagram|AM|PM)$/;
     const out = new Set(), sc = document.scrollingElement;
     const inClip = r => !clip || (r.bottom + sc.scrollTop > clip.y && r.top + sc.scrollTop < clip.y + clip.h);
     const walk = node => {
