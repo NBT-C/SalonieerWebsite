@@ -34,9 +34,12 @@ const CURRENCIES = ['USD'];
 const SYMBOLS = { USD:'$', ILS:'₪' };
 let storedDisplay;
 try { storedDisplay = localStorage.getItem('salonieer_display_currency'); } catch {}
+// A submission key. crypto.randomUUID exists only on https pages; getRandomValues works everywhere (a page opened over
+// plain http stopped at "Loading…" without this).
+const uuid = () => { if (window.crypto?.randomUUID) { try { return crypto.randomUUID(); } catch {} } const b = crypto.getRandomValues(new Uint8Array(16)); b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128; const h = [...b].map(x => x.toString(16).padStart(2, '0')).join(''); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`; };
 let storedInterval;
 try { storedInterval = localStorage.getItem('salonieer_interval'); } catch {}
-const state = { interval: storedInterval === 'year' ? 'year' : 'month', invoices: [], currency: 'USD', displayCurrency: /^[A-Z]{3}$/.test(storedDisplay || '') ? storedDisplay : '', user: null, csrf: '', catalog: null, applications: [], logo: '', logoName: '', submissionKey: crypto.randomUUID(), receipt: null, filter: 'all', billing: null, checkout: null, paid: false, salons: [] };
+const state = { interval: storedInterval === 'year' ? 'year' : 'month', invoices: [], currency: 'USD', displayCurrency: /^[A-Z]{3}$/.test(storedDisplay || '') ? storedDisplay : '', user: null, csrf: '', catalog: null, applications: [], logo: '', logoName: '', submissionKey: uuid(), receipt: null, filter: 'all', billing: null, checkout: null, paid: false, salons: [] };
 const drafts = {};
 const t = (key,vars) => translate(key,lang,vars);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1435,7 +1438,7 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
     if ((next==='/admin'||next.startsWith('/admin/')) && !state.user?.isAdmin) return go('/applications', {replace:true});
     if (['/login','/register'].includes(next) && state.user) return go(nextPage(), {replace:true});
     // A new page (not a re-render of the same one) starts with a fresh application form.
-    if (key !== routeKey) { state.receipt = null; state.logo = ''; state.logoName = ''; state.submissionKey = crypto.randomUUID(); }
+    if (key !== routeKey) { state.receipt = null; state.logo = ''; state.logoName = ''; state.submissionKey = uuid(); }
     if (next==='/apply') await loadPhoneLib();
     if (['/','/plans','/apply'].includes(next)) {
       // The visitor's country picks the currency approximate prices are shown in (payments are always in USD).
