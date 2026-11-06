@@ -72,7 +72,7 @@ export const empty = (title, text = '', action = '') => `<div class="ap-empty"><
 export function setTitle(title, actions = '') {
   document.getElementById('ap-title').textContent = title;
   document.getElementById('ap-top-actions').innerHTML = actions;
-  document.title = 'Salonieer · ' + title;
+  document.title = 'METON · ' + title;
 }
 export const PAY = { unpaid: 'warn', paid: 'ok', test_paid: 'info', refunded: 'muted' };
 export const STATUS = { pending: 'warn', in_review: 'info', needs_info: 'warn', approved: 'ok', declined: 'danger' };
@@ -108,7 +108,7 @@ const icon = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" s
 export function adminShell(c) {
   ctx = c;
   return `<div class="ap" id="ap"><aside class="ap-spine" id="ap-spine" aria-label="${esc(T('panelNav'))}">
-    <a class="ap-brand" href="/admin"><img src="/assets/brand/Salonieer_symbol_for_dark.svg" alt="" width="34" height="36"><span><b>Salonieer</b><small>${esc(T('panelName'))}</small></span></a>
+    <a class="ap-brand" href="/admin"><img src="/assets/brand/favicon.svg" alt="" width="32" height="32"><span><b>METON</b><small>${esc(T('panelName'))}</small></span></a>
     <nav class="ap-nav" id="ap-nav"></nav>
     <div class="ap-spine-foot"><a class="ap-nav-item" href="/">${icon('M10 17l-5-5 5-5M5 12h14')}<span>${esc(T('backToSite'))}</span></a>
       <div class="ap-account" id="ap-account"></div></div></aside>
@@ -344,7 +344,7 @@ async function applicationView(id) {
   })();
   const q = a.quote || {}, addons = [q.loyalty ? ctx.t('loyalty') : '', q.extraSpecialists ? `${ctx.t('extraSpecialists')} × ${q.extraSpecialists}` : ''].filter(Boolean);
   const facts = (rows) => `<dl class="ap-facts">${rows.filter(r => r[1]).map(([k, v, ltr]) => `<div><dt>${esc(k)}</dt><dd${ltr ? ' dir="ltr"' : ''}>${v}</dd></div>`).join('')}</dl>`;
-  const who = m => m.direction === 'in' ? esc(m.author || a.fullName) : m.direction === 'out' ? 'Salonieer' : esc(T('system'));
+  const who = m => m.direction === 'in' ? esc(m.author || a.fullName) : m.direction === 'out' ? 'METON' : esc(T('system'));
   view().innerHTML = `<section class="ap-app-head" style="--salon:#1a88a4">${salonMark(a, 64)}<div><h2>${esc(a.salonName)}</h2><p dir="ltr">${esc(a.id)}</p><div class="ap-pills">${appStatus(a)}${payPill(a)}${reviewBadge(a)}</div></div></section>
     <div class="ap-columns is-detail"><div class="ap-stack">
       ${reviewPanel(a)}

@@ -397,7 +397,7 @@ function httpGetJson(string $url): ?array {
         $r=curl_exec($c);$code=(int)curl_getinfo($c,CURLINFO_HTTP_CODE);curl_close($c);
         if (is_string($r)&&$code===200) $body=$r;
     } elseif (ini_get('allow_url_fopen')) {
-        $r=@file_get_contents($url,false,stream_context_create(['http'=>['timeout'=>3,'header'=>"Accept: application/json\r\nUser-Agent: Salonieer/1.0\r\n"]]));
+        $r=@file_get_contents($url,false,stream_context_create(['http'=>['timeout'=>3,'header'=>"Accept: application/json\r\nUser-Agent: METON/1.0\r\n"]]));
         if (is_string($r)) $body=$r;
     }
     } catch (Throwable $e) { error_log('Salonieer geo lookup failed: '.$e->getMessage()); return null; }
@@ -1233,7 +1233,7 @@ try {
     if (in_array($route,['/login','/register'],true)&&$user) redirectTo('/plans');
     if (in_array($route,array_merge($public,$private),true)||$adminPanel) {header('Content-Type: text/html; charset=utf-8');if ($method!=='HEAD') echo pageHtml();exit;}
     [$themeAttrs,$themeStyle]=themeHead();
-    http_response_code(404);header('Content-Type: text/html; charset=utf-8');echo '<!doctype html><html lang="en"'.$themeAttrs.'><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found · Salonieer</title><link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/site.css">'.$themeStyle.'<main class="wrap empty-state"><img src="/assets/brand/Salonieer_header_for_light_1224x385.svg" alt="Salonieer" width="220" height="69" style="display:block;margin:0 auto 24px;height:auto"><h1>Page not found</h1><p>This page doesn’t exist or has moved.</p><a class="btn primary" href="/">Back to Salonieer</a></main></html>';
+    http_response_code(404);header('Content-Type: text/html; charset=utf-8');echo '<!doctype html><html lang="en"'.$themeAttrs.'><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page not found · METON</title><link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="/assets/app.css"><link rel="stylesheet" href="/assets/site.css">'.$themeStyle.'<main class="wrap empty-state"><img src="/assets/brand/meton-wordmark-ink.svg" alt="METON" width="180" height="36" style="display:block;margin:0 auto 24px;height:auto"><h1>Page not found</h1><p>This page doesn’t exist or has moved.</p><a class="btn primary" href="/">Back to METON</a></main></html>';
 } catch (HttpFailure $e) {
     if ($e->status===429) header('Retry-After: 900');
     sendJson($e->status,['error'=>$e->errorCode,'field'=>$e->field]);

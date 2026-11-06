@@ -189,7 +189,7 @@ async function tabOverview(host, s, reload) {
   document.getElementById('ap-print').addEventListener('click', () => {
     const w = window.open('', '_blank', 'width=480,height=640');
     if (!w) return;
-    w.document.write(`<!doctype html><title>${esc(s.name)}</title><body style="font-family:sans-serif;text-align:center;padding:40px"><h1>${esc(s.name)}</h1><div style="width:320px;margin:auto">${qrSvg(link)}</div><h2 style="letter-spacing:.1em">${esc(s.access_code)}</h2><p>Salonieer</p><script>print()<\/script>`);
+    w.document.write(`<!doctype html><title>${esc(s.name)}</title><body style="font-family:sans-serif;text-align:center;padding:40px"><h1>${esc(s.name)}</h1><div style="width:320px;margin:auto">${qrSvg(link)}</div><h2 style="letter-spacing:.1em">${esc(s.access_code)}</h2><p>METON</p><script>print()<\/script>`);
     w.document.close();
   });
   document.getElementById('ap-active')?.addEventListener('click', async e => {
@@ -300,7 +300,7 @@ async function tabAccounts(host, s, reload) {
   const ownerRow = o => `<li><span><b>${esc(o.name || T('noName'))}</b><small dir="ltr">${esc(o.account?.phone || o.phone)}</small>
       <small>${esc(o.account ? T('accountLinked', { name: o.account.name }) : T('accountNotLinked'))}${o.specialist ? ' · ' + esc(T('specialistToo')) : ''}${o.last_seen ? ' · ' + esc(T('lastSeen', { date: fmtDate(o.last_seen) })) : ''}</small></span>
       ${o.disabled ? pill('danger', T('disabled')) : ''}${can ? `<button class="ap-link is-danger" type="button" data-remove="${esc(o.id)}">${esc(T('removeOwner'))}</button>` : ''}</li>`;
-  const pendingRow = g => `<li><span><b dir="ltr">${esc(g.phone)}</b><small>${esc(roleText(g.role))}${g.title ? ' · ' + esc(g.title) : ''} · ${esc(T('waitingLine', { by: g.created_by || 'Salonieer', date: fmtDate(g.created_at) }))}</small>
+  const pendingRow = g => `<li><span><b dir="ltr">${esc(g.phone)}</b><small>${esc(roleText(g.role))}${g.title ? ' · ' + esc(g.title) : ''} · ${esc(T('waitingLine', { by: g.created_by || 'METON', date: fmtDate(g.created_at) }))}</small>
       ${g.last_error ? `<small class="ap-error-inline">${esc(T('accessError', { error: errorText({ message: g.last_error }) }))}</small>` : ''}</span>${pill('warn', T('waitingShort'))}
       ${can ? `<span class="ap-row-actions"><button class="ap-link" type="button" data-retry="${esc(g.id)}">${esc(T('retryAccess'))}</button><button class="ap-link is-danger" type="button" data-cancel="${esc(g.id)}">${esc(T('cancelAccess'))}</button></span>` : ''}</li>`;
   const memberRow = m => `<li><span><b>${esc(m.status === 'invited' ? T('memberInvitedName') : (m.name || '—'))}</b><small>${esc(roleText(m.role))}${m.title ? ' · ' + esc(m.title) : ''}${m.phone && m.status !== 'invited' ? ` · <bdi dir="ltr">${esc(m.phone)}</bdi>` : ''}</small></span>${pill(m.status === 'active' ? 'ok' : 'info', T('member_' + m.status))}</li>`;

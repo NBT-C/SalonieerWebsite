@@ -18,7 +18,7 @@ function mailReady(): bool { return mailSetting('MAIL_HOST')!=='' && mailSetting
 function adminEmail(): string { return strtolower(mailSetting('ADMIN_EMAIL','salonieer1st@gmail.com')); }
 // Who receives admin alerts (new application, payment, customer reply): ADMIN_ALERT_EMAILS, comma separated.
 function adminAlertEmails(): array {
-    $list = array_map('trim', explode(',', strtolower(mailSetting('ADMIN_ALERT_EMAILS', 'hello@salonieer.com,'.adminEmail()))));
+    $list = array_map('trim', explode(',', strtolower(mailSetting('ADMIN_ALERT_EMAILS', 'support@meton.work,'.adminEmail()))));
     return array_values(array_unique(array_filter($list, fn($a) => filter_var($a, FILTER_VALIDATE_EMAIL))));
 }
 function siteUrl(): string { return rtrim(mailSetting('SITE_URL','https://salonieer.com'),'/'); }
@@ -76,7 +76,7 @@ function smtpSend(string|array $to, string $subject, string $html, string $text,
         $c->write("DATA\r\n"); smtpExpect($c, [354]);
         $b = 'b'.bin2hex(random_bytes(12));
         $domain = substr(strrchr($user, '@'), 1);
-        $headers = ['Date: '.date(DATE_RFC2822), 'From: '.encodeHeader(mailSetting('MAIL_FROM_NAME','Salonieer'))." <$user>", 'To: '.implode(', ', array_map(fn($a) => "<$a>", $to)),
+        $headers = ['Date: '.date(DATE_RFC2822), 'From: '.encodeHeader(mailSetting('MAIL_FROM_NAME','METON'))." <$user>", 'To: '.implode(', ', array_map(fn($a) => "<$a>", $to)),
             'Reply-To: <'.($replyTo !== '' ? cleanAddress($replyTo) : $user).'>', 'Subject: '.encodeHeader($subject),
             'Message-ID: <'.bin2hex(random_bytes(16))."@$domain>", 'MIME-Version: 1.0', "Content-Type: multipart/alternative; boundary=\"$b\"", 'Auto-Submitted: auto-generated'];
         $body = implode("\r\n", $headers)."\r\n\r\n"
@@ -205,69 +205,69 @@ function mailCopy(string $template, string $lang): array {
     $c = [
         'received' => [
             'en' => ['We received your application', "Thank you! We received your application for {salon} ({plan} plan). Reference: {ref}.\n\n{payline}\n\nApproval usually takes up to one day once payment is confirmed. You can follow it any time on your Applications page."],
-            'ar' => ['استلمنا طلبك', "شكراً لك! استلمنا طلبك لصالون {salon} (باقة {plan}). رقم المرجع: {ref}.\n\n{payline}\n\nتتم الموافقة عادةً خلال يوم واحد كحد أقصى بعد تأكيد الدفع. يمكنك متابعة الطلب في أي وقت من صفحة طلباتي."],
+            'ar' => ['استلمنا طلبك', "شكراً لك! استلمنا طلبك لـ {salon} (باقة {plan}). رقم المرجع: {ref}.\n\n{payline}\n\nتتم الموافقة عادةً خلال يوم واحد كحد أقصى بعد تأكيد الدفع. يمكنك متابعة الطلب في أي وقت من صفحة طلباتي."],
             'he' => ['קיבלנו את הבקשה שלך', "תודה! קיבלנו את הבקשה עבור {salon} (חבילת {plan}). אסמכתא: {ref}.\n\n{payline}\n\nהאישור לוקח בדרך כלל עד יום אחד לאחר אישור התשלום. אפשר לעקוב בדף הבקשות."]],
         'payment_received' => [
-            'en' => ['Payment received — awaiting approval', "We received the payment for {salon} ({ref}). Your application is now awaiting approval, which usually takes up to one day. We'll email you as soon as your salon is ready."],
-            'ar' => ['تم استلام الدفع — بانتظار الموافقة', "استلمنا الدفع لصالون {salon} ({ref}). طلبك الآن بانتظار الموافقة، وتستغرق عادةً يوماً واحداً كحد أقصى. سنراسلك فور تجهيز صالونك."],
-            'he' => ['התשלום התקבל — ממתין לאישור', "קיבלנו את התשלום עבור {salon} ({ref}). הבקשה ממתינה כעת לאישור, שלוקח בדרך כלל עד יום אחד. נשלח לך דוא״ל ברגע שהסלון יהיה מוכן."]],
+            'en' => ['Payment received — awaiting approval', "We received the payment for {salon} ({ref}). Your application is now awaiting approval, which usually takes up to one day. We'll email you as soon as your business is ready."],
+            'ar' => ['تم استلام الدفع — بانتظار الموافقة', "استلمنا الدفع لـ {salon} ({ref}). طلبك الآن بانتظار الموافقة، وتستغرق عادةً يوماً واحداً كحد أقصى. سنراسلك فور تجهيز منشأتك."],
+            'he' => ['התשלום התקבל — ממתין לאישור', "קיבלנו את התשלום עבור {salon} ({ref}). הבקשה ממתינה כעת לאישור, שלוקח בדרך כלל עד יום אחד. נשלח לך דוא״ל ברגע שהעסק יהיה מוכן."]],
         'needs_info' => [
             'en' => ['We need a little more information', "To continue with your application for {salon} ({ref}), we need the following:\n\n{body}\n\nJust reply to this email, or answer on your Applications page."],
-            'ar' => ['نحتاج بعض المعلومات الإضافية', "لمتابعة طلبك لصالون {salon} ({ref}) نحتاج ما يلي:\n\n{body}\n\nيمكنك الرد على هذا البريد مباشرة، أو الإجابة من صفحة طلباتي."],
+            'ar' => ['نحتاج بعض المعلومات الإضافية', "لمتابعة طلبك لـ {salon} ({ref}) نحتاج ما يلي:\n\n{body}\n\nيمكنك الرد على هذا البريد مباشرة، أو الإجابة من صفحة طلباتي."],
             'he' => ['נדרש מעט מידע נוסף', "כדי להמשיך בבקשה עבור {salon} ({ref}) נצטרך את הפרטים הבאים:\n\n{body}\n\nאפשר להשיב לדוא״ל הזה או לענות בדף הבקשות."]],
         'message' => [
-            'en' => ['A message about your application', "{body}\n\n— Salonieer ({ref})\nYou can reply to this email."],
-            'ar' => ['رسالة بخصوص طلبك', "{body}\n\n— Salonieer ({ref})\nيمكنك الرد على هذا البريد."],
-            'he' => ['הודעה בנוגע לבקשה שלך', "{body}\n\n— Salonieer ({ref})\nאפשר להשיב לדוא״ל הזה."]],
+            'en' => ['A message about your application', "{body}\n\n— METON ({ref})\nYou can reply to this email."],
+            'ar' => ['رسالة بخصوص طلبك', "{body}\n\n— METON ({ref})\nيمكنك الرد على هذا البريد."],
+            'he' => ['הודעה בנוגע לבקשה שלך', "{body}\n\n— METON ({ref})\nאפשר להשיב לדוא״ל הזה."]],
         'approved' => [
-            'en' => ['Your salon is ready', "Great news — {salon} is approved and ready in the Salonieer app.\n\nSalon code: {code}\nPlan: {plan}\n\nTo manage your salon:\n1. Install Salonieer (App Store / Google Play) and tap Log In.\n2. Sign in with phone {phone} and the temporary password {password}. Your salon appears in My Salons as yours (salon code {code}).\n3. Change the password from My Account after signing in.\nAlready have a Salonieer account with this number? Add the salon with the code {code} or the QR on your account page and enter the temporary password once to link it.\n\nYour account page shows all your salon details and its QR code: {site}/account"],
-            'ar' => ['صالونك جاهز', "خبر سعيد — تمت الموافقة على {salon} وأصبح جاهزاً في تطبيق Salonieer.\n\nرمز الصالون: {code}\nالباقة: {plan}\n\nلإدارة صالونك:\n1. ثبّت تطبيق Salonieer واضغط «تسجيل الدخول».\n2. سجّل الدخول برقم الهاتف {phone} وكلمة المرور المؤقتة {password}، فيظهر صالونك في «صالوناتي» كصالون تملكه (رمز الصالون {code}).\n3. غيّر كلمة المرور من «حسابي» بعد الدخول.\nلديك حساب Salonieer بهذا الرقم؟ أضف الصالون بالرمز {code} أو برمز QR في صفحة حسابك وأدخل كلمة المرور المؤقتة مرة واحدة لربطه.\n\nتجد كل تفاصيل صالونك ورمز QR في صفحة حسابك: {site}/account"],
-            'he' => ['הסלון שלך מוכן', "חדשות טובות — {salon} אושר ומוכן ביישום Salonieer.\n\nקוד הסלון: {code}\nחבילה: {plan}\n\nכדי לנהל את הסלון:\n1. התקינו את Salonieer ולחצו על ״התחברות״.\n2. התחברו עם הטלפון {phone} והסיסמה הזמנית {password}. הסלון יופיע ב״הסלונים שלי״ כסלון שלכם (קוד הסלון {code}).\n3. שנו את הסיסמה מ״החשבון שלי״ לאחר הכניסה.\nכבר יש לכם חשבון Salonieer עם המספר הזה? הוסיפו את הסלון עם הקוד {code} או ה־QR בדף החשבון והזינו את הסיסמה הזמנית פעם אחת כדי לקשר אותו.\n\nכל פרטי הסלון וקוד ה־QR בדף החשבון: {site}/account"]],
-        // 2.40: the owner signs in with their own Salonieer account (no temporary password).
+            'en' => ['Your business is ready', "Great news — {salon} is approved and ready in the METON app.\n\nBusiness code: {code}\nPlan: {plan}\n\nTo manage your business:\n1. Install METON (App Store / Google Play) and tap Log In.\n2. Sign in with phone {phone} and the temporary password {password}. Your business appears in My Businesses as yours (business code {code}).\n3. Change the password from My Account after signing in.\nAlready have a METON account with this number? Add the business with the code {code} or the QR on your account page and enter the temporary password once to link it.\n\nYour account page shows all your business details and its QR code: {site}/account"],
+            'ar' => ['منشأتك جاهزة', "خبر سعيد — تمت الموافقة على {salon} وأصبح جاهزاً في تطبيق METON.\n\nرمز المنشأة: {code}\nالباقة: {plan}\n\nلإدارة عملك:\n1. ثبّت تطبيق METON واضغط «تسجيل الدخول».\n2. سجّل الدخول برقم الهاتف {phone} وكلمة المرور المؤقتة {password}، فتظهر منشأتك في «أعمالي» كمنشأة تملكها (رمز المنشأة {code}).\n3. غيّر كلمة المرور من «حسابي» بعد الدخول.\nلديك حساب METON بهذا الرقم؟ أضف المنشأة بالرمز {code} أو برمز QR في صفحة حسابك وأدخل كلمة المرور المؤقتة مرة واحدة لربطه.\n\nتجد كل تفاصيل منشأتك ورمز QR في صفحة حسابك: {site}/account"],
+            'he' => ['העסק שלך מוכן', "חדשות טובות — {salon} אושר ומוכן ביישום METON.\n\nקוד העסק: {code}\nחבילה: {plan}\n\nכדי לנהל את העסק:\n1. התקינו את METON ולחצו על ״התחברות״.\n2. התחברו עם הטלפון {phone} והסיסמה הזמנית {password}. העסק יופיע ב״העסקים שלי״ כעסק שלכם (קוד העסק {code}).\n3. שנו את הסיסמה מ״החשבון שלי״ לאחר הכניסה.\nכבר יש לכם חשבון METON עם המספר הזה? הוסיפו את העסק עם הקוד {code} או ה־QR בדף החשבון והזינו את הסיסמה הזמנית פעם אחת כדי לקשר אותו.\n\nכל פרטי העסק וקוד ה־QR בדף החשבון: {site}/account"]],
+        // 2.40: the owner signs in with their own METON account (no temporary password).
         'approved_account' => [
-            'en' => ['Your salon is ready', "Great news — {salon} is approved and ready in the Salonieer app.\n\nSalon code: {code}\nPlan: {plan}\n\nTo manage your salon:\n1. Install Salonieer (App Store / Google Play).\n2. Sign in with your Salonieer account using the phone number {v:phone} — no account yet? Tap Create account and use this number. (If your app asks for a salon code instead, it is an older version: enter {code} and register with this number and a password of your choice.)\n3. Your salon appears in My Salons as yours (salon code {code}). No salon password is needed.\n\nYour account page shows all your salon details and its QR code: {site}/account"],
-            'ar' => ['صالونك جاهز', "خبر سعيد — تمت الموافقة على {salon} وأصبح جاهزاً في تطبيق Salonieer.\n\nرمز الصالون: {code}\nالباقة: {plan}\n\nلإدارة صالونك:\n1. ثبّت تطبيق Salonieer.\n2. سجّل الدخول بحساب Salonieer الخاص بك برقم الهاتف {v:phone} — ليس لديك حساب؟ اضغط «إنشاء حساب» واستخدم هذا الرقم. (إذا طلب التطبيق رمز الصالون بدلاً من ذلك فهو نسخة أقدم: أدخل {code} وسجّل بهذا الرقم وبكلمة مرور تختارها.)\n3. يظهر صالونك في «صالوناتي» كصالون تملكه (رمز الصالون {code})، دون أي كلمة مرور للصالون.\n\nتجد كل تفاصيل صالونك ورمز QR في صفحة حسابك: {site}/account"],
-            'he' => ['הסלון שלך מוכן', "חדשות טובות — {salon} אושר ומוכן ביישום Salonieer.\n\nקוד הסלון: {code}\nחבילה: {plan}\n\nכדי לנהל את הסלון:\n1. התקינו את Salonieer.\n2. היכנסו עם חשבון ה־Salonieer שלכם במספר הטלפון {v:phone} — אין חשבון? לחצו על ״יצירת חשבון״ והשתמשו במספר הזה. (אם היישום מבקש קוד סלון במקום זאת, זו גרסה ישנה: הזינו {code} והירשמו עם המספר הזה וסיסמה לבחירתכם.)\n3. הסלון יופיע ב״הסלונים שלי״ כסלון שלכם (קוד הסלון {code}), בלי סיסמה לסלון.\n\nכל פרטי הסלון וקוד ה־QR בדף החשבון: {site}/account"]],
+            'en' => ['Your business is ready', "Great news — {salon} is approved and ready in the METON app.\n\nBusiness code: {code}\nPlan: {plan}\n\nTo manage your business:\n1. Install METON (App Store / Google Play).\n2. Sign in with your METON account using the phone number {v:phone} — no account yet? Tap Create account and use this number. (If your app asks for a business code instead, it is an older version: enter {code} and register with this number and a password of your choice.)\n3. Your business appears in My Businesses as yours (business code {code}). No business password is needed.\n\nYour account page shows all your business details and its QR code: {site}/account"],
+            'ar' => ['منشأتك جاهزة', "خبر سعيد — تمت الموافقة على {salon} وأصبح جاهزاً في تطبيق METON.\n\nرمز المنشأة: {code}\nالباقة: {plan}\n\nلإدارة عملك:\n1. ثبّت تطبيق METON.\n2. سجّل الدخول بحساب METON الخاص بك برقم الهاتف {v:phone} — ليس لديك حساب؟ اضغط «إنشاء حساب» واستخدم هذا الرقم. (إذا طلب التطبيق رمز المنشأة بدلاً من ذلك فهو نسخة أقدم: أدخل {code} وسجّل بهذا الرقم وبكلمة مرور تختارها.)\n3. تظهر منشأتك في «أعمالي» كمنشأة تملكها (رمز المنشأة {code})، دون أي كلمة مرور للمنشأة.\n\nتجد كل تفاصيل منشأتك ورمز QR في صفحة حسابك: {site}/account"],
+            'he' => ['העסק שלך מוכן', "חדשות טובות — {salon} אושר ומוכן ביישום METON.\n\nקוד העסק: {code}\nחבילה: {plan}\n\nכדי לנהל את העסק:\n1. התקינו את METON.\n2. היכנסו עם חשבון ה־METON שלכם במספר הטלפון {v:phone} — אין חשבון? לחצו על ״יצירת חשבון״ והשתמשו במספר הזה. (אם היישום מבקש קוד עסק במקום זאת, זו גרסה ישנה: הזינו {code} והירשמו עם המספר הזה וסיסמה לבחירתכם.)\n3. העסק יופיע ב״העסקים שלי״ כעסק שלכם (קוד העסק {code}), בלי סיסמה לעסק.\n\nכל פרטי העסק וקוד ה־QR בדף החשבון: {site}/account"]],
         'declined' => [
             'en' => ['About your application', "We're sorry — we can't approve the application for {salon} ({ref}) at this time.\n\n{body}\n\nIf you have questions, just reply to this email."],
-            'ar' => ['بخصوص طلبك', "نأسف — لا يمكننا الموافقة على طلب صالون {salon} ({ref}) حالياً.\n\n{body}\n\nإذا كان لديك أي سؤال، رد على هذا البريد."],
+            'ar' => ['بخصوص طلبك', "نأسف — لا يمكننا الموافقة على طلب {salon} ({ref}) حالياً.\n\n{body}\n\nإذا كان لديك أي سؤال، رد على هذا البريد."],
             'he' => ['בנוגע לבקשה שלך', "מצטערים — לא נוכל לאשר כרגע את הבקשה עבור {salon} ({ref}).\n\n{body}\n\nלשאלות, פשוט השיבו לדוא״ל הזה."]],
         // ---- Billing (website_billing.sql / billing.php) ----
         'payment_failed' => [
             'en' => ['Payment failed — {days} days left for {salon}', "We couldn't charge your card for the {salon} subscription.\n\nPlease pay within {days} days (by {date}) or {salon} will be paused: customers won't be able to book and your team won't be able to sign in. Nothing is deleted, and paying reopens it right away.\n\nUpdate your card and pay: {site}/account"],
-            'ar' => ['فشل الدفع — متبقٍ {days} أيام لصالون {salon}', "لم نتمكن من خصم اشتراك صالون {salon} من بطاقتك.\n\nيرجى الدفع خلال {days} أيام (قبل {date}) وإلا سيتم إيقاف {salon} مؤقتاً: لن يتمكن الزبائن من الحجز ولن يتمكن فريقك من الدخول. لن يُحذف أي شيء، والدفع يعيد تشغيله فوراً.\n\nحدّث بطاقتك وادفع من هنا: {site}/account"],
+            'ar' => ['فشل الدفع — متبقٍ {days} أيام لـ {salon}', "لم نتمكن من خصم اشتراك {salon} من بطاقتك.\n\nيرجى الدفع خلال {days} أيام (قبل {date}) وإلا سيتم إيقاف {salon} مؤقتاً: لن يتمكن الزبائن من الحجز ولن يتمكن فريقك من الدخول. لن يُحذف أي شيء، والدفع يعيد تشغيله فوراً.\n\nحدّث بطاقتك وادفع من هنا: {site}/account"],
             'he' => ['התשלום נכשל — נותרו {days} ימים עבור {salon}', "לא הצלחנו לחייב את הכרטיס עבור המנוי של {salon}.\n\nנא לשלם בתוך {days} ימים (עד {date}), אחרת {salon} יושהה: לקוחות לא יוכלו לקבוע תורים והצוות לא יוכל להתחבר. דבר לא נמחק, ותשלום מחזיר אותו מיד.\n\nעדכון כרטיס ותשלום: {site}/account"]],
         'salon_paused' => [
-            'en' => ['{salon} is paused', "{salon} has been paused because {reasontext}.\n\nCustomers can't book and your team can't sign in until the subscription is paid. All your data is kept safe — paying reopens the salon immediately.\n\nPay or re-subscribe: {site}/account"],
-            'ar' => ['تم إيقاف {salon} مؤقتاً', "تم إيقاف {salon} مؤقتاً لأن {reasontext}.\n\nلن يتمكن الزبائن من الحجز ولا فريقك من الدخول حتى يتم دفع الاشتراك. جميع بياناتك محفوظة — الدفع يعيد فتح الصالون فوراً.\n\nادفع أو جدّد الاشتراك: {site}/account"],
-            'he' => ['{salon} הושהה', "{salon} הושהה כי {reasontext}.\n\nלקוחות לא יכולים לקבוע תורים והצוות לא יכול להתחבר עד שהמנוי ישולם. כל הנתונים שמורים — תשלום פותח את הסלון מיד.\n\nתשלום או חידוש מנוי: {site}/account"]],
+            'en' => ['{salon} is paused', "{salon} has been paused because {reasontext}.\n\nCustomers can't book and your team can't sign in until the subscription is paid. All your data is kept safe — paying reopens the business immediately.\n\nPay or re-subscribe: {site}/account"],
+            'ar' => ['تم إيقاف {salon} مؤقتاً', "تم إيقاف {salon} مؤقتاً لأن {reasontext}.\n\nلن يتمكن الزبائن من الحجز ولا فريقك من الدخول حتى يتم دفع الاشتراك. جميع بياناتك محفوظة — الدفع يعيد فتح المنشأة فوراً.\n\nادفع أو جدّد الاشتراك: {site}/account"],
+            'he' => ['{salon} הושהה', "{salon} הושהה כי {reasontext}.\n\nלקוחות לא יכולים לקבוע תורים והצוות לא יכול להתחבר עד שהמנוי ישולם. כל הנתונים שמורים — תשלום פותח את העסק מיד.\n\nתשלום או חידוש מנוי: {site}/account"]],
         'salon_reactivated' => [
             'en' => ['{salon} is open again', "Thank you — your payment went through and {salon} is open again. Customers can book and your team can sign in as usual."],
             'ar' => ['عاد {salon} للعمل', "شكراً لك — تم الدفع بنجاح وعاد {salon} للعمل. يمكن للزبائن الحجز ولفريقك الدخول كالمعتاد."],
             'he' => ['{salon} פתוח שוב', "תודה — התשלום עבר ו־{salon} פתוח שוב. לקוחות יכולים לקבוע תורים והצוות יכול להתחבר כרגיל."]],
         'cancel_scheduled' => [
-            'en' => ['Your subscription will end on {date}', "Auto-renewal for {salon} is cancelled. You've already paid until {date}, so everything keeps working until then; after that the salon will be paused (nothing is deleted).\n\nChanged your mind? Resume any time before {date}: {site}/account"],
-            'ar' => ['سينتهي اشتراكك في {date}', "تم إلغاء التجديد التلقائي لصالون {salon}. لقد دفعت حتى {date}، لذا يبقى كل شيء يعمل حتى ذلك التاريخ؛ بعده سيتم إيقاف الصالون مؤقتاً (دون حذف أي شيء).\n\nغيّرت رأيك؟ يمكنك الاستئناف في أي وقت قبل {date}: {site}/account"],
-            'he' => ['המנוי שלך יסתיים ב־{date}', "החידוש האוטומטי עבור {salon} בוטל. שילמת עד {date}, ולכן הכול ממשיך לעבוד עד אז; לאחר מכן הסלון יושהה (דבר לא נמחק).\n\nהתחרטתם? אפשר לחדש בכל עת לפני {date}: {site}/account"]],
+            'en' => ['Your subscription will end on {date}', "Auto-renewal for {salon} is cancelled. You've already paid until {date}, so everything keeps working until then; after that the business will be paused (nothing is deleted).\n\nChanged your mind? Resume any time before {date}: {site}/account"],
+            'ar' => ['سينتهي اشتراكك في {date}', "تم إلغاء التجديد التلقائي لـ {salon}. لقد دفعت حتى {date}، لذا يبقى كل شيء يعمل حتى ذلك التاريخ؛ بعده سيتم إيقاف المنشأة مؤقتاً (دون حذف أي شيء).\n\nغيّرت رأيك؟ يمكنك الاستئناف في أي وقت قبل {date}: {site}/account"],
+            'he' => ['המנוי שלך יסתיים ב־{date}', "החידוש האוטומטי עבור {salon} בוטל. שילמת עד {date}, ולכן הכול ממשיך לעבוד עד אז; לאחר מכן העסק יושהה (דבר לא נמחק).\n\nהתחרטתם? אפשר לחדש בכל עת לפני {date}: {site}/account"]],
         'cancel_resumed' => [
             'en' => ['Your subscription continues', "Good to have you — the subscription for {salon} will renew as usual on {date}."],
             'ar' => ['اشتراكك مستمر', "يسعدنا بقاؤك — سيتجدد اشتراك {salon} كالمعتاد في {date}."],
             'he' => ['המנוי שלך ממשיך', "שמחים שנשארתם — המנוי של {salon} יתחדש כרגיל ב־{date}."]],
         'pay_link' => [
             'en' => ['Payment link for {salon}', "Please complete the payment for {salon} here: {link}\n\nAfter paying, everything updates automatically."],
-            'ar' => ['رابط الدفع لصالون {salon}', "يرجى إكمال الدفع لصالون {salon} من هنا: {link}\n\nبعد الدفع يتم تحديث كل شيء تلقائياً."],
+            'ar' => ['رابط الدفع لـ {salon}', "يرجى إكمال الدفع لـ {salon} من هنا: {link}\n\nبعد الدفع يتم تحديث كل شيء تلقائياً."],
             'he' => ['קישור לתשלום עבור {salon}', "נא להשלים את התשלום עבור {salon} כאן: {link}\n\nלאחר התשלום הכול מתעדכן אוטומטית."]],
         'trial_ending' => [
             'en' => ['Your free trial ends on {date}', "Your 14-day free trial of {salon} ends on {date}. Your subscription then starts automatically with the card you added — nothing to do.\n\nTo stop before you're charged, cancel from your account page: {site}/account"],
-            'ar' => ['تنتهي تجربتك المجانية في {date}', "تنتهي تجربتك المجانية لمدة 14 يوماً لصالون {salon} في {date}. بعدها يبدأ اشتراكك تلقائياً بالبطاقة التي أضفتها — لا حاجة لأي إجراء.\n\nلإيقافه قبل الخصم، ألغِ من صفحة حسابك: {site}/account"],
+            'ar' => ['تنتهي تجربتك المجانية في {date}', "تنتهي تجربتك المجانية لمدة 14 يوماً لـ {salon} في {date}. بعدها يبدأ اشتراكك تلقائياً بالبطاقة التي أضفتها — لا حاجة لأي إجراء.\n\nلإيقافه قبل الخصم، ألغِ من صفحة حسابك: {site}/account"],
             'he' => ['תקופת הניסיון שלך מסתיימת ב־{date}', "תקופת הניסיון של 14 יום עבור {salon} מסתיימת ב־{date}. אחר כך המנוי מתחיל אוטומטית עם הכרטיס שהוספת — אין צורך לעשות דבר.\n\nכדי לעצור לפני החיוב, בטלו מדף החשבון: {site}/account"]],
         'change_approved' => [
             'en' => ['Your plan change is active', "Your change for {salon} is done: {change}.\n\n{amountline}\n\n{note}"],
-            'ar' => ['تم تفعيل تغيير باقتك', "تم تنفيذ التغيير لصالون {salon}: {change}.\n\n{amountline}\n\n{note}"],
+            'ar' => ['تم تفعيل تغيير باقتك', "تم تنفيذ التغيير لـ {salon}: {change}.\n\n{amountline}\n\n{note}"],
             'he' => ['שינוי החבילה פעיל', "השינוי עבור {salon} בוצע: {change}.\n\n{amountline}\n\n{note}"]],
         'change_rejected' => [
             'en' => ['About your plan change request', "We couldn't make the requested change for {salon} ({change}).\n\n{note}\n\nReply to this email if you have questions."],
-            'ar' => ['بخصوص طلب تغيير الباقة', "لم نتمكن من تنفيذ التغيير المطلوب لصالون {salon} ({change}).\n\n{note}\n\nرد على هذا البريد إذا كان لديك سؤال."],
+            'ar' => ['بخصوص طلب تغيير الباقة', "لم نتمكن من تنفيذ التغيير المطلوب لـ {salon} ({change}).\n\n{note}\n\nرد على هذا البريد إذا كان لديك سؤال."],
             'he' => ['בנוגע לבקשת שינוי החבילה', "לא הצלחנו לבצע את השינוי שביקשתם עבור {salon} ({change}).\n\n{note}\n\nאפשר להשיב לדוא״ל הזה בכל שאלה."]],
         'change_payment_failed' => [
             'en' => ['Payment needed for your plan change', "We tried to charge the difference for your change to {salon} ({change}), but the payment didn't go through, so nothing changed yet.\n\nPlease update your card on your account page, then tell us and we'll apply it: {site}/account"],
@@ -276,27 +276,27 @@ function mailCopy(string $template, string $lang): array {
         // ---- Cash billing and card links (2.26) ----
         'card_link' => [
             'en' => ['Set up card payments for {salon}', "From now on {salon} can be paid by card, automatically each period. Please complete the first payment here:\n\n{link}\n\nAfter paying, renewals are charged to your card and everything updates by itself. Questions? Just reply to this email."],
-            'ar' => ['تفعيل الدفع بالبطاقة لصالون {salon}', "من الآن يمكن دفع اشتراك {salon} بالبطاقة تلقائياً في كل فترة. يرجى إكمال الدفعة الأولى من هنا:\n\n{link}\n\nبعد الدفع يتم تجديد الاشتراك على بطاقتك ويتحدث كل شيء تلقائياً. لأي سؤال، رد على هذا البريد."],
+            'ar' => ['تفعيل الدفع بالبطاقة لـ {salon}', "من الآن يمكن دفع اشتراك {salon} بالبطاقة تلقائياً في كل فترة. يرجى إكمال الدفعة الأولى من هنا:\n\n{link}\n\nبعد الدفع يتم تجديد الاشتراك على بطاقتك ويتحدث كل شيء تلقائياً. لأي سؤال، رد على هذا البريد."],
             'he' => ['הפעלת תשלום בכרטיס עבור {salon}', "מעכשיו אפשר לשלם על {salon} בכרטיס, אוטומטית בכל תקופה. נא להשלים את התשלום הראשון כאן:\n\n{link}\n\nלאחר התשלום החידושים יחויבו בכרטיס והכול יתעדכן מעצמו. לשאלות, השיבו לדוא״ל הזה."]],
         'cash_payment_received' => [
             'en' => ['Payment received for {salon}', "Thank you — we received {amount} for {salon}. Your subscription is paid until {date}."],
-            'ar' => ['تم استلام الدفعة لصالون {salon}', "شكراً لك — استلمنا {amount} لصالون {salon}. اشتراكك مدفوع حتى {date}."],
+            'ar' => ['تم استلام الدفعة لـ {salon}', "شكراً لك — استلمنا {amount} لـ {salon}. اشتراكك مدفوع حتى {date}."],
             'he' => ['התשלום עבור {salon} התקבל', "תודה — קיבלנו {amount} עבור {salon}. המנוי שלך משולם עד {date}."]],
         'cash_renewal_soon' => [
-            'en' => ['{salon}: your paid period ends on {date}', "Your Salonieer subscription for {salon} is paid until {date}. To keep everything running, please arrange the next payment with us before then.\n\nReply to this email if you have any questions."],
-            'ar' => ['{salon}: تنتهي فترتك المدفوعة في {date}', "اشتراك Salonieer لصالون {salon} مدفوع حتى {date}. ليستمر كل شيء بالعمل، يرجى ترتيب الدفعة التالية معنا قبل هذا التاريخ.\n\nرد على هذا البريد إذا كان لديك أي سؤال."],
-            'he' => ['{salon}: התקופה ששולמה מסתיימת ב־{date}', "המנוי של Salonieer עבור {salon} משולם עד {date}. כדי שהכול ימשיך לעבוד, נא לתאם איתנו את התשלום הבא לפני כן.\n\nלשאלות, השיבו לדוא״ל הזה."]],
+            'en' => ['{salon}: your paid period ends on {date}', "Your METON subscription for {salon} is paid until {date}. To keep everything running, please arrange the next payment with us before then.\n\nReply to this email if you have any questions."],
+            'ar' => ['{salon}: تنتهي فترتك المدفوعة في {date}', "اشتراك METON لـ {salon} مدفوع حتى {date}. ليستمر كل شيء بالعمل، يرجى ترتيب الدفعة التالية معنا قبل هذا التاريخ.\n\nرد على هذا البريد إذا كان لديك أي سؤال."],
+            'he' => ['{salon}: התקופה ששולמה מסתיימת ב־{date}', "המנוי של METON עבור {salon} משולם עד {date}. כדי שהכול ימשיך לעבוד, נא לתאם איתנו את התשלום הבא לפני כן.\n\nלשאלות, השיבו לדוא״ל הזה."]],
         'cash_due' => [
             'en' => ['Payment due — {days} days left for {salon}', "The paid period of {salon} has ended.\n\nPlease make the payment within {days} days (by {date}) or {salon} will be paused: customers won't be able to book and your team won't be able to sign in. Nothing is deleted, and the payment reopens it right away.\n\nReply to this email to arrange the payment."],
-            'ar' => ['مطلوب الدفع — متبقٍ {days} أيام لصالون {salon}', "انتهت الفترة المدفوعة لصالون {salon}.\n\nيرجى الدفع خلال {days} أيام (قبل {date}) وإلا سيتم إيقاف {salon} مؤقتاً: لن يتمكن الزبائن من الحجز ولن يتمكن فريقك من الدخول. لن يُحذف أي شيء، والدفع يعيد تشغيله فوراً.\n\nرد على هذا البريد لترتيب الدفع."],
+            'ar' => ['مطلوب الدفع — متبقٍ {days} أيام لـ {salon}', "انتهت الفترة المدفوعة لـ {salon}.\n\nيرجى الدفع خلال {days} أيام (قبل {date}) وإلا سيتم إيقاف {salon} مؤقتاً: لن يتمكن الزبائن من الحجز ولن يتمكن فريقك من الدخول. لن يُحذف أي شيء، والدفع يعيد تشغيله فوراً.\n\nرد على هذا البريد لترتيب الدفع."],
             'he' => ['נדרש תשלום — נותרו {days} ימים עבור {salon}', "התקופה ששולמה עבור {salon} הסתיימה.\n\nנא לשלם בתוך {days} ימים (עד {date}), אחרת {salon} יושהה: לקוחות לא יוכלו לקבוע תורים והצוות לא יוכל להתחבר. דבר לא נמחק, והתשלום מחזיר אותו מיד.\n\nהשיבו לדוא״ל הזה כדי לתאם את התשלום."]],
         'billing_to_cash' => [
-            'en' => ['Your billing for {salon} changed', "From now on {salon} is billed directly by Salonieer (cash or bank transfer) instead of your card. Your card will not be charged again.\n\nThe current period is paid until {date}. We'll contact you about the next payment before then."],
-            'ar' => ['تغيّرت طريقة الدفع لصالون {salon}', "من الآن تتم محاسبة {salon} مباشرة من Salonieer (نقداً أو بتحويل بنكي) بدلاً من بطاقتك. لن يتم الخصم من بطاقتك مرة أخرى.\n\nالفترة الحالية مدفوعة حتى {date}. سنتواصل معك بخصوص الدفعة التالية قبل هذا التاريخ."],
-            'he' => ['אופן החיוב עבור {salon} השתנה', "מעכשיו {salon} מחויב ישירות על ידי Salonieer (מזומן או העברה בנקאית) במקום בכרטיס שלך. הכרטיס לא יחויב שוב.\n\nהתקופה הנוכחית משולמת עד {date}. ניצור איתך קשר לגבי התשלום הבא לפני כן."]],
-        'admin_cash_due' => ['en' => ['Cash payment due: {salon}', "{salon} ({ref}) is billed in cash and its paid period has ended. The owner has until {date} before the salon pauses automatically; reminders go out every 2 days.\n\nOwner: {name} <{email}>\n\nRecord the payment: {site}/admin/billing"]],
-        'admin_past_due' => ['en' => ['Payment failed: {salon}', "The renewal payment for {salon} ({ref}) failed. The owner has 7 days (until {date}) before the salon pauses automatically; reminders go out every 2 days.\n\nOwner: {name} <{email}>\n\nFinance: {site}/admin/finance"]],
-        'admin_paused' => ['en' => ['Salon paused: {salon}', "{salon} ({ref}) was paused automatically because {reasontext}.\nIt reopens by itself when the subscription is paid.\n\nOwner: {name} <{email}>\n\nFinance: {site}/admin/finance"]],
+            'en' => ['Your billing for {salon} changed', "From now on {salon} is billed directly by METON (cash or bank transfer) instead of your card. Your card will not be charged again.\n\nThe current period is paid until {date}. We'll contact you about the next payment before then."],
+            'ar' => ['تغيّرت طريقة الدفع لـ {salon}', "من الآن تتم محاسبة {salon} مباشرة من METON (نقداً أو بتحويل بنكي) بدلاً من بطاقتك. لن يتم الخصم من بطاقتك مرة أخرى.\n\nالفترة الحالية مدفوعة حتى {date}. سنتواصل معك بخصوص الدفعة التالية قبل هذا التاريخ."],
+            'he' => ['אופן החיוב עבור {salon} השתנה', "מעכשיו {salon} מחויב ישירות על ידי METON (מזומן או העברה בנקאית) במקום בכרטיס שלך. הכרטיס לא יחויב שוב.\n\nהתקופה הנוכחית משולמת עד {date}. ניצור איתך קשר לגבי התשלום הבא לפני כן."]],
+        'admin_cash_due' => ['en' => ['Cash payment due: {salon}', "{salon} ({ref}) is billed in cash and its paid period has ended. The owner has until {date} before the business pauses automatically; reminders go out every 2 days.\n\nOwner: {name} <{email}>\n\nRecord the payment: {site}/admin/billing"]],
+        'admin_past_due' => ['en' => ['Payment failed: {salon}', "The renewal payment for {salon} ({ref}) failed. The owner has 7 days (until {date}) before the business pauses automatically; reminders go out every 2 days.\n\nOwner: {name} <{email}>\n\nFinance: {site}/admin/finance"]],
+        'admin_paused' => ['en' => ['Business paused: {salon}', "{salon} ({ref}) was paused automatically because {reasontext}.\nIt reopens by itself when the subscription is paid.\n\nOwner: {name} <{email}>\n\nFinance: {site}/admin/finance"]],
         'admin_change_request' => ['en' => ['Plan change request: {salon}', "{name} <{email}> asked to change {salon} ({ref}) to: {change}.\n\nNote: {note}\n\nReview, preview the charge and approve: {site}/admin/requests"]],
         'admin_new_application' => ['en' => ['New application: {salon}', "A new application was submitted.
 
@@ -311,7 +311,7 @@ Country: {country}
 Language: {lang}
 ID number (last 4): {idlast4}
 
-Salon
+Business
 Name: {salon}
 Type: {category}
 Time zone: {timezone}
@@ -327,15 +327,15 @@ Payment status: {payment}
 
 Review: {site}/admin/applications/{ref}"]],
         'admin_payment' => ['en' => ['Paid — awaiting approval: {salon}', "{ref} ({salon}, {plan}) is {payment} and waiting for your approval.\nApproval promised within a day.\n\nReview: {site}/admin"]],
-        'admin_problem_report' => ['en' => ['Problem report: {v:salon}', "A salon owner reported a problem ({v:category}, from the {v:source}).
+        'admin_problem_report' => ['en' => ['Problem report: {v:salon}', "A business owner reported a problem ({v:category}, from the {v:source}).
 
-Salon: {v:salon} ({v:slug})
+Business: {v:salon} ({v:slug})
 From: {v:reporter} <{v:contact}>
 
 {v:body}
 
 All reports: {site}/admin/reports"]],
-        'admin_salon_deleted' => ['en' => ['Salon deleted after suspension: {v:salon}', "{v:salon} ({v:slug}) was deleted automatically: it had been suspended since {v:since} ({v:months} months or more).
+        'admin_salon_deleted' => ['en' => ['Business deleted after suspension: {v:salon}', "{v:salon} ({v:slug}) was deleted automatically: it had been suspended since {v:since} ({v:months} months or more).
 
 Cleanup settings: {site}/admin/cleanup"]],
         'admin_reply' => ['en' => ['Reply from {name}: {salon}', "{name} <{email}> answered on {ref}:\n\n{body}\n\nReply to this email to answer the customer, or open {site}/admin"]],
@@ -361,12 +361,12 @@ function renderMail(array $item): array {
         '{total}'=>isset($q['total']) && $q['total']!==null ? $q['total'].' '.($q['currency'] ?? '').' / '.(($q['interval'] ?? 'month')==='year' ? 'year' : 'month') : 'by agreement', '{payline}'=>$paylines[$lang][0],
         '{code}'=>$a['salon']['accessCode'] ?? '',
         '{created}'=>isset($a['createdAt']) ? gmdate('Y-m-d H:i', strtotime((string)$a['createdAt'])).' UTC' : '', '{country}'=>$a['country'] ?? '', '{lang}'=>strtoupper((string)($a['lang'] ?? '')),
-        '{idlast4}'=>($a['idLast4'] ?? '') !== '' ? $a['idLast4'] : 'not asked (salon outside Israel/Palestine)', '{category}'=>ucfirst((string)($a['salonCategory'] ?? '')), '{timezone}'=>$a['timezone'] ?? '', '{logo}'=>$a['logoUrl'] ?? '',
+        '{idlast4}'=>($a['idLast4'] ?? '') !== '' ? $a['idLast4'] : 'not asked (business outside Israel/Palestine)', '{category}'=>ucfirst((string)($a['salonCategory'] ?? '')), '{timezone}'=>$a['timezone'] ?? '', '{logo}'=>$a['logoUrl'] ?? '',
         '{loyalty}'=>!empty($q['loyalty']) ? 'yes' : (in_array($a['plan'] ?? '', ['business','enterprise'], true) ? 'included' : 'no'), '{extra}'=>(string)(int)($q['extraSpecialists'] ?? 0), '{password}'=>(string)($item['vars']['password'] ?? ''), '{body}'=>(string)($item['vars']['body'] ?? ''), '{site}'=>siteUrl()];
     $vars += billingMailVars($item, $lang);
     // {v:name} = a value queued with the email itself (problem reports, cleanup notices).
     foreach (($item['vars'] ?? []) as $k => $v) if (is_string($k) && is_scalar($v)) $vars['{v:'.$k.'}'] = (string)$v;
-    $subject = strtr($subject, $vars).' · '.($a['id'] ?? 'Salonieer');
+    $subject = strtr($subject, $vars).' · '.($a['id'] ?? 'METON');
     $text = strtr($body, $vars);
     $dir = $lang === 'en' ? 'ltr' : 'rtl';
     $safe = nl2br(htmlspecialchars($text, ENT_QUOTES|ENT_HTML5, 'UTF-8'));
@@ -374,7 +374,7 @@ function renderMail(array $item): array {
     $html = '<!doctype html><html lang="'.$lang.'" dir="'.$dir.'"><body style="margin:0;background:#f4f1ea;font-family:Arial,Helvetica,sans-serif;color:#1d1d1b">'
         .'<div style="max-width:560px;margin:0 auto;padding:28px 18px"><div style="background:#fff;border-radius:16px;padding:28px;line-height:1.7;font-size:15px;text-align:'.($dir==='rtl'?'right':'left').'">'
         .'<div style="font-weight:700;letter-spacing:.08em;color:#1a88a4;margin-bottom:14px">SALONIEER</div>'.$safe.'</div>'
-        .'<p style="font-size:12px;color:#8a857b;text-align:center;margin-top:16px">Salonieer · '.htmlspecialchars(siteUrl()).'</p></div></body></html>';
+        .'<p style="font-size:12px;color:#8a857b;text-align:center;margin-top:16px">METON · '.htmlspecialchars(siteUrl()).'</p></div></body></html>';
     return [$subject, $html, $text];
 }
 

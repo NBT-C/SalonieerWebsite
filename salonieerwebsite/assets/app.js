@@ -177,21 +177,21 @@ function header() {
   const link = (path,key) => `<a href="${path}"${route===path?' aria-current="page"':''}>${t(key)}</a>`;
   const item = (path,key) => `<li>${link(path,key)}</li>`;
   return `<a class="skip" href="#main">${t('skip')}</a><header class="topbar"><div class="nav">
-    <a href="/" class="brand" aria-label="Salonieer"><img class="brand-logo brand-logo-light" src="/assets/brand/Salonieer_header_for_light_1224x385.svg" alt="Salonieer" width="160" height="50"><img class="brand-logo brand-logo-dark" src="/assets/brand/Salonieer_header_for_dark_1224x385.svg" alt="" width="160" height="50"></a>
+    <a href="/" class="brand" aria-label="METON"><img class="brand-logo brand-logo-light" src="/assets/brand/meton-wordmark-ink.svg" alt="METON" width="124" height="25"><img class="brand-logo brand-logo-dark" src="/assets/brand/meton-wordmark-cream.svg" alt="" width="124" height="25"></a>
     <nav class="bar-links" aria-label="${t('menu')}">${link('/plans','plans')}${link('/support','support')}${state.user?link('/account','account'):link('/login','login')}</nav>
     ${state.user?`<button class="btn small bar-logout" id="logout" type="button">${t('logout')}</button>`:''}
     <select id="language" class="language-select" aria-label="${t('language')}"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="ar" ${lang==='ar'?'selected':''}>العربية</option><option value="he" ${lang==='he'?'selected':''}>עברית</option></select>
     <button class="menu-toggle" id="menu-toggle" aria-controls="nav-panel" aria-expanded="false" data-open="${t('menu')}" data-close="${t('close')}"><span class="label-text">${t('menu')}</span><span class="bars" aria-hidden="true"></span></button>
     <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><ul class="menu-links">${item('/','home')}${item('/plans','plans')}${state.user?item('/applications','applications')+item('/account','account'):''}${item('/support','support')}${state.user?.isAdmin?item('/admin','adminPanel'):''}${state.user?'':item('/login','login')+item('/register','register')}</ul>
-      <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/register">${t('register')}</a>`}</div><a class="mail" href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a></div></nav>
+      <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/register">${t('register')}</a>`}</div><a class="mail" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></nav>
   </div></header>`;
 }
 function footer() {
-  return `<footer class="site-footer"><div class="wrap"><div class="footer-grid"><div><img class="footer-logo" src="/assets/brand/Salonieer_footer_for_dark_1224x385.svg" alt="Salonieer" width="200" height="63" loading="lazy"><p>${t('footerTagline')}</p></div>
+  return `<footer class="site-footer"><div class="wrap"><div class="footer-grid"><div><img class="footer-logo" src="/assets/brand/meton-wordmark-cream.svg" alt="METON" width="160" height="32" loading="lazy"><p>${t('footerTagline')}</p></div>
     <nav aria-label="${t('footerProduct')}"><h3>${t('footerProduct')}</h3><div class="footer-links"><a href="/">${t('home')}</a><a href="/plans">${t('plans')}</a>${state.user?`<a href="/account">${t('account')}</a>`:`<a href="/register">${t('register')}</a>`}</div></nav>
     <nav aria-label="${t('legal')}"><h3>${t('legal')}</h3><div class="footer-links"><a href="/terms">${t('termsTitle')}</a><a href="/privacy">${t('privacyPolicy')}</a><a href="/refund">${t('refundTitle')}</a></div></nav>
-    <div><h3>${t('footerContact')}</h3><div class="footer-links"><a href="/support">${t('support')}</a><a href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a></div></div></div>
-    <div class="footer-bottom"><span>© ${new Date().getFullYear()} Salonieer. ${t('footerRights')}</span><span>${t('footerMade')}</span></div></div></footer>`;
+    <div><h3>${t('footerContact')}</h3><div class="footer-links"><a href="/support">${t('support')}</a><a href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></div></div>
+    <div class="footer-bottom"><span>© ${new Date().getFullYear()} METON. ${t('footerRights')}</span><span>${t('footerMade')}</span></div></div></footer>`;
 }
 function titleBlock(eyebrow,title,lead,center=false,extra='') {
   return `<div class="page-heading${center?' center':''}"><h1>${t(title)}</h1>${lead?`<p>${t(lead)}</p>`:''}${extra}</div>`;
@@ -219,7 +219,7 @@ const ICONS = {
   user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-4 4.2-6 7.5-6s6.3 2 7.5 6"/>',
   users: '<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c.9-3.6 3.6-5.5 6.5-5.5s5.6 1.9 6.5 5.5M15.5 5.2a3.5 3.5 0 0 1 0 6.6M17.5 14.8c2 .7 3.4 2.4 4 5.2"/>',
   chart: '<path d="M3.5 20.5h17M6.5 17v-5M11 17V7M15.5 17v-8M19.5 17v-3.5"/>',
-  scissors: '<circle cx="6" cy="6.5" r="2.5"/><circle cx="6" cy="17.5" r="2.5"/><path d="M8 8.2 20 18M8 15.8 20 6"/>',
+  briefcase: '<rect x="3.5" y="7" width="17" height="12.5" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3.5 12.5h17"/>',
   bell: '<path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2h-15z"/><path d="M10 21h4"/>',
   compass: '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
@@ -235,8 +235,8 @@ const ICONS = {
   zoom: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M10.5 7.5v6M7.5 10.5h6"/>',
 };
 // The tour's sections (screen = tab id) and the other features, in the order shown; their words come from plans-data.js.
-const TOUR = [['dashboard', 'grid'], ['schedule', 'calendar'], ['clients', 'user'], ['team', 'users'], ['stats', 'chart'], ['specialist', 'scissors']];
-const MORE = [['notifications', 'bell'], ['discover', 'compass'], ['smart_waitlist', 'clock'], ['loyalty', 'star'], ['service_packages', 'layers'], ['smart_checkout', 'receipt'],
+const TOUR = [['dashboard', 'grid'], ['schedule', 'calendar'], ['clients', 'user'], ['team', 'users'], ['stats', 'chart'], ['specialist', 'briefcase']];
+const MORE = [['notifications', 'bell'], ['smart_waitlist', 'clock'], ['loyalty', 'star'], ['service_packages', 'layers'], ['smart_checkout', 'receipt'],
   ['financial_management', 'trend'], ['employee_earnings', 'wallet'], ['attendance', 'attend'], ['inventory', 'box'], ['deposits', 'shield'], ['coupons', 'ticket']];
 // A screen in its device: a phone (390×844) or an iPad in landscape (1180×820). Tapping it opens the large picture.
 // priority: 'high' for the hero, 'low' for pictures loaded at once but after it (the phone's sideways steps, which
@@ -302,7 +302,7 @@ function home() {
     <ol class="hm-steps">${[1,2,3].map(n=>`<li><span class="hm-num" aria-hidden="true">${n}</span><h3>${t('hm_s'+n)}</h3><p>${t('hm_s'+n+'_text')}</p></li>`).join('')}</ol></div></section>
   <section class="hm-section sc-help" aria-labelledby="help-title"><div class="wrap"><div class="hm-box sc-help-box">
     <div><h2 id="help-title">${t('hm_help_title')}</h2><p>${t('hm_help_text')}</p></div>
-    <div class="hero-actions"><a class="btn" href="/support">${t('support')}</a><a class="text-link" href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a></div></div></div></section>
+    <div class="hero-actions"><a class="btn" href="/support">${t('support')}</a><a class="text-link" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></div></div></section>
   <dialog class="sc-lightbox" id="sc-lightbox" aria-label="${t('sc_zoom')}"><button type="button" class="sc-lb-close" data-close aria-label="${t('sc_close')}">${ico('<path d="M6 6l12 12M18 6 6 18"/>', 22)}</button><img alt=""></dialog>
 </div>`;
 }
@@ -361,7 +361,7 @@ function plans() {
 function planCompare(c) {
   const L3 = o => (o && (o[lang] || o.en)) || '';
   const W = { title:{ar:'قارن الباقات بالتفصيل',en:'Compare the plans in detail',he:'השוואה מפורטת בין החבילות'},
-    lead:{ar:'كل ميزة وماذا تفعل لصالونك. اضغط «عرض المزيد» لشرح ومثال.',en:'Every feature and what it does for your salon. Tap “Show more” for an explanation and an example.',he:'כל פיצ׳ר ומה הוא עושה לסלון. הקישו ״הצג עוד״ להסבר ודוגמה.'},
+    lead:{ar:'كل ميزة وماذا تفعل لعملك. اضغط «عرض المزيد» لشرح ومثال.',en:'Every feature and what it does for your business. Tap “Show more” for an explanation and an example.',he:'כל פיצ׳ר ומה הוא עושה לעסק. הקישו ״הצג עוד״ להסבר ודוגמה.'},
     feature:{ar:'الميزة',en:'Feature',he:'פיצ׳ר'}, more:{ar:'عرض المزيد',en:'Show more',he:'הצג עוד'}, price:{ar:'السعر',en:'Price',he:'מחיר'},
     incl:{ar:'مشمولة',en:'Included',he:'כלול'}, no:{ar:'غير مشمولة',en:'Not included',he:'לא כלול'}, opt:{ar:'إضافة اختيارية',en:'Optional add-on',he:'תוספת אופציונלית'},
     custom:{ar:'حسب الاتفاق',en:'Custom',he:'בהתאמה אישית'}, popular:{ar:'الأكثر اختياراً',en:'Most chosen',he:'הנבחר ביותר'},
@@ -550,7 +550,7 @@ function stateNote(a) {
 }
 function thread(a, admin=false) {
   const list = (a.messages||[]).filter(m=>admin||m.direction!=='system');
-  const who = m => m.direction==='in' ? (admin ? (m.author || t('customer')) : t('you')) : m.direction==='out' ? 'Salonieer' : t('system');
+  const who = m => m.direction==='in' ? (admin ? (m.author || t('customer')) : t('you')) : m.direction==='out' ? 'METON' : t('system');
   const open = !['approved','declined'].includes(a.status) || admin;
   if (!list.length && !open) return '';
   return `<section class="thread" aria-label="${t('messages')}"><h3>${t('messages')}</h3>${list.length?`<ol class="thread-list" data-paginate="thread-${esc(a.id)}" data-paginate-start="last">${list.map(m=>`<li class="msg ${m.direction}"><div class="msg-head"><b>${esc(who(m))}</b><time>${date(m.createdAt)}</time></div><p>${esc(m.body)}</p></li>`).join('')}</ol>`:`<p class="small-note">${t('noMessages')}</p>`}
@@ -727,7 +727,7 @@ function accountSettings() {
     <section class="danger-zone" aria-labelledby="delete-title"><h3 id="delete-title">${t('deleteAccount')}</h3>${del}</section></section>`;
 }
 function support() {
-  return `<div class="wrap">${titleBlock('support','helpTitle','helpLead')}<div class="support-layout"><section class="support-contact"><h2>${t('contactUs')}</h2><a class="email-address" href="mailto:salonieer1st@gmail.com" dir="ltr">salonieer1st@gmail.com</a><a class="btn primary" href="mailto:salonieer1st@gmail.com?subject=Salonieer%20Support">${t('emailSupport')}</a><button type="button" class="btn" id="copy-email">${t('copyEmail')}</button><p id="copy-feedback" role="status"></p></section><section class="faq-list"><h2>${t('faq')}</h2>${[['faqLoginQ','faqLoginA','account'],['faqPriceQ','faqPriceA','pricing'],['faqPayQ','faqPayA','payment'],['faqNotificationsQ','faqNotificationsA','notifications'],['faqSalonQ','faqSalonA','salon']].map(([q,a,id])=>`<details id="${id}"${location.hash==='#'+id?' open':''}><summary>${t(q)}</summary><p>${t(a)}</p></details>`).join('')}</section></div></div>`;
+  return `<div class="wrap">${titleBlock('support','helpTitle','helpLead')}<div class="support-layout"><section class="support-contact"><h2>${t('contactUs')}</h2><a class="email-address" href="mailto:support@meton.work" dir="ltr">support@meton.work</a><a class="btn primary" href="mailto:support@meton.work?subject=METON%20Support">${t('emailSupport')}</a><button type="button" class="btn" id="copy-email">${t('copyEmail')}</button><p id="copy-feedback" role="status"></p></section><section class="faq-list"><h2>${t('faq')}</h2>${[['faqLoginQ','faqLoginA','account'],['faqPriceQ','faqPriceA','pricing'],['faqPayQ','faqPayA','payment'],['faqNotificationsQ','faqNotificationsA','notifications'],['faqSalonQ','faqSalonA','salon']].map(([q,a,id])=>`<details id="${id}"${location.hash==='#'+id?' open':''}><summary>${t(q)}</summary><p>${t(a)}</p></details>`).join('')}</section></div></div>`;
 }
 // 2.33: a salon team invitation (shared by the owner from the app). The link
 // carries only the code; the app opens it (salonieer://salon/INV-…) or the
@@ -735,16 +735,16 @@ function support() {
 function invite() {
   const W = {
     eyebrow:{ar:'دعوة للفريق',en:'Team invitation',he:'הזמנה לצוות'},
-    title:{ar:'تمت دعوتك للانضمام إلى فريق صالون',en:'You are invited to join a salon team',he:'הוזמנת להצטרף לצוות של סלון'},
-    lead:{ar:'افتح الدعوة في تطبيق Salonieer وسجّل الدخول بحسابك أو أنشئ حساباً، ثم اقبلها. يفعّلك الصالون بعد التحقق منك.',en:'Open the invitation in the Salonieer app, sign in or create your account, then accept. The salon activates you after checking.',he:'פתחו את ההזמנה באפליקציית Salonieer, התחברו או צרו חשבון, ואז אשרו. הסלון יפעיל אותך אחרי בדיקה.'},
-    open:{ar:'افتح في تطبيق Salonieer',en:'Open in the Salonieer app',he:'פתיחה באפליקציית Salonieer'},
+    title:{ar:'تمت دعوتك للانضمام إلى فريق عمل',en:'You are invited to join a business team',he:'הוזמנת להצטרף לצוות של עסק'},
+    lead:{ar:'افتح الدعوة في تطبيق METON وسجّل الدخول بحسابك أو أنشئ حساباً، ثم اقبلها. يفعّلك صاحب العمل بعد التحقق منك.',en:'Open the invitation in the METON app, sign in or create your account, then accept. The business activates you after checking.',he:'פתחו את ההזמנה באפליקציית METON, התחברו או צרו חשבון, ואז אשרו. העסק יפעיל אותך אחרי בדיקה.'},
+    open:{ar:'افتح في تطبيق METON',en:'Open in the METON app',he:'פתיחה באפליקציית METON'},
     copy:{ar:'نسخ رمز الدعوة',en:'Copy the invitation code',he:'העתקת קוד ההזמנה'},
     copied:{ar:'تم نسخ الرمز',en:'Code copied',he:'הקוד הועתק'},
-    s1:{ar:'ثبّت تطبيق Salonieer من App Store أو Google Play إن لم يكن لديك.',en:'Install the Salonieer app from the App Store or Google Play if you do not have it.',he:'התקינו את אפליקציית Salonieer מ-App Store או מ-Google Play אם עדיין אין לכם.'},
-    s2:{ar:'اضغط «افتح في تطبيق Salonieer»، أو الصق رمز الدعوة في خانة «رمز الصالون» داخل التطبيق.',en:'Tap “Open in the Salonieer app”, or paste the invitation code in the app’s “Salon code” box.',he:'הקישו „פתיחה באפליקציית Salonieer”, או הדביקו את קוד ההזמנה בתיבת „קוד הסלון” באפליקציה.'},
+    s1:{ar:'ثبّت تطبيق METON من App Store أو Google Play إن لم يكن لديك.',en:'Install the METON app from the App Store or Google Play if you do not have it.',he:'התקינו את אפליקציית METON מ-App Store או מ-Google Play אם עדיין אין לכם.'},
+    s2:{ar:'اضغط «افتح في تطبيق METON»، أو الصق رمز الدعوة في خانة الرمز داخل التطبيق.',en:'Tap “Open in the METON app”, or paste the invitation code in the app’s code box.',he:'הקישו „פתיחה באפליקציית METON”, או הדביקו את קוד ההזמנה בתיבת הקוד באפליקציה.'},
     s3:{ar:'سجّل الدخول بحسابك أو أنشئ حساباً جديداً، ثم اقبل الدعوة.',en:'Sign in or create a new account, then accept the invitation.',he:'התחברו או צרו חשבון חדש, ואז אשרו את ההזמנה.'},
     note:{ar:'الدعوة شخصية وتصلح لمرة واحدة. لا تشاركها مع غيرك.',en:'The invitation is personal and works once. Do not share it.',he:'ההזמנה אישית ותקפה לשימוש אחד. אל תשתפו אותה.'},
-    bad:{ar:'رابط الدعوة غير مكتمل. اطلب من الصالون رابطاً جديداً.',en:'This invitation link is incomplete. Ask the salon for a new link.',he:'קישור ההזמנה אינו שלם. בקשו מהסלון קישור חדש.'},
+    bad:{ar:'رابط الدعوة غير مكتمل. اطلب من صاحب العمل رابطاً جديداً.',en:'This invitation link is incomplete. Ask the business for a new link.',he:'קישור ההזמנה אינו שלם. בקשו מהעסק קישור חדש.'},
   };
   const L3 = o => o[lang] || o.en;
   const code = new URLSearchParams(location.search).get('code') || '';
@@ -767,19 +767,19 @@ const device = () => /android/i.test(navigator.userAgent) ? 'android' : (/iphone
 function salonCodeFromPath() { const m = location.pathname.match(/^\/s\/([A-Za-z0-9_-]{2,64})\/?$/); return m ? m[1] : ''; }
 function salonLink() {
   const W = {
-    eyebrow:{ar:'رابط صالون',en:'Salon link',he:'קישור לסלון'},
-    title:{ar:'احجز موعدك عبر تطبيق Salonieer',en:'Book your appointment in the Salonieer app',he:'קבעו תור באפליקציית Salonieer'},
+    eyebrow:{ar:'رابط الحجز',en:'Booking link',he:'קישור להזמנה'},
+    title:{ar:'احجز موعدك عبر تطبيق METON',en:'Book your appointment in the METON app',he:'קבעו תור באפליקציית METON'},
     lead:{ar:'تصفح الخدمات والمختصين والمواعيد المتاحة في التطبيق. سجّل الدخول أو أنشئ حساباً عند تأكيد الحجز.',en:'Browse the services, specialists and free times in the app. Sign in or create an account when you confirm a booking.',he:'עיינו בשירותים, באנשי המקצוע ובזמנים הפנויים באפליקציה. התחברו או צרו חשבון כשאתם מאשרים תור.'},
-    open:{ar:'افتح الصالون في التطبيق',en:'Open the salon in the app',he:'פתיחת הסלון באפליקציה'},
+    open:{ar:'افتح في التطبيق',en:'Open in the app',he:'פתיחה באפליקציה'},
     play:{ar:'تحميل من Google Play',en:'Get it on Google Play',he:'הורדה מ-Google Play'},
     store:{ar:'تحميل من App Store',en:'Download on the App Store',he:'הורדה מ-App Store'},
-    androidNote:{ar:'إن لم يكن التطبيق مثبتاً يفتح متجر Google Play، وبعد التثبيت يفتح الصالون تلقائياً.',en:'Without the app, Google Play opens; after installing, the app opens this salon by itself.',he:'בלי האפליקציה ייפתח Google Play; אחרי ההתקנה האפליקציה תפתח את הסלון בעצמה.'},
-    iosNote:{ar:'بعد تثبيت التطبيق ارجع إلى هذه الصفحة واضغط «افتح الصالون في التطبيق»، أو أدخل رمز الصالون في التطبيق.',en:'After installing the app, come back to this page and tap “Open the salon in the app”, or enter the salon code in the app.',he:'אחרי התקנת האפליקציה חזרו לדף הזה והקישו „פתיחת הסלון באפליקציה”, או הזינו את קוד הסלון באפליקציה.'},
+    androidNote:{ar:'إن لم يكن التطبيق مثبتاً يفتح متجر Google Play، وبعد التثبيت يفتح التطبيقُ صفحة الحجز تلقائياً.',en:'Without the app, Google Play opens; after installing, the app opens this booking page by itself.',he:'בלי האפליקציה ייפתח Google Play; אחרי ההתקנה האפליקציה תפתח את עמוד ההזמנה בעצמה.'},
+    iosNote:{ar:'بعد تثبيت التطبيق ارجع إلى هذه الصفحة واضغط «افتح في التطبيق»، أو أدخل الرمز في التطبيق.',en:'After installing the app, come back to this page and tap “Open in the app”, or enter the code in the app.',he:'אחרי התקנת האפליקציה חזרו לדף הזה והקישו „פתיחה באפליקציה”, או הזינו את הקוד באפליקציה.'},
     desktop:{ar:'افتح هذا الرابط على هاتفك، أو امسح الرمز بكاميرا الهاتف.',en:'Open this link on your phone, or scan the code with the phone camera.',he:'פתחו את הקישור בטלפון, או סרקו את הקוד במצלמת הטלפון.'},
-    code:{ar:'رمز الصالون',en:'Salon code',he:'קוד הסלון'},
+    code:{ar:'رمز المنشأة',en:'Business code',he:'קוד העסק'},
     copy:{ar:'نسخ الرمز',en:'Copy the code',he:'העתקת הקוד'},
     copied:{ar:'تم نسخ الرمز',en:'Code copied',he:'הקוד הועתק'},
-    bad:{ar:'رابط الصالون غير صحيح. اطلب من الصالون رابطه من جديد.',en:'This salon link is not valid. Ask the salon for its link again.',he:'קישור הסלון אינו תקין. בקשו מהסלון את הקישור שוב.'},
+    bad:{ar:'رابط الحجز غير صحيح. اطلب الرابط من صاحب العمل من جديد.',en:'This booking link is not valid. Ask the business for its link again.',he:'קישור ההזמנה אינו תקין. בקשו מהעסק את הקישור שוב.'},
   };
   const L3 = o => o[lang] || o.en;
   const code = salonCodeFromPath(), dev = device();
@@ -810,7 +810,7 @@ async function bindSalonLink() {
     const brand = document.getElementById('salon-link-brand'); if (!brand) return;
     document.getElementById('salon-link-name').textContent = d.salon.name;
     if (d.salon.logo_url) { const img = document.getElementById('salon-link-logo'); img.src = d.salon.logo_url; img.hidden = false; }
-    brand.hidden = false; document.title = d.salon.name + ' · Salonieer';
+    brand.hidden = false; document.title = d.salon.name + ' · METON';
   } catch {}
 }
 function legalPage(eyebrow,title,content) {
@@ -1151,7 +1151,7 @@ function bind() {
   document.getElementById('copy-invite')?.addEventListener('click',async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(document.getElementById('invite-code').textContent);toast(b.dataset.copied,'success');}catch{}});
   if (route === '/s') bindSalonLink();
   document.getElementById('copy-email')?.addEventListener('click',async()=>{
-    try { await navigator.clipboard.writeText('salonieer1st@gmail.com');document.getElementById('copy-feedback').textContent=t('copied'); }
+    try { await navigator.clipboard.writeText('support@meton.work');document.getElementById('copy-feedback').textContent=t('copied'); }
     catch { document.getElementById('copy-feedback').textContent=t('copyFailed'); }
   });
   document.querySelectorAll('[data-display-currency]').forEach(select=>select.addEventListener('change',()=>{
@@ -1368,7 +1368,7 @@ function paint(place) {
   }
   setLanguage(lang);
   killFx();
-  document.title = 'Salonieer · ' + t(titles[route] || 'home');
+  document.title = 'METON · ' + t(titles[route] || 'home');
   const scene = route === '/' ? 'is-home' : route === '/plans' ? 'is-plans' : ['/login','/register','/setup'].includes(route) ? 'is-auth' : 'is-paper';
   document.body.dataset.scene = scene;
   app.innerHTML = header()+`<main id="main" tabindex="-1" class="${scene}">${(pages[route] || home)()}</main>`+footer();
@@ -1482,7 +1482,7 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
   } catch(error) {
     if (token !== navToken) return;
     route = next;
-    app.innerHTML=header()+`<main id="main" class="wrap empty-state"><h1>Salonieer</h1><p role="alert">${t(error.code || 'serverError')}</p><button class="btn primary" id="retry">${t('retry')}</button></main>`+footer();
+    app.innerHTML=header()+`<main id="main" class="wrap empty-state"><h1>METON</h1><p role="alert">${t(error.code || 'serverError')}</p><button class="btn primary" id="retry">${t('retry')}</button></main>`+footer();
     document.getElementById('retry').addEventListener('click',()=>loadRoute());
     document.getElementById('language').addEventListener('change',event=>{setLanguage(event.target.value);loadRoute();});
   } finally {

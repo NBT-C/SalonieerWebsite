@@ -1,5 +1,5 @@
 // Generated from Salonieer-KMP/web/plans.js by tools/export_plans_data.mjs — do not edit here.
-// What Basic, Pro and Enterprise include (plan entitlements, October 2026), explained for salon owners.
+// What Basic, Pro and Enterprise include (plan entitlements, October 2026), explained for business owners.
 export const PLAN_FEATURES = [
  {
   "key": "booking",
@@ -15,9 +15,9 @@ export const PLAN_FEATURES = [
    "he": "הלקוחות מזמינים מהטלפון בכל שעה, לפי שעות העבודה של כל מומחה; אתם מאשרים, מבטלים ומסמנים הגעה באפליקציה."
   },
   "x": {
-   "ar": "مثال: عميل يحجز قصّة الساعة 11 ليلاً دون أن يتصل بك.",
-   "en": "Example: a customer books a haircut at 11 pm without calling you.",
-   "he": "לדוגמה: לקוח מזמין תספורת ב־23:00 בלי להתקשר."
+   "ar": "مثال: عميل يحجز موعداً الساعة 11 ليلاً دون أن يتصل بك.",
+   "en": "Example: a customer books an appointment at 11 pm without calling you.",
+   "he": "לדוגמה: לקוח קובע תור ב־23:00 בלי להתקשר."
   }
  },
  {
@@ -57,21 +57,6 @@ export const PLAN_FEATURES = [
    "en": "Example: a reminder an hour before cuts missed appointments.",
    "he": "לדוגמה: תזכורת שעה לפני מפחיתה תורים שהוחמצו."
   }
- },
- {
-  "key": "discover",
-  "included": "all",
-  "t": {
-   "ar": "الظهور في «اكتشف الصالونات»",
-   "en": "Listed in Discover",
-   "he": "מופיעים ב״גלו סלונים״"
-  },
-  "d": {
-   "ar": "يجد عملاء جدد صالونك بالبحث بالاسم أو الخدمة أو المدينة، مع تقييمات الزيارات.",
-   "en": "New customers find your salon by name, service or city, with visit ratings.",
-   "he": "לקוחות חדשים מוצאים אתכם לפי שם, שירות או עיר, עם דירוגי ביקורים."
-  },
-  "x": null
  },
  {
   "key": "statistics",
@@ -150,9 +135,9 @@ export const PLAN_FEATURES = [
    "he": "הלקוחות צוברים מטבעות על כל ביקור או רכישה וממירים אותם לשירות, מוצר או הטבה שתבחרו."
   },
   "x": {
-   "ar": "مثال: بعد 10 زيارات تصبح القصّة مجانية — سبب ليعود العميل إليك.",
-   "en": "Example: the 10th haircut is free — a reason to come back to you.",
-   "he": "לדוגמה: התספורת העשירית בחינם — סיבה לחזור אליכם."
+   "ar": "مثال: بعد 10 زيارات تصبح الزيارة التالية مجانية — سبب ليعود العميل إليك.",
+   "en": "Example: the 10th visit is free — a reason to come back to you.",
+   "he": "לדוגמה: הביקור העשירי בחינם — סיבה לחזור אליכם."
   }
  },
  {
@@ -169,9 +154,9 @@ export const PLAN_FEATURES = [
    "he": "כשהיום מלא, הלקוח ממתין לשעה מסוימת. אם מישהו מבטל, השעה מוצעת אוטומטית לראשון בתור ל־10 דקות לפני שהיא נפתחת לכולם."
   },
   "x": {
-   "ar": "مثال: إلغاء في آخر لحظة لا يترك كرسياً فارغاً.",
-   "en": "Example: a last-minute cancellation doesn't leave a chair empty.",
-   "he": "לדוגמה: ביטול ברגע האחרון לא משאיר כיסא ריק."
+   "ar": "مثال: إلغاء في آخر لحظة لا يترك موعداً فارغاً.",
+   "en": "Example: a last-minute cancellation doesn't leave a slot empty.",
+   "he": "לדוגמה: ביטול ברגע האחרון לא משאיר משבצת ריקה."
   }
  },
  {
@@ -183,7 +168,7 @@ export const PLAN_FEATURES = [
    "he": "דף מוצרים"
   },
   "d": {
-   "ar": "اعرض منتجات الصالون بأسعارها وصورها في التطبيق ليطلبها العميل ويستلمها في زيارته.",
+   "ar": "اعرض منتجاتك بأسعارها وصورها في التطبيق ليطلبها العميل ويستلمها في زيارته.",
    "en": "Show your products with prices and photos in the app, for customers to pick up on their visit.",
    "he": "הציגו מוצרים עם מחירים ותמונות באפליקציה, לאיסוף בביקור."
   },
@@ -232,9 +217,9 @@ export const PLAN_FEATURES = [
    "he": "שכר ורווחי עובדים"
   },
   "d": {
-   "ar": "راتب ثابت أو بالساعة أو عمولة أو إيجار كرسي لكل موظف، ويحسب التطبيق المستحقات والدفعات تلقائياً.",
-   "en": "Salary, hourly pay, commission or chair rent per employee; the app calculates what is owed and what was paid.",
-   "he": "משכורת, שכר שעתי, עמלה או השכרת כיסא לכל עובד; האפליקציה מחשבת מה מגיע ומה שולם."
+   "ar": "راتب ثابت أو بالساعة أو عمولة أو إيجار كرسي أو غرفة لكل موظف، ويحسب التطبيق المستحقات والدفعات تلقائياً.",
+   "en": "Salary, hourly pay, commission or chair/room rent per employee; the app calculates what is owed and what was paid.",
+   "he": "משכורת, שכר שעתי, עמלה או השכרת כיסא או חדר לכל עובד; האפליקציה מחשבת מה מגיע ומה שולם."
   },
   "x": null
  },
@@ -262,9 +247,9 @@ export const PLAN_FEATURES = [
    "he": "נוכחות"
   },
   "d": {
-   "ar": "يسجّل الموظف حضوره من هاتفه في الصالون (بالموقع أو رمز QR أو رمز متغيّر)، مع الوقت الإضافي والمراجعة.",
-   "en": "Employees clock in at the salon from their phone (location, QR code or rotating code), with overtime and review.",
-   "he": "העובד מחתים נוכחות מהטלפון בסלון (מיקום, קוד QR או קוד מתחלף), כולל שעות נוספות ובקרה."
+   "ar": "يسجّل الموظف حضوره من هاتفه في مكان العمل (بالموقع أو رمز QR أو رمز متغيّر)، مع الوقت الإضافي والمراجعة.",
+   "en": "Employees clock in at work from their phone (location, QR code or rotating code), with overtime and review.",
+   "he": "העובד מחתים נוכחות מהטלפון במקום העבודה (מיקום, קוד QR או קוד מתחלף), כולל שעות נוספות ובקרה."
   },
   "x": null
  },
@@ -282,9 +267,9 @@ export const PLAN_FEATURES = [
    "he": "כמויות מוצרים, התראות על מלאי נמוך, תנועות, רכש וברקודים."
   },
   "x": {
-   "ar": "مثال: تنبيه عندما يبقى 3 علب صبغة فقط.",
-   "en": "Example: an alert when only 3 boxes of colour are left.",
-   "he": "לדוגמה: התראה כשנשארו רק 3 קופסאות צבע."
+   "ar": "مثال: تنبيه عندما تبقى 3 قطع فقط من منتج.",
+   "en": "Example: an alert when only 3 units of a product are left.",
+   "he": "לדוגמה: התראה כשנשארו רק 3 יחידות ממוצר."
   }
  },
  {
@@ -354,18 +339,18 @@ export const PLAN_FEATURES = [
 ];
 export const PLAN_SUMMARY = {
  "basic": {
-  "ar": "للصالون الصغير أو المختص المستقل: الحجز والجدول والإشعارات وإحصائيات آخر 30 يوماً، ومختص واحد. يمكن إضافة ميزة واحدة: نقاط الولاء أو قائمة الانتظار الذكية.",
-  "en": "For a small salon or an independent specialist: booking, schedule, notifications and statistics for the last 30 days, with 1 specialist. One add-on available: Loyalty Coins or the Smart waitlist.",
-  "he": "לסלון קטן או למומחה עצמאי: הזמנות, לוח, התראות וסטטיסטיקה ל־30 יום, עם מומחה אחד. תוספת אחת אפשרית: מטבעות נאמנות או רשימת המתנה חכמה."
+  "ar": "للمنشأة الصغيرة أو المختص المستقل: الحجز والجدول والإشعارات وإحصائيات آخر 30 يوماً، ومختص واحد. يمكن إضافة ميزة واحدة: نقاط الولاء أو قائمة الانتظار الذكية.",
+  "en": "For a small business or an independent specialist: booking, schedule, notifications and statistics for the last 30 days, with 1 specialist. One add-on available: Loyalty Coins or the Smart waitlist.",
+  "he": "לעסק קטן או למומחה עצמאי: הזמנות, לוח, התראות וסטטיסטיקה ל־30 יום, עם מומחה אחד. תוספת אחת אפשרית: מטבעות נאמנות או רשימת המתנה חכמה."
  },
  "pro": {
-  "ar": "للصالون الذي يدير فريقاً وأموالاً: كل ما في Basic مع 7 مختصين، وكل الميزات: الدفع الذكي والمالية ورواتب الموظفين والحضور والمخزون والولاء وقائمة الانتظار وكل سجل الإحصائيات.",
-  "en": "For a salon running a team and its money: everything in Basic with 7 specialists and every feature — Smart Checkout, finance, employee wages, attendance, inventory, loyalty, waitlist and full statistics history.",
-  "he": "לסלון שמנהל צוות וכספים: כל מה שב־Basic עם 7 מומחים וכל הפיצ׳רים — קופה חכמה, כספים, שכר עובדים, נוכחות, מלאי, נאמנות, רשימת המתנה וכל היסטוריית הסטטיסטיקה."
+  "ar": "للمنشأة التي تدير فريقاً وأموالاً: كل ما في Basic مع 7 مختصين، وكل الميزات: الدفع الذكي والمالية ورواتب الموظفين والحضور والمخزون والولاء وقائمة الانتظار وكل سجل الإحصائيات.",
+  "en": "For a business running a team and its money: everything in Basic with 7 specialists and every feature — Smart Checkout, finance, employee wages, attendance, inventory, loyalty, waitlist and full statistics history.",
+  "he": "לעסק שמנהל צוות וכספים: כל מה שב־Basic עם 7 מומחים וכל הפיצ׳רים — קופה חכמה, כספים, שכר עובדים, נוכחות, מלאי, נאמנות, רשימת המתנה וכל היסטוריית הסטטיסטיקה."
  },
  "enterprise": {
-  "ar": "للسلاسل والصالونات الكبيرة: كل الميزات، وعدد المختصين والإضافات والسعر حسب الاتفاق، مع دعم مخصص.",
-  "en": "For chains and large salons: every feature; specialists, extras and price as agreed, with dedicated support.",
-  "he": "לרשתות וסלונים גדולים: כל הפיצ׳רים; מומחים, תוספות ומחיר לפי הסכם, עם תמיכה ייעודית."
+  "ar": "للسلاسل والمنشآت الكبيرة: كل الميزات، وعدد المختصين والإضافات والسعر حسب الاتفاق، مع دعم مخصص.",
+  "en": "For chains and large businesses: every feature; specialists, extras and price as agreed, with dedicated support.",
+  "he": "לרשתות ולעסקים גדולים: כל הפיצ׳רים; מומחים, תוספות ומחיר לפי הסכם, עם תמיכה ייעודית."
  }
 };

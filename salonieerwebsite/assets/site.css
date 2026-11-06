@@ -780,3 +780,46 @@ html.sc-locked{overflow:hidden}
 .pf-amount small{font-weight:600;color:var(--color-text-muted)}
 .pf-amount .px-usd{flex-basis:100%;font-size:.8rem;font-weight:600;color:var(--color-text-muted)}
 .pf-miss{margin:10px 0 0;font-size:.88rem;line-height:1.55;color:#8A3B2E}
+/* =================================================================================================================
+   METON IDENTITY (2026-11-06) — final layer, re-points the tokens above and the few hard-coded colours.
+   Brand assets (brand/meton): deep aubergine ink #241D28, warm cream #FAF4EB, coral #FF7057. Coral is used as a
+   fill and accent; on cream, coral TEXT uses the deeper #B5402B so it stays readable (contrast about 5:1).
+   ================================================================================================================= */
+:root{
+  --night:#241D28;--night-2:#2E2633;--night-3:#3A3140;--chrome:#E9DFD3;--steel:#7D7280;
+  --talc:#FAF4EB;--talc-2:#F1E8DB;--paper:#FFFCF7;--peroxide:#FF7057;--barbicide:#FF7057;--barbicide-deep:#D9533B;
+  --coral:#FF7057;--coral-deep:#D9533B;--coral-text:#B5402B;--gold:#FF7057;--gold-deep:#B5402B;
+  --color-primary:var(--night);--color-secondary:#4A3F4E;--color-accent:var(--night);--color-accent-hover:var(--night-3);
+  --color-accent-text:var(--coral-text);--color-accent-soft:rgba(255,112,87,.14);--color-on-accent:#fff;
+  --color-background:var(--talc);--color-surface:var(--paper);--color-surface-secondary:var(--talc-2);--color-surface-sunken:#F3EBDF;
+  --color-text-primary:var(--night);--color-text-secondary:#4A3F4E;--color-text-muted:#6E6371;
+  --color-border:rgba(36,29,40,.11);--color-border-strong:rgba(36,29,40,.26);--color-info:var(--night);--color-info-text:var(--night);
+  --color-overlay:rgba(24,18,27,.62);--button-primary-bg:var(--night);--button-primary-text:#fff;--button-primary-hover:var(--night-3);
+  --button-secondary-text:var(--night);--input-focus:var(--coral-deep);--nav-active:var(--night);
+  --badge-bg:rgba(255,112,87,.16);--badge-text:#8E3322;--shade:#18121B;--ring:0 0 0 3px rgba(255,112,87,.45);
+  --elev-2:0 30px 60px -40px rgba(24,18,27,.4);--elev-3:0 40px 90px -40px rgba(24,18,27,.55);
+}
+.ink{--color-surface-sunken:#1C1620;--color-text-secondary:var(--chrome);--color-text-muted:#B3A8B6;
+  --color-border:rgba(250,244,235,.14);--color-border-strong:rgba(250,244,235,.3);--button-primary-hover:var(--coral)}
+.brand .brand-logo{height:25px;margin-inline-start:0}
+@media (max-width:480px){.brand .brand-logo{height:22px}}
+.footer-logo{width:160px;margin-inline-start:0}
+.hm-hero{background:radial-gradient(90% 70% at 85% 10%,rgba(255,112,87,.12),transparent 60%),var(--talc)}
+.hm-points .ck,.check-list .ck{color:var(--coral-text)}
+.hm-num{background:var(--night);color:var(--coral)}
+.hm-plan.is-popular,.cmp-card.is-popular,.pf-card.is-pick{border-color:var(--coral-deep)}
+.hm-plan .tag,.cmp-card .tag,.pf-card .tag{background:var(--coral);color:var(--night)}
+.btn.primary:before{background:var(--night-3)}
+.ink .btn.primary:before{background:var(--coral)}
+.ink .btn.primary:hover{color:var(--night)}
+.site-footer{background:var(--night);color:var(--chrome)}
+.site-footer a{color:var(--talc)}
+.site-footer a:hover{color:#fff}
+.invite-card{border-color:rgba(36,29,40,.12);box-shadow:0 10px 30px rgba(36,29,40,.06)}
+.invite-code{background:var(--talc-2)}
+.pf-why{color:#F1E8DB}
+.pf-card .trial-badge{border-color:var(--coral-text);color:var(--coral-text)}
+.plans-page .menu-row .price{color:var(--coral-text)}
+@media (hover:hover) and (pointer:fine){.plans-page .menu-row:hover h3{color:var(--coral-text)}}
+.cmp-more summary{color:var(--coral-text)}
+.ink .cmp-more summary,.pf-kicker{color:var(--coral)}

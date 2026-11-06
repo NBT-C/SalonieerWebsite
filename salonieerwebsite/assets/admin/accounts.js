@@ -9,7 +9,7 @@ import { loadPhone, toE164, countryOptions } from './phone-input.js';
 
 const field = (label, input, cls = '') => `<label class="ap-field ${cls}"><span>${esc(label)}</span>${input}</label>`;
 const roleLabel = s => s.owned ? T('accessRoleOwner') : T('rowRole_' + (s.role || 'user'));
-const helpList = list => list.length ? `<h4>${esc(T('accountHelp'))}</h4><ol class="ap-feed">${list.map(x => `<li><span>${esc(T('helpReset', { by: x.by || 'Salonieer', reason: x.reason }))}</span><time>${esc(fmtTime(x.at))}</time></li>`).join('')}</ol>` : '';
+const helpList = list => list.length ? `<h4>${esc(T('accountHelp'))}</h4><ol class="ap-feed">${list.map(x => `<li><span>${esc(T('helpReset', { by: x.by || 'METON', reason: x.reason }))}</span><time>${esc(fmtTime(x.at))}</time></li>`).join('')}</ol>` : '';
 const resetForm = (attr, lead) => `<form class="ap-form-grid" ${attr} novalidate><h4 class="is-full">${esc(T('resetTitle'))}</h4><p class="ap-quiet is-full">${esc(lead)}</p>
   ${field(T('resetReason'), `<textarea name="reason" rows="2" maxlength="300" required></textarea><small>${esc(T('resetReasonHint'))}</small>`, 'is-full')}
   <div class="ap-actions is-full"><button class="ap-btn is-danger" type="submit">${esc(T('resetTitle'))}</button><p class="ap-error" role="alert"></p></div></form>`;

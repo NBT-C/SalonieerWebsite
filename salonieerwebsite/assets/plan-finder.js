@@ -22,7 +22,7 @@ const GROUPS = [
 ].map(([id, keys]) => [id, keys.filter(k => KIND[k])]);
 
 const W = {
-  title: { ar: 'ما الباقة المناسبة لصالونك؟', en: 'Which plan fits your salon?', he: 'איזו חבילה מתאימה לסלון שלכם?' },
+  title: { ar: 'ما الباقة المناسبة لعملك؟', en: 'Which plan fits your business?', he: 'איזו חבילה מתאימה לעסק שלכם?' },
   lead: { ar: 'اختر عدد المختصين والميزات التي تحتاجها فعلاً، ونحسب لك تكلفة كل باقة ونرشّح الأنسب لك — لا الأغلى.',
     en: 'Choose how many specialists you have and the features you actually need. We work out what each plan would cost and recommend the best fit — not the most expensive one.',
     he: 'בחרו כמה מומחים יש לכם ואילו פיצ׳רים אתם באמת צריכים. נחשב כמה תעלה כל חבילה ונמליץ על המתאימה ביותר — לא על היקרה ביותר.' },
