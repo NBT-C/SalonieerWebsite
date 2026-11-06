@@ -13,6 +13,8 @@ import { adminShell, bindAdmin, isAdminRoute, refresh as refreshAdmin } from './
 import { installPager } from './pager.js';
 import { PLAN_FEATURES, PLAN_SUMMARY } from './plans-data.js';
 import { planFinder, bindPlanFinder, finderLink } from './plan-finder.js';
+// METON 2.44: booking pages (/s/<code>), private booking links (/m/<token>), My bookings (/me), Try METON Free (/try).
+import { bookPage, bindBook, managePage, bindManage, mePage, bindMe, tryPage, bindTry, forgotPage, bindForgot } from './book.js';
 
 const app = document.getElementById('app');
 let storedLanguage;
@@ -21,7 +23,8 @@ try { storedLanguage = localStorage.getItem('salonieer_lang'); } catch {}
 try { const fromLink = new URLSearchParams(location.search).get('lang'); if (languages.includes(fromLink)) { storedLanguage = fromLink; localStorage.setItem('salonieer_lang', fromLink); } } catch {}
 let lang = languages.includes(storedLanguage) ? storedLanguage : (languages.includes(navigator.language.slice(0,2)) ? navigator.language.slice(0,2) : 'en');
 // 2.34: /s/<code> (a salon's own link) is one page whatever the code.
-const routeOf = pathname => { const r = pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/'; if (/^\/s\/[A-Za-z0-9_-]{2,64}$/.test(r)) return '/s'; return r === '/index' ? '/' : r; };
+const routeOf = pathname => { const r = pathname.replace(/\.html$/, '').replace(/\/$/, '') || '/'; if (/^\/s\/[A-Za-z0-9_-]{2,64}$/.test(r)) return '/s';
+  if (/^\/m\/[a-f0-9]{48}$/.test(r)) return '/m'; if (/^\/try\/(customer|business)$/.test(r)) return '/try'; return r === '/index' ? '/' : r; };
 let route = routeOf(location.pathname);
 let routeKey = '';
 const privateRoutes = ['/apply','/applications','/account','/admin'];
@@ -161,7 +164,7 @@ async function api(path, options = {}) {
 }
 function nextPage() {
   const value = new URLSearchParams(location.search).get('next');
-  if (!value || !/^\/(plans|apply|applications|account|admin)(\?[^\r\n\\]*)?$/.test(value)) return '/plans';
+  if (!value || !/^\/(plans|apply|applications|account|admin|try\/business)(\?[^\r\n\\]*)?$/.test(value)) return '/plans';
   return value;
 }
 function setLanguage(value) {
@@ -181,17 +184,17 @@ function header() {
   const item = (path,key) => `<li>${link(path,key)}</li>`;
   return `<a class="skip" href="#main">${t('skip')}</a><header class="topbar"><div class="nav">
     <a href="/" class="brand" aria-label="METON"><img class="brand-logo brand-logo-light" src="/assets/brand/meton-wordmark-ink.svg" alt="METON" width="124" height="25"><img class="brand-logo brand-logo-dark" src="/assets/brand/meton-wordmark-cream.svg" alt="" width="124" height="25"></a>
-    <nav class="bar-links" aria-label="${t('menu')}">${link('/plans','plans')}${link('/support','support')}${state.user?link('/account','account'):link('/login','login')}</nav>
+    <nav class="bar-links" aria-label="${t('menu')}">${link('/try','tryFree')}${link('/plans','plans')}${link('/support','support')}${state.user?link('/account','account'):link('/login','login')}</nav>
     ${state.user?`<button class="btn small bar-logout" id="logout" type="button">${t('logout')}</button>`:''}
     <select id="language" class="language-select" aria-label="${t('language')}"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="ar" ${lang==='ar'?'selected':''}>العربية</option><option value="he" ${lang==='he'?'selected':''}>עברית</option></select>
     <button class="menu-toggle" id="menu-toggle" aria-controls="nav-panel" aria-expanded="false" data-open="${t('menu')}" data-close="${t('close')}"><span class="label-text">${t('menu')}</span><span class="bars" aria-hidden="true"></span></button>
-    <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><ul class="menu-links">${item('/','home')}${item('/plans','plans')}${state.user?item('/applications','applications')+item('/account','account'):''}${item('/support','support')}${state.user?.isAdmin?item('/admin','adminPanel'):''}${state.user?'':item('/login','login')+item('/register','register')}</ul>
+    <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><ul class="menu-links">${item('/','home')}${item('/try','tryFree')}${item('/plans','plans')}${item('/me','myBookings')}${state.user?item('/applications','applications')+item('/account','account'):''}${item('/support','support')}${state.user?.isAdmin?item('/admin','adminPanel'):''}${state.user?'':item('/login','login')+item('/register','register')}</ul>
       <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/register">${t('register')}</a>`}</div><a class="mail" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></nav>
   </div></header>`;
 }
 function footer() {
   return `<footer class="site-footer"><div class="wrap"><div class="footer-grid"><div><img class="footer-logo" src="/assets/brand/meton-wordmark-cream.svg" alt="METON" width="160" height="32" loading="lazy"><p>${t('footerTagline')}</p></div>
-    <nav aria-label="${t('footerProduct')}"><h3>${t('footerProduct')}</h3><div class="footer-links"><a href="/">${t('home')}</a><a href="/plans">${t('plans')}</a>${state.user?`<a href="/account">${t('account')}</a>`:`<a href="/register">${t('register')}</a>`}</div></nav>
+    <nav aria-label="${t('footerProduct')}"><h3>${t('footerProduct')}</h3><div class="footer-links"><a href="/">${t('home')}</a><a href="/try">${t('tryFree')}</a><a href="/plans">${t('plans')}</a><a href="/me">${t('myBookings')}</a>${state.user?`<a href="/account">${t('account')}</a>`:`<a href="/register">${t('register')}</a>`}</div></nav>
     <nav aria-label="${t('legal')}"><h3>${t('legal')}</h3><div class="footer-links"><a href="/terms">${t('termsTitle')}</a><a href="/privacy">${t('privacyPolicy')}</a><a href="/refund">${t('refundTitle')}</a></div></nav>
     <div><h3>${t('footerContact')}</h3><div class="footer-links"><a href="/support">${t('support')}</a><a href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></div></div>
     <div class="footer-bottom"><span>© ${new Date().getFullYear()} METON. ${t('footerRights')}</span><span>${t('footerMade')}</span></div></div></footer>`;
@@ -278,7 +281,7 @@ function home() {
     <div class="sc-hero-copy sc-reveal" data-r="hero-copy">
       <p class="sc-kicker">${t('sc_kicker')}</p>
       <h1 id="hm-title">${t('sc_title')}</h1><p class="sc-lead">${t('sc_lead')}</p>
-      <div class="hero-actions">${start}<a class="btn" href="#how">${t('sc_cta_how')}</a></div>
+      <div class="hero-actions">${start}<a class="btn" href="/try">${t('tryFree')}</a><a class="text-link" href="#how">${t('sc_cta_how')}</a></div>
       <ul class="hm-points">${[1,2,3].map(i=>`<li><span class="ck">${checkSvg}</span>${t('hm_point'+i)}</li>`).join('')}</ul></div>
     <figure class="sc-hero-visual sc-reveal" data-r="hero-visual">
       <div class="sc-stage">${framed('tablet-dashboard', t('sc_alt_tablet_dashboard'), { tablet: true, priority: 'high', sizes: '(max-width: 900px) 84vw, 640px' })}${framed('requested', t('sc_alt_requested'), { priority: 'high', sizes: '(max-width: 900px) 25vw, 180px' })}</div>
@@ -310,7 +313,7 @@ function home() {
 </div>`;
 }
 function login() {
-  return `<div class="auth-split">${authIntro('welcome','loginLead')}<div class="auth-form"><section class="auth-card"><h2>${t('login')}</h2>${new URLSearchParams(location.search).has('next')?`<p class="notice info">${t('loginRequired')}</p>`:''}<form id="login-form" novalidate>${formErrorBox()}${field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com'})}${field('password','password',{type:'password',autocomplete:'current-password',maxlength:128})}<div class="login-help"><a class="text-link" href="/support#account">${t('forgot')}</a></div><button class="btn primary full" type="submit">${t('login')}</button></form><p class="auth-footer">${t('noAccount')} <a href="/register" class="text-link">${t('register')}</a></p></section></div></div>`;
+  return `<div class="auth-split">${authIntro('welcome','loginLead')}<div class="auth-form"><section class="auth-card"><h2>${t('login')}</h2>${new URLSearchParams(location.search).has('next')?`<p class="notice info">${t('loginRequired')}</p>`:''}<form id="login-form" novalidate>${formErrorBox()}${field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com'})}${field('password','password',{type:'password',autocomplete:'current-password',maxlength:128})}<div class="login-help"><a class="text-link" href="/forgot">${t('forgot')}</a></div><button class="btn primary full" type="submit">${t('login')}</button>${state.google?`<a class="btn full google-btn" href="/auth/google">${t('withGoogle')}</a>`:''}</form><p class="auth-footer">${t('noAccount')} <a href="/register" class="text-link">${t('register')}</a></p></section></div></div>`;
 }
 // Dialing country guess from the time zone, used only to preselect the phone code (the account country is never guessed).
 function dialGuess() {
@@ -1073,7 +1076,7 @@ const broadcast = type => { try { channel?.postMessage(type); } catch {} };
 let lastSessionCheck = 0;
 async function refreshSession() {
   const session = await api('/api/session');
-  state.user = session.user; state.csrf = session.csrf; state.checkout = session.checkout; state.platform = session.platform || null;
+  state.user = session.user; state.csrf = session.csrf; state.checkout = session.checkout; state.platform = session.platform || null; state.google = !!session.google;
   lastSessionCheck = Date.now();
   return session;
 }
@@ -1152,7 +1155,11 @@ function bind() {
     catch (error) { document.getElementById('checkout-status').textContent = t(error.code || 'checkoutUnavailable'); }
   });
   document.getElementById('copy-invite')?.addEventListener('click',async e=>{const b=e.currentTarget;try{await navigator.clipboard.writeText(document.getElementById('invite-code').textContent);toast(b.dataset.copied,'success');}catch{}});
-  if (route === '/s') bindSalonLink();
+  if (route === '/s') bindBook(bookContext());
+  if (route === '/m') bindManage(bookContext());
+  if (route === '/me') bindMe(bookContext());
+  if (route === '/try') bindTry(bookContext());
+  if (route === '/forgot') bindForgot(bookContext());
   document.getElementById('copy-email')?.addEventListener('click',async()=>{
     try { await navigator.clipboard.writeText('support@meton.work');document.getElementById('copy-feedback').textContent=t('copied'); }
     catch { document.getElementById('copy-feedback').textContent=t('copyFailed'); }
@@ -1350,7 +1357,9 @@ function bindApplicationActions() {
     catch (error) { toast(t(error.code || 'serverError'), 'error'); }
   }));
 }
-const pages = {'/':home,'/login':login,'/register':register,'/plans':plans,'/apply':apply,'/applications':()=>applications(false),'/admin':()=>applications(true),'/account':account,'/support':support,'/privacy':privacy,'/terms':termsPage,'/refund':refundPage,'/setup':setup,'/checkout':paymentLink,'/invite':invite,'/s':salonLink};
+const pages = {'/':home,'/login':login,'/register':register,'/plans':plans,'/apply':apply,'/applications':()=>applications(false),'/admin':()=>applications(true),'/account':account,'/support':support,'/privacy':privacy,'/terms':termsPage,'/refund':refundPage,'/setup':setup,'/checkout':paymentLink,'/invite':invite,'/s':()=>bookPage(bookContext()),'/m':()=>managePage(bookContext()),'/me':()=>mePage(bookContext()),'/forgot':()=>forgotPage(bookContext()),'/try':()=>tryPage(bookContext())};
+// What the booking pages need from the website (book.js): language, API, dialogs and the phone helpers.
+const bookContext = () => ({ lang, api, toast, esc, state, go, confirmDialog, countryPicker, bindCountryPicker, pickerOptions, PINNED, phoneE164 });
 const titles = {'/checkout':'payByCard','/':'tagline','/login':'login','/register':'register','/plans':'plans','/apply':'applyTitle','/applications':'applications','/admin':'inbox','/account':'account','/support':'support','/privacy':'privacyPolicy','/terms':'termsTitle','/refund':'refundTitle','/setup':'setupTitle'};
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.effects === 'off';
 // What the admin panel needs from the website: its session, API helpers, dialogs and language.
@@ -1439,7 +1448,7 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
     if (['/login','/register'].includes(next) && state.user) return go(nextPage(), {replace:true});
     // A new page (not a re-render of the same one) starts with a fresh application form.
     if (key !== routeKey) { state.receipt = null; state.logo = ''; state.logoName = ''; state.submissionKey = uuid(); }
-    if (next==='/apply') await loadPhoneLib();
+    if (['/apply','/s','/me','/try'].includes(next)) await loadPhoneLib();
     if (['/','/plans','/apply'].includes(next)) {
       // The visitor's country picks the currency approximate prices are shown in (payments are always in USD).
       let tz = '';

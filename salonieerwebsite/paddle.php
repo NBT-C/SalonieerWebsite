@@ -318,6 +318,8 @@ function paddlePayApplication(TransactionEntity $t): void {
         if (preg_match('/application_declined|application_not_found/',$e->remoteMessage)) { error_log('Salonieer Paddle '.$t->id.': '.$e->remoteMessage.' for '.$app); return; }
         throw $e;
     }
+    // METON 2.44: a completed card payment creates the business at once (no approval queue).
+    metonInstantApprove($app, is_numeric($userId) ? (int)$userId : null);
 }
 
 // Right after a card payment the browser asks for its application to be checked, so "Paid" shows at once instead of
@@ -342,6 +344,7 @@ function paddleConfirmApplicationPayment(array $user, string $appId, string $txn
     runSql("UPDATE customers SET user_id=?,updated_at=datetime('now') WHERE customer_id=? AND user_id IS NULL",[(int)$user['id'],$c['id']]);
     if (!one('SELECT 1 FROM customers WHERE customer_id=? AND user_id=?',[$c['id'],(int)$user['id']])) { paddleTrace('confirm: customer linked to another account'); return; }
     sbRpc('website_mark_paid',['p_id'=>$appId,'p_method'=>'paid','p_reference'=>$t->id,'p_actor'=>'paddle','p_user'=>(int)$user['id']]);
+    metonInstantApprove($appId, (int)$user['id']);
 }
 
 // ---- Access -------------------------------------------------------------------

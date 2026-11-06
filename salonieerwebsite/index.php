@@ -26,6 +26,8 @@ require __DIR__.'/supabase.php';
 require __DIR__.'/mail.php';
 require __DIR__.'/billing.php';
 require __DIR__.'/ops.php';
+// METON 2.44: business booking pages, private booking links, My bookings.
+require __DIR__.'/booking.php';
 
 final class HttpFailure extends RuntimeException {
     public function __construct(public int $status, public string $errorCode, public ?string $field = null) {
@@ -734,7 +736,7 @@ function api(string $method,string $path,array|false $session,array|false $user)
         // Grace reminders and pauses run even when the cron job isn't set up.
         billingWorkAfterResponse(600);
         if (!$session) rateLimit('guest-session',200,3600);
-        sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session),'checkout'=>checkoutConfig($user)]+($user&&(int)$user['is_admin']?['platform'=>platformConfig()]:[]));
+        sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session),'checkout'=>checkoutConfig($user),'google'=>metonGoogleReady()]+($user&&(int)$user['is_admin']?['platform'=>platformConfig()]:[]));
     }
     if ($method==='GET'&&$path==='/api/health') {
         $sqlite=in_array('sqlite',PDO::getAvailableDrivers(),true);$database=false;
@@ -773,6 +775,9 @@ function api(string $method,string $path,array|false $session,array|false $user)
         setAuthCookie('',-3600);sendJson(200,['ok'=>true]);
     }
     if (!in_array($method,['GET','HEAD'],true)) csrfAndOrigin($session);
+    if (str_starts_with($path,'/api/book')||str_starts_with($path,'/api/me/')) metonBookingApi($method,$path,$session);
+    if ($path==='/api/drafts') metonDraftsApi($method,$path,$user);
+    if (str_starts_with($path,'/api/password/')) metonPasswordApi($method,$path,$session);
     if ($method==='POST'&&$path==='/api/billing/portal') {
         // The customer is resolved from the signed-in session user only; nothing from the request body is used.
         requireUser($user);rateLimit('billing-portal',20,3600,(string)$user['id']);
@@ -1222,11 +1227,15 @@ try {
     if (str_starts_with($path,'/api/')) api($method,$path,$session,$user);
     if (!in_array($method,['GET','HEAD'],true)) fail(405,'invalidRequest');
     $route=preg_replace('~\.html$~','',$path);$route=rtrim($route,'/')?:'/';if ($route==='/index') $route='/';
+    // METON 2.44: Google sign-in for business accounts (only when configured).
+    if ($route==='/auth/google'||$route==='/auth/google/callback') metonGoogleRoute($route,$session);
     // /checkout is Paddle's default payment link (invoices, card updates, payment links): it opens checkout for ?_ptxn=.
     // /invite: team invitation links (https://salonieer.com/invite?code=INV-…) are opened by people without a website account.
     $public=['/','/login','/register','/support','/privacy','/terms','/refund','/plans','/setup','/checkout','/invite'];$private=['/apply','/applications','/account','/admin'];
     // 2.34: a salon's own link (https://salonieer.com/s/<code>), shared on Instagram / WhatsApp.
     if (preg_match('~^/s/[A-Za-z0-9_-]{2,64}$~D',$route)) $public[]=$route;
+    // METON 2.44: a booking's private link (/m/<token>), My bookings, and Try METON Free.
+    if (preg_match('~^/m/[a-f0-9]{48}$~D',$route)||preg_match('~^/try(/(customer|business))?$~D',$route)||$route==='/me'||$route==='/forgot') $public[]=$route;
     $adminPanel=str_starts_with($route,'/admin/');
     if ((in_array($route,$private,true)||$adminPanel)&&!$user) redirectTo('/login?next='.rawurlencode($route.(empty($_SERVER['QUERY_STRING'])?'':'?'.$_SERVER['QUERY_STRING'])));
     if (($route==='/admin'||$adminPanel)&&!$user['is_admin']) redirectTo('/applications');
