@@ -8,6 +8,14 @@ Header set Cache-Control "no-cache"
 </IfModule>
 <IfModule mod_rewrite.c>
 RewriteEngine On
+# METON (2026-11-06): plain http goes to https (on http the browser withholds crypto.randomUUID and the page stopped at
+# "Loading…"). Page loads only (GET/HEAD), so webhooks and form posts are never redirected; Smile's /services and the
+# certificate checks (/.well-known) are left exactly as they were.
+RewriteCond %{HTTPS} !=on
+RewriteCond %{SERVER_PORT} =80
+RewriteCond %{REQUEST_METHOD} ^(?:GET|HEAD)$
+RewriteCond %{REQUEST_URI} !^/(?:services|\.well-known)(?:/|$) [NC]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 RewriteRule ^(?:data|salonieer-private|vendor|\.env[^/]*|composer\.(?:json|lock)|paddle\.php|security\.php|supabase\.php|mail\.php|cron\.php)(?:/|$) - [F,NC]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
