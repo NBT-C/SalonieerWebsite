@@ -13,8 +13,11 @@ import { adminShell, bindAdmin, isAdminRoute, refresh as refreshAdmin } from './
 import { installPager } from './pager.js';
 import { PLAN_FEATURES, PLAN_SUMMARY } from './plans-data.js';
 import { planFinder, bindPlanFinder, finderLink } from './plan-finder.js';
-// METON 2.44: booking pages (/s/<code>), private booking links (/m/<token>), My bookings (/me), Try METON Free (/try).
-import { bookPage, bindBook, managePage, bindManage, mePage, bindMe, tryPage, bindTry, forgotPage, bindForgot } from './book.js';
+// METON 2.44: booking pages (/s/<code>), private booking links (/m/<token>), My bookings (/me).
+import { bookPage, bindBook, managePage, bindManage, mePage, bindMe, forgotPage, bindForgot, L as bookL } from './book.js';
+// 2026-11-07: Try METON Free (/try): the customer demo and the 3-step page builder with its preview and dashboard.
+import { tryPage, bindTry } from './demo.js';
+import { CATEGORIES as SECTORS, pick3 } from './demo-data.js';
 
 const app = document.getElementById('app');
 let storedLanguage;
@@ -179,22 +182,29 @@ function countryName(code) {
 function locationName(user) {
   return [countryName(user.country), user.region ? t(user.region) : ''].filter(Boolean).join(' · ');
 }
+const langSelect = () => `<select id="language" class="language-select" aria-label="${t('language')}"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="ar" ${lang==='ar'?'selected':''}>العربية</option><option value="he" ${lang==='he'?'selected':''}>עברית</option></select>`;
 function header() {
-  const link = (path,key) => `<a href="${path}"${route===path?' aria-current="page"':''}>${t(key)}</a>`;
+  const link = (path,key,cls='') => `<a href="${path}"${cls?` class="${cls}"`:''}${route===path?' aria-current="page"':''}>${t(key)}</a>`;
   const item = (path,key) => `<li>${link(path,key)}</li>`;
   return `<a class="skip" href="#main">${t('skip')}</a><header class="topbar"><div class="nav">
     <a href="/" class="brand" aria-label="METON"><img class="brand-logo brand-logo-light" src="/assets/brand/meton-wordmark-ink.svg" alt="METON" width="124" height="25"><img class="brand-logo brand-logo-dark" src="/assets/brand/meton-wordmark-cream.svg" alt="" width="124" height="25"></a>
-    <nav class="bar-links" aria-label="${t('menu')}">${link('/try','tryFree')}${link('/plans','plans')}${link('/support','support')}${state.user?link('/account','account'):link('/login','login')}</nav>
+    <nav class="bar-links" aria-label="${t('menu')}">${link('/#sectors','navSectors')}${link('/#features','navFeatures')}${link('/plans','plans')}${link('/support','support')}${state.user?link('/account','account'):link('/login','login')}</nav>
+    <a class="btn primary small bar-try" href="/try">${t('tryFree')}</a>
     ${state.user?`<button class="btn small bar-logout" id="logout" type="button">${t('logout')}</button>`:''}
-    <select id="language" class="language-select" aria-label="${t('language')}"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="ar" ${lang==='ar'?'selected':''}>العربية</option><option value="he" ${lang==='he'?'selected':''}>עברית</option></select>
+    ${langSelect()}
     <button class="menu-toggle" id="menu-toggle" aria-controls="nav-panel" aria-expanded="false" data-open="${t('menu')}" data-close="${t('close')}"><span class="label-text">${t('menu')}</span><span class="bars" aria-hidden="true"></span></button>
-    <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><ul class="menu-links">${item('/','home')}${item('/try','tryFree')}${item('/plans','plans')}${item('/me','myBookings')}${state.user?item('/applications','applications')+item('/account','account'):''}${item('/support','support')}${state.user?.isAdmin?item('/admin','adminPanel'):''}${state.user?'':item('/login','login')+item('/register','register')}</ul>
-      <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/register">${t('register')}</a>`}</div><a class="mail" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></nav>
+    <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><ul class="menu-links">${item('/','home')}${item('/try','tryFree')}${item('/#sectors','navSectors')}${item('/plans','plans')}${item('/me','myBookings')}${state.user?item('/applications','applications')+item('/account','account'):''}${item('/support','support')}${state.user?.isAdmin?item('/admin','adminPanel'):''}${state.user?'':item('/login','login')+item('/register','register')}</ul>
+      <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/try">${t('tryFree')}</a>`}</div><a class="mail" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></nav>
   </div></header>`;
 }
+// A business's own pages (its booking page, a booking's private link) and the customer demo of one: the business's
+// name and colours lead; METON stays in a small footer line (decision record: a private page for the business).
+const bizPageRoute = () => route === '/s' || route === '/m' || (route === '/try' && /^\/try\/customer\/?$/.test(location.pathname));
+const bizTop = () => `<a class="skip" href="#main">${t('skip')}</a><div class="biz-top">${langSelect()}</div>`;
+const bizFoot = () => `<footer class="biz-foot"><a href="/" class="biz-foot-brand"><img src="/assets/brand/meton-wordmark-ink.svg" alt="" width="62" height="13" loading="lazy">${bookL({lang}, 'poweredBy')}</a><span><a href="/privacy">${t('privacyPolicy')}</a> · <a href="/terms">${t('termsTitle')}</a></span></footer>`;
 function footer() {
   return `<footer class="site-footer"><div class="wrap"><div class="footer-grid"><div><img class="footer-logo" src="/assets/brand/meton-wordmark-cream.svg" alt="METON" width="160" height="32" loading="lazy"><p>${t('footerTagline')}</p></div>
-    <nav aria-label="${t('footerProduct')}"><h3>${t('footerProduct')}</h3><div class="footer-links"><a href="/">${t('home')}</a><a href="/try">${t('tryFree')}</a><a href="/plans">${t('plans')}</a><a href="/me">${t('myBookings')}</a>${state.user?`<a href="/account">${t('account')}</a>`:`<a href="/register">${t('register')}</a>`}</div></nav>
+    <nav aria-label="${t('footerProduct')}"><h3>${t('footerProduct')}</h3><div class="footer-links"><a href="/">${t('home')}</a><a href="/try">${t('tryFree')}</a><a href="/try/business">${t('hm2_cta_build_short')}</a><a href="/plans">${t('plans')}</a><a href="/me">${t('myBookings')}</a>${state.user?`<a href="/account">${t('account')}</a>`:''}</div></nav>
     <nav aria-label="${t('legal')}"><h3>${t('legal')}</h3><div class="footer-links"><a href="/terms">${t('termsTitle')}</a><a href="/privacy">${t('privacyPolicy')}</a><a href="/refund">${t('refundTitle')}</a></div></nav>
     <div><h3>${t('footerContact')}</h3><div class="footer-links"><a href="/support">${t('support')}</a><a href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></div></div>
     <div class="footer-bottom"><span>© ${new Date().getFullYear()} METON. ${t('footerRights')}</span><span>${t('footerMade')}</span></div></div></footer>`;
@@ -240,10 +250,10 @@ const ICONS = {
   ticket: '<path d="M3.5 8.5v-2a1 1 0 0 1 1-1h15a1 1 0 0 1 1 1v2a2.5 2.5 0 0 0 0 5v2a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-2a2.5 2.5 0 0 0 0-5z"/><path d="m9.5 14.5 5-5"/>',
   zoom: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M10.5 7.5v6M7.5 10.5h6"/>',
 };
-// The tour's sections (screen = tab id) and the other features, in the order shown; their words come from plans-data.js.
-const TOUR = [['dashboard', 'grid'], ['schedule', 'calendar'], ['clients', 'user'], ['team', 'users'], ['stats', 'chart'], ['specialist', 'briefcase']];
-const MORE = [['notifications', 'bell'], ['smart_waitlist', 'clock'], ['loyalty', 'star'], ['service_packages', 'layers'], ['smart_checkout', 'receipt'],
-  ['financial_management', 'trend'], ['employee_earnings', 'wallet'], ['attendance', 'attend'], ['inventory', 'box'], ['deposits', 'shield'], ['coupons', 'ticket']];
+// 2026-11-07: the five things METON does for a business, each shown with its real app screen
+// [tab id, screen, icon, words]. "online", "sched", "cust", "staff", "org" have their own titles; the copy of the last
+// four is the earlier tour's (sc_schedule_*, sc_clients_*, sc_team_*, sc_dashboard_*).
+const BENEFITS = [['online', 'book', 'calendar', 'online'], ['sched', 'schedule', 'clock', 'schedule'], ['cust', 'clients', 'user', 'clients'], ['staff', 'team', 'users', 'team'], ['org', 'dashboard', 'grid', 'dashboard']];
 // A screen in its device: a phone (390×844) or an iPad in landscape (1180×820). Tapping it opens the large picture.
 // priority: 'high' for the hero, 'low' for pictures loaded at once but after it (the phone's sideways steps, which
 // lazy loading would only fetch mid-swipe), none = lazy.
@@ -253,59 +263,50 @@ function framed(id, alt, { tablet = false, priority, sizes } = {}) {
     + `<span class="sc-bezel"><span class="sc-screen"><img src="${f}-${widths[tablet ? 1 : 0]}.webp" srcset="${widths.map(x => `${f}-${x}.webp ${x}w`).join(', ')}" sizes="${sizes}" width="${w}" height="${h}" alt="${esc(alt)}" decoding="async"${priority ? ` fetchpriority="${priority}"` : ' loading="lazy"'}></span></span>`
     + `<span class="sc-zoom-hint" aria-hidden="true">${ico(ICONS.zoom, 16)}</span></button>`;
 }
+// ---- Home (2026-11-07) ----------------------------------------------------------------------------------------
+// One clear story: what METON is for (any business that works with appointments), the sectors it serves, the five
+// things it does (with the real app screens), the two free demos, how to go live, the prices, help.
 function home() {
-  const start = state.user ? `<a class="btn primary" href="/plans">${t('explorePlans')}</a>` : `<a class="btn primary" href="/register">${t('register')}</a>`;
   const c = state.catalog;
-  const active = tourTab();
-  const steps = [['book', 1], ['requested', 2], ['confirm', 3], ['confirmed', 4]].map(([id, n]) => `<li class="sc-step sc-reveal" data-r="how-${n}">
-    <div class="sc-step-shot">${framed(id, t('sc_alt_' + id), { priority: 'low', sizes: '(max-width: 640px) 56vw, (max-width: 1100px) 30vw, 230px' })}</div>
-    <span class="sc-step-num" aria-hidden="true">${n}</span><h3>${t('sc_how' + n)}</h3><p>${t('sc_how' + n + '_text')}</p></li>`).join('');
-  const tabs = `<div class="sc-tabs" role="tablist" aria-label="${t('sc_tour_label')}" data-tour-tabs>${TOUR.map(([id, icon]) => `<button type="button" role="tab" class="sc-tab" id="tab-${id}" data-tab="${id}" aria-controls="tour-${id}" aria-selected="${id === active}" tabindex="${id === active ? 0 : -1}">${ico(ICONS[icon], 18)}<span>${t('sc_t_' + id)}</span></button>`).join('')}</div>`;
-  const panels = `<div class="sc-panels">${TOUR.map(([id]) => `<div class="sc-panel${id === active ? ' is-active' : ''}" id="tour-${id}" role="tabpanel" aria-labelledby="tab-${id}">
-    <div class="sc-panel-shot">${framed(id, t('sc_' + id + '_alt'), { sizes: '(max-width: 900px) 64vw, 280px' })}</div>
-    <div class="sc-panel-copy"><h3>${t('sc_' + id + '_h')}</h3><p>${t('sc_' + id + '_p')}</p>
-      <ul class="check-list">${[1, 2, 3].map(i => `<li><span class="ck">${checkSvg}</span><span>${t('sc_' + id + '_' + i)}</span></li>`).join('')}</ul></div></div>`).join('')}</div>`;
-  const features = MORE.map(([key, icon]) => {
-    const f = PLAN_FEATURES.find(x => x.key === key); if (!f) return '';
-    const tag = f.included === 'all' ? 'all' : f.included === 'option' ? 'option' : 'pro';
-    return `<li class="sc-feat sc-reveal" data-r="feat-${key}"><span class="sc-feat-icon">${ico(ICONS[icon])}</span><h3>${esc(f.t[lang] || f.t.en)}</h3><p>${esc(f.d[lang] || f.d.en)}</p><span class="sc-feat-tag is-${tag}">${t('sc_tag_' + tag)}</span></li>`;
-  }).join('');
+  const active = BENEFITS.some(([id]) => id === tourTab()) ? tourTab() : 'online';
+  const build = `<a class="btn primary" href="/try/business">${t('hm2_cta_build')}</a>`;
+  const book = `<a class="btn" href="/try/customer">${t('hm2_cta_book')}</a>`;
+  const tabs = `<div class="sc-tabs hm2-tabs" role="tablist" aria-label="${t('hm2_features_title')}" data-tour-tabs>${BENEFITS.map(([id, , icon]) => `<button type="button" role="tab" class="sc-tab" id="tab-${id}" data-tab="${id}" aria-controls="tour-${id}" aria-selected="${id === active}" tabindex="${id === active ? 0 : -1}">${ico(ICONS[icon], 18)}<span>${t('sc_t_' + id)}</span></button>`).join('')}</div>`;
+  const panels = `<div class="sc-panels">${BENEFITS.map(([id, shot, , words]) => `<div class="sc-panel${id === active ? ' is-active' : ''}" id="tour-${id}" role="tabpanel" aria-labelledby="tab-${id}">
+    <div class="sc-panel-shot">${framed(shot, t(shot === 'book' ? 'sc_alt_book' : 'sc_' + words + '_alt'), { sizes: '(max-width: 900px) 64vw, 280px' })}</div>
+    <div class="sc-panel-copy"><h3>${t('sc_' + words + '_h')}</h3><p>${t('sc_' + words + '_p')}</p>
+      <ul class="check-list">${[1, 2, 3].map(i => `<li><span class="ck">${checkSvg}</span><span>${t('sc_' + words + '_' + i)}</span></li>`).join('')}</ul></div></div>`).join('')}</div>`;
+  const sectors = SECTORS.map(k => `<li><a class="hm2-sector" href="/try/business?category=${k.key}"><span class="hm2-sector-ico">${ico(k.icon, 24)}</span><b>${esc(pick3(k.name, lang))}</b><small>${esc(pick3(k.examples, lang))}</small><span class="hm2-sector-go">${t('hm2_sector_go')}<span aria-hidden="true">${lang === 'en' ? '→' : '←'}</span></span></a></li>`).join('');
   const prices = c ? `<section class="hm-section hm-tint" id="prices" aria-labelledby="prices-title"><div class="wrap"><div class="hm-head"><h2 id="prices-title">${t('bd_title')}</h2><p>${t('bd_lead')}</p></div>
     <div class="hm-currency">${currencySwitch()}</div>
     <ul class="hm-plans">${c.plans.map(p=>{ const price = priceOf(p.prices); return `<li class="hm-plan${p.id==='pro'?' is-popular':''}"><div class="hm-plan-top"><h3>${esc(p.name)}</h3>${p.id==='pro'?`<span class="tag">${t('popular')}</span>`:''}</div>
       <p class="hm-price">${price===null?t('byAgreement'):shownPrice(price, ` <small>${t('monthly')}</small>`)}</p><p class="hm-plan-desc">${t(p.id+'Desc')}</p>
       <a class="btn${p.id==='pro'?' primary':''} full" href="/apply?plan=${p.id}" aria-label="${t(p.id==='enterprise'?'contactUs':'startNow')} · ${esc(p.name)}">${t(p.id==='enterprise'?'contactUs':'startNow')}</a></li>`; }).join('')}</ul>
     ${fxNote()}<p class="hm-note">${t('pricesNote')} <a class="text-link" href="/plans">${t('bd_all')}</a> · <a class="text-link" href="/plans#finder">${esc(finderLink(lang))}</a></p></div></section>` : '';
-  return `<div class="home sc-home">
-  <section class="sc-hero" aria-labelledby="hm-title"><div class="wrap sc-hero-grid">
+  const tryCard = (href, img, tablet, title, text, cta) => `<a class="hm2-try-card" href="${href}"><span class="hm2-try-shot${tablet ? ' is-tablet' : ''}"><img src="/assets/img/showcase/${img}-${lang}-${tablet ? 640 : 360}.webp" alt="" loading="lazy" decoding="async"></span><span class="hm2-try-copy"><b>${t(title)}</b><span>${t(text)}</span><span class="btn primary small">${t(cta)}</span></span></a>`;
+  return `<div class="home sc-home hm2">
+  <section class="sc-hero hm2-hero" aria-labelledby="hm-title"><div class="wrap sc-hero-grid">
     <div class="sc-hero-copy sc-reveal" data-r="hero-copy">
-      <p class="sc-kicker">${t('sc_kicker')}</p>
-      <h1 id="hm-title">${t('sc_title')}</h1><p class="sc-lead">${t('sc_lead')}</p>
-      <div class="hero-actions">${start}<a class="btn" href="/try">${t('tryFree')}</a><a class="text-link" href="#how">${t('sc_cta_how')}</a></div>
-      <ul class="hm-points">${[1,2,3].map(i=>`<li><span class="ck">${checkSvg}</span>${t('hm_point'+i)}</li>`).join('')}</ul></div>
+      <p class="sc-kicker">${t('hm2_kicker')}</p>
+      <h1 id="hm-title">${t('hm2_title')}</h1><p class="sc-lead">${t('hm2_lead')}</p>
+      <div class="hero-actions">${build}${book}<a class="text-link" href="${c ? '#prices' : '/plans'}">${t('hm2_cta_plans')}</a></div>
+      <ul class="hm-points">${['hm2_point1','hm_point1','hm2_point3'].map(k=>`<li><span class="ck">${checkSvg}</span>${t(k)}</li>`).join('')}</ul></div>
     <figure class="sc-hero-visual sc-reveal" data-r="hero-visual">
-      <div class="sc-stage">${framed('tablet-dashboard', t('sc_alt_tablet_dashboard'), { tablet: true, priority: 'high', sizes: '(max-width: 900px) 84vw, 640px' })}${framed('requested', t('sc_alt_requested'), { priority: 'high', sizes: '(max-width: 900px) 25vw, 180px' })}</div>
+      <div class="sc-stage">${framed('tablet-schedule', t('sc_ipad_alt'), { tablet: true, priority: 'high', sizes: '(max-width: 900px) 84vw, 640px' })}${framed('book', t('sc_alt_book'), { priority: 'high', sizes: '(max-width: 900px) 25vw, 180px' })}</div>
       <figcaption class="sc-note">${t('sc_note')}</figcaption></figure></div></section>
-  <section class="hm-section sc-how" id="how" aria-labelledby="how-title"><div class="wrap">
-    <div class="hm-head sc-reveal" data-r="how-head"><h2 id="how-title">${t('sc_how_title')}</h2><p>${t('sc_how_lead')}</p></div>
-    <ol class="sc-steps">${steps}</ol></div></section>
-  <section class="hm-section hm-tint sc-tour" id="tour" aria-labelledby="tour-title"><div class="wrap">
-    <div class="hm-head sc-reveal" data-r="tour-head"><h2 id="tour-title">${t('sc_tour_title')}</h2><p>${t('sc_tour_lead')}</p></div>
-    <div class="sc-reveal" data-r="tour-body">${tabs}${panels}</div>
-    <div class="sc-tour-cta">${start}<a class="text-link" href="${c ? '#prices' : '/plans'}">${t('hm_prices')}</a></div></div></section>
-  <section class="hm-section sc-ipad" aria-labelledby="ipad-title"><div class="wrap sc-ipad-grid">
-    <div class="sc-reveal" data-r="ipad-copy"><h2 id="ipad-title">${t('sc_ipad_title')}</h2><p>${t('sc_ipad_text')}</p></div>
-    <div class="sc-reveal" data-r="ipad-shot">${framed('tablet-schedule', t('sc_ipad_alt'), { tablet: true, sizes: '(max-width: 900px) 92vw, 820px' })}</div></div></section>
-  <section class="hm-section hm-tint sc-more" aria-labelledby="more-title"><div class="wrap">
-    <div class="hm-head sc-reveal" data-r="more-head"><h2 id="more-title">${t('sc_more_title')}</h2><p>${t('sc_more_lead')}</p></div>
-    <ul class="sc-feats">${features}</ul>
-    <p class="hm-note"><a class="text-link" href="/plans">${t('sc_more_all')}</a></p></div></section>
-  <section class="sc-band ink" aria-labelledby="band-title"><div class="wrap sc-band-grid">
-    <div><h2 id="band-title">${t('sc_band_title')}</h2><p>${t('hm_ready_text')}</p></div>
-    <div class="hero-actions">${start}<a class="btn" href="${c ? '#prices' : '/plans'}">${t('hm_prices')}</a></div></div></section>
+  <section class="hm-section hm2-sectors" id="sectors" aria-labelledby="sectors-title"><div class="wrap">
+    <div class="hm-head sc-reveal" data-r="sectors-head"><h2 id="sectors-title">${t('hm2_sectors_title')}</h2><p>${t('hm2_sectors_lead')}</p></div>
+    <ul class="hm2-sector-grid">${sectors}</ul></div></section>
+  <section class="hm-section hm-tint sc-tour" id="features" aria-labelledby="tour-title"><div class="wrap">
+    <div class="hm-head sc-reveal" data-r="tour-head"><h2 id="tour-title">${t('hm2_features_title')}</h2><p>${t('hm2_features_lead')}</p></div>
+    <div class="sc-reveal" data-r="tour-body">${tabs}${panels}</div></div></section>
+  <section class="hm-section hm2-try" id="try" aria-labelledby="try-title"><div class="wrap">
+    <div class="hm-head sc-reveal" data-r="try-head"><h2 id="try-title">${t('hm2_try_title')}</h2><p>${t('hm2_try_lead')}</p></div>
+    <div class="hm2-try-grid">${tryCard('/try/customer', 'requested', false, 'hm2_cta_book', 'hm2_tryA_text', 'hm2_tryA_cta')}${tryCard('/try/business', 'tablet-dashboard', true, 'hm2_cta_build_short', 'hm2_tryB_text', 'hm2_tryB_cta')}</div></div></section>
+  <section class="hm-section hm-tint" aria-labelledby="steps-title"><div class="wrap"><div class="hm-head"><h2 id="steps-title">${t('hm2_how_title')}</h2></div>
+    <ol class="hm-steps">${[1,2,3].map(n=>`<li><span class="hm-num" aria-hidden="true">${n}</span><h3>${t('hm2_step'+n)}</h3><p>${t('hm2_step'+n+'_text')}</p></li>`).join('')}</ol>
+    <div class="hm2-how-cta">${build}</div></div></section>
   ${prices}
-  <section class="hm-section" aria-labelledby="steps-title"><div class="wrap"><div class="hm-head"><h2 id="steps-title">${t('hm_steps_title')}</h2></div>
-    <ol class="hm-steps">${[1,2,3].map(n=>`<li><span class="hm-num" aria-hidden="true">${n}</span><h3>${t('hm_s'+n)}</h3><p>${t('hm_s'+n+'_text')}</p></li>`).join('')}</ol></div></section>
   <section class="hm-section sc-help" aria-labelledby="help-title"><div class="wrap"><div class="hm-box sc-help-box">
     <div><h2 id="help-title">${t('hm_help_title')}</h2><p>${t('hm_help_text')}</p></div>
     <div class="hero-actions"><a class="btn" href="/support">${t('support')}</a><a class="text-link" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></div></div></section>
@@ -1092,10 +1093,12 @@ async function logout(button) {
   location.replace(isPrivate(route) ? '/' : location.pathname + location.search);
 }
 function bind() {
-  document.getElementById('language').addEventListener('change',event=>{captureDraft();setLanguage(event.target.value);render({transition:true});});
+  document.getElementById('language')?.addEventListener('change',event=>{captureDraft();setLanguage(event.target.value);render({transition:true});});
   const menu = document.getElementById('menu-toggle'), nav = document.getElementById('nav-panel');
-  menu.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));});
-  nav.addEventListener('keydown',event=>{if(event.key==='Escape'){nav.classList.remove('open');menu.setAttribute('aria-expanded','false');menu.focus();}});
+  menu?.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));});
+  nav?.addEventListener('keydown',event=>{if(event.key==='Escape'){nav.classList.remove('open');menu.setAttribute('aria-expanded','false');menu.focus();}});
+  // A menu link to a section of the home page closes the menu.
+  nav?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');menu?.setAttribute('aria-expanded','false');}));
   document.getElementById('logout')?.addEventListener('click',event=>logout(event.currentTarget));
   document.querySelectorAll('[data-password]').forEach(button=>button.addEventListener('click',()=>{
     const input=document.getElementById(button.dataset.password);const visible=input.type==='password';input.type=visible?'text':'password';
@@ -1122,6 +1125,8 @@ function bind() {
       if (['loyalty','smart_waitlist'].includes(q.get('option'))) applicationForm.elements.basicOption.value = q.get('option');
       const extra = /^\d{1,2}$/.test(q.get('extra') || '') ? Number(q.get('extra')) : 0;
       if (extra > 0 && extra <= 50) applicationForm.elements.extraSpecialists.value = String(extra);
+      // Coming from the page builder (Try METON Free): the business name is already known.
+      try { const built = JSON.parse(localStorage.getItem('meton_demo_v2') || 'null'); if (built?.name && !applicationForm.elements.salonName.value) applicationForm.elements.salonName.value = String(built.name).slice(0, 100); } catch {}
     }
     for (const name of ['plan','basicOption','extraSpecialists','paymentMethod','trial']) {
       applicationForm.querySelectorAll(`[name="${name}"]`).forEach(el=>el.addEventListener('input',syncApplication));
@@ -1381,6 +1386,14 @@ function paint(place) {
   setLanguage(lang);
   killFx();
   document.title = 'METON · ' + t(titles[route] || 'home');
+  if (bizPageRoute()) {
+    // A business's own page: its name and colours, a language choice, and METON only in the footer line.
+    document.body.dataset.scene = 'is-biz';
+    app.innerHTML = bizTop()+`<main id="main" tabindex="-1" class="is-biz">${pages[route]()}</main>`+bizFoot();
+    bind();
+    place?.();
+    return;
+  }
   const scene = route === '/' ? 'is-home' : route === '/plans' ? 'is-plans' : ['/login','/register','/setup'].includes(route) ? 'is-auth' : 'is-paper';
   document.body.dataset.scene = scene;
   app.innerHTML = header()+`<main id="main" tabindex="-1" class="${scene}">${(pages[route] || home)()}</main>`+footer();
