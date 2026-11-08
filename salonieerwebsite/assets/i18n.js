@@ -27,7 +27,7 @@ fxApprox: ['approximate','تقريبي','משוער'],
 
 
 home: ['Home','الرئيسية','בית'], tryFree: ['Try METON free','جرّب METON مجاناً','נסו את METON בחינם'], myBookings: ['My bookings','حجوزاتي','ההזמנות שלי'], withGoogle: ['Continue with Google','المتابعة باستخدام Google','המשך עם Google'], support: ['Support','الدعم','תמיכה'], privacy: ['Privacy','الخصوصية','פרטיות'],
-login: ['Log in','تسجيل الدخول','כניסה'], register: ['Create account','إنشاء حساب','יצירת חשבון'], logout: ['Log out','تسجيل الخروج','יציאה'], plans: ['Plans','الخطط','מסלולים'], applications: ['My applications','طلباتي','הבקשות שלי'], inbox: ['Applications inbox','صندوق الطلبات','תיבת בקשות'],
+login: ['Log in','تسجيل الدخول','כניסה'], register: ['Create account','إنشاء حساب','יצירת חשבון'], logout: ['Log out','تسجيل الخروج','יציאה'], plans: ['Plans','الخطط','מסלולים'], applications: ['Businesses in progress','أعمال قيد التجهيز','עסקים בהכנה'], inbox: ['Applications inbox','صندوق الطلبات','תיבת בקשות'],
 tagline: ["Appointments and business management, simplified", "إدارة المواعيد والأعمال ببساطة", "ניהול תורים ועסקים, בפשטות"],
 eyebrow: ["BOOKING & BUSINESS MANAGEMENT", "الحجز وإدارة الأعمال", "הזמנת תורים וניהול עסק"],
 heroFirst: ["Your appointments.", "مواعيدك.", "התורים שלכם."], heroSecond: ["In perfect order.", "بتنظيم مثالي.", "בסדר מושלם."],
