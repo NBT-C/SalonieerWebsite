@@ -165,9 +165,9 @@ async function api(path, options = {}) {
   }
   return data;
 }
-function nextPage() {
+function nextPage(fallback='/account') {
   const value = new URLSearchParams(location.search).get('next');
-  if (!value || !/^\/(plans|apply|applications|account|admin|try\/business)(\?[^\r\n\\]*)?$/.test(value)) return '/plans';
+  if (!value || !/^\/(plans|apply|applications|account|admin|try\/business)(\?[^\r\n\\]*)?$/.test(value)) return fallback;
   return value;
 }
 function setLanguage(value) {
@@ -193,7 +193,7 @@ function header() {
     ${state.user?`<button class="btn small bar-logout" id="logout" type="button">${t('logout')}</button>`:''}
     ${langSelect()}
     <button class="menu-toggle" id="menu-toggle" aria-controls="nav-panel" aria-expanded="false" data-open="${t('menu')}" data-close="${t('close')}"><span class="label-text">${t('menu')}</span><span class="bars" aria-hidden="true"></span></button>
-    <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><ul class="menu-links">${item('/','home')}${item('/try','tryFree')}${item('/#sectors','navSectors')}${item('/plans','plans')}${item('/me','myBookings')}${state.user?item('/applications','applications')+item('/account','account'):''}${item('/support','support')}${state.user?.isAdmin?item('/admin','adminPanel'):''}${state.user?'':item('/login','login')+item('/register','register')}</ul>
+    <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><ul class="menu-links">${item('/','home')}${item('/try','tryFree')}${item('/#sectors','navSectors')}${item('/plans','plans')}${item('/me','myBookings')}${state.user?item('/account','account'):''}${item('/support','support')}${state.user?.isAdmin?item('/admin','adminPanel'):''}${state.user?'':item('/login','login')+item('/register','register')}</ul>
       <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/try">${t('tryFree')}</a>`}</div><a class="mail" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></nav>
   </div></header>`;
 }
@@ -249,7 +249,23 @@ const ICONS = {
   shield: '<path d="M12 3.5 19 6v5.5c0 4.4-3 7.8-7 9-4-1.2-7-4.6-7-9V6z"/><path d="m9 12 2.2 2.2L15.5 10"/>',
   ticket: '<path d="M3.5 8.5v-2a1 1 0 0 1 1-1h15a1 1 0 0 1 1 1v2a2.5 2.5 0 0 0 0 5v2a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-2a2.5 2.5 0 0 0 0-5z"/><path d="m9.5 14.5 5-5"/>',
   zoom: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5M10.5 7.5v6M7.5 10.5h6"/>',
+  phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
+  globe: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.3 3.6 5.2 3.6 8.5s-1.2 6.2-3.6 8.5c-2.4-2.3-3.6-5.2-3.6-8.5s1.2-6.2 3.6-8.5z"/>',
 };
+// ---- the METON app (2026-11-08): the store of the visitor's device; a computer or an unknown device gets both -----
+// Store marks: Simple Icons (CC0).
+const STORE_ICONS = {
+  ios: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>',
+  android: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="#FBBC04" d="M22.018 13.298l-3.919 2.218-3.515-3.493 3.543-3.521 3.891 2.202a1.49 1.49 0 0 1 0 2.594z"/><path fill="#4285F4" d="M1.337.924a1.486 1.486 0 0 0-.112.568v21.017c0 .217.045.419.124.6l11.155-11.087L1.337.924z"/><path fill="#34A853" d="M13.544 10.989l3.258-3.238L3.45.195a1.466 1.466 0 0 0-.946-.179l11.04 10.973z"/><path fill="#EA4335" d="M13.544 13.056l-11 10.933c.298.036.612-.016.906-.183l13.324-7.54-3.23-3.21z"/></svg>',
+};
+const storeBadge = os => `<a class="store-badge" href="${STORE[os]}" target="_blank" rel="noopener" data-store="${os}">${STORE_ICONS[os]}<span><small>${t(os === 'ios' ? 'store_ios_small' : 'store_play_small')}</small><b dir="ltr">${os === 'ios' ? 'App Store' : 'Google Play'}</b></span></a>`;
+const storeBadges = () => { const dev = device(); return dev === 'ios' || dev === 'android' ? storeBadge(dev) : storeBadge('ios') + storeBadge('android'); };
+// One "Download METON" control: on a phone or tablet it opens that device's store; elsewhere it shows both stores.
+function appGet() {
+  const dev = device();
+  if (dev === 'ios' || dev === 'android') return `<a class="btn small app-get-btn" href="${STORE[dev]}" target="_blank" rel="noopener" data-store="${dev}">${STORE_ICONS[dev]}<span>${t('app_download')}</span></a>`;
+  return `<details class="app-get"><summary class="btn small app-get-btn">${ico(ICONS.phone, 18)}<span>${t('app_download')}</span></summary><div class="app-get-menu" role="group" aria-label="${t('app_choose')}">${storeBadge('ios')}${storeBadge('android')}</div></details>`;
+}
 // 2026-11-07: the five things METON does for a business, each shown with its real app screen
 // [tab id, screen, icon, words]. "online", "sched", "cust", "staff", "org" have their own titles; the copy of the last
 // four is the earlier tour's (sc_schedule_*, sc_clients_*, sc_team_*, sc_dashboard_*).
@@ -290,7 +306,8 @@ function home() {
       <p class="sc-kicker">${t('hm2_kicker')}</p>
       <h1 id="hm-title">${t('hm2_title')}</h1><p class="sc-lead">${t('hm2_lead')}</p>
       <div class="hero-actions">${build}${book}<a class="text-link" href="${c ? '#prices' : '/plans'}">${t('hm2_cta_plans')}</a></div>
-      <ul class="hm-points">${['hm2_point1','hm_point1','hm2_point3'].map(k=>`<li><span class="ck">${checkSvg}</span>${t(k)}</li>`).join('')}</ul></div>
+      <div class="hm-app"><span class="hm-app-ico" aria-hidden="true">${ico(ICONS.phone, 20)}</span><div class="hm-app-copy"><b>${t('app_hero_title')}</b><span>${t('app_hero_text')}</span></div>${appGet()}</div>
+      <ul class="hm-points">${['hm2_point1','hm_point1'].map(k=>`<li><span class="ck">${checkSvg}</span>${t(k)}</li>`).join('')}</ul></div>
     <figure class="sc-hero-visual sc-reveal" data-r="hero-visual">
       <div class="sc-stage">${framed('tablet-schedule', t('sc_ipad_alt'), { tablet: true, priority: 'high', sizes: '(max-width: 900px) 84vw, 640px' })}${framed('book', t('sc_alt_book'), { priority: 'high', sizes: '(max-width: 900px) 25vw, 180px' })}</div>
       <figcaption class="sc-note">${t('sc_note')}</figcaption></figure></div></section>
@@ -300,6 +317,9 @@ function home() {
   <section class="hm-section hm-tint sc-tour" id="features" aria-labelledby="tour-title"><div class="wrap">
     <div class="hm-head sc-reveal" data-r="tour-head"><h2 id="tour-title">${t('hm2_features_title')}</h2><p>${t('hm2_features_lead')}</p></div>
     <div class="sc-reveal" data-r="tour-body">${tabs}${panels}</div></div></section>
+  <section class="hm-section hm-app-sec" id="get-the-app" aria-labelledby="app-title"><div class="wrap">
+    <div class="hm-head"><h2 id="app-title">${t('app_sec_title')}</h2><p>${t('app_sec_lead')}</p></div>
+    <div class="hm-app-cols">${[['web', ICONS.globe], ['app', ICONS.phone]].map(([k, icon]) => `<div class="hm-app-col is-${k}"><h3><span class="hm-app-ico" aria-hidden="true">${ico(icon, 20)}</span>${t('app_' + k + '_h')}</h3><ul class="check-list">${[1, 2, 3].map(i => `<li><span class="ck">${checkSvg}</span><span>${t('app_' + k + '_' + i)}</span></li>`).join('')}</ul>${k === 'app' ? `<div class="store-row">${storeBadges()}</div>` : ''}</div>`).join('')}</div></div></section>
   <section class="hm-section hm2-try" id="try" aria-labelledby="try-title"><div class="wrap">
     <div class="hm-head sc-reveal" data-r="try-head"><h2 id="try-title">${t('hm2_try_title')}</h2><p>${t('hm2_try_lead')}</p></div>
     <div class="hm2-try-grid">${tryCard('/try/customer', 'requested', false, 'hm2_cta_book', 'hm2_tryA_text', 'hm2_tryA_cta')}${tryCard('/try/business', 'tablet-dashboard', true, 'hm2_cta_build_short', 'hm2_tryB_text', 'hm2_tryB_cta')}</div></div></section>
@@ -342,7 +362,15 @@ function accountFields(prefix='') {
   <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>`;
 }
 function register() {
-  return `<div class="auth-split">${authIntro('registerTitle','registerLead')}<div class="auth-form"><section class="auth-card"><h2>${t('register')}</h2><form id="register-form" novalidate>${formErrorBox()}${accountFields()}<p class="privacy-note">${t('privacyNote')} <a class="text-link" href="/privacy" target="_blank" rel="noopener">${t('privacyPolicy')}</a>.</p><button class="btn primary full" type="submit">${t('register')}</button></form><p class="auth-footer">${t('haveAccount')} <a href="/login" class="text-link">${t('login')}</a></p></section></div></div>`;
+  // Back from Google with an email that has no account yet: confirm a few details (no password needed).
+  const g = state.googleSignup;
+  if (g) return `<div class="auth-split">${authIntro('registerTitle','googleSignupLead')}<div class="auth-form"><section class="auth-card"><h2>${t('googleSignupTitle')}</h2><form id="google-signup-form" novalidate>${formErrorBox()}
+    <p class="google-email">${t('signInEmail')}: <b dir="ltr">${esc(g.email)}</b> <span class="google-verified">${t('googleVerified')}</span></p>
+    <div class="form-grid">${field('fullName','fullName',{autocomplete:'name',maxlength:100,full:true,placeholder:t('fullName'),extra:`value="${esc(g.name||'')}"`})}${genderField()}</div>
+    <div class="field" style="margin-top:16px"><label for="country-btn">${t('country')}</label>${countryPicker(pickerOptions({name:'country',mode:'country',value:'',label:t('country'),describedBy:'country-hint country-error'}))}<small id="country-hint">${t('countryLockedHint')}</small><small id="country-error" class="field-error" aria-live="polite"></small></div>
+    <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>
+    <p class="privacy-note">${t('privacyNote')} <a class="text-link" href="/privacy" target="_blank" rel="noopener">${t('privacyPolicy')}</a>.</p><button class="btn primary full" type="submit">${t('register')}</button></form></section></div></div>`;
+  return `<div class="auth-split">${authIntro('registerTitle','registerLead')}<div class="auth-form"><section class="auth-card"><h2>${t('register')}</h2>${state.google?`<a class="btn full google-btn" href="/auth/google">${t('withGoogle')}</a><p class="auth-or"><span>${t('orWithEmail')}</span></p>`:''}<form id="register-form" novalidate>${formErrorBox()}${accountFields()}<p class="privacy-note">${t('privacyNote')} <a class="text-link" href="/privacy" target="_blank" rel="noopener">${t('privacyPolicy')}</a>.</p><button class="btn primary full" type="submit">${t('register')}</button></form><p class="auth-footer">${t('haveAccount')} <a href="/login" class="text-link">${t('login')}</a></p></section></div></div>`;
 }
 function setup() {
   if (!state.setupAvailable) return `<div class="wrap empty-state"><h1>${t('setupDone')}</h1><p>${t('setupDoneText')}</p><a class="btn primary" href="${state.user?'/admin':'/login'}">${t(state.user?'inbox':'login')}</a></div>`;
@@ -502,7 +530,7 @@ async function openCheckout(a) {
 const payButton = a => canPayOnline(a) ? `<button class="btn primary full" type="button" data-pay="${esc(a.id)}">${t('payByCard')}</button><p class="small-note" data-pay-feedback="${esc(a.id)}" role="status"></p>` : '';
 function apply() {
   if (state.receipt) return receipt();
-  return `<div class="wrap">${titleBlock('selectedPlan','applyTitle','applyLead')}<div class="steps" aria-label="${t('applications')}"><div class="step"><span aria-hidden="true">✓</span>${t('stepPlan')}</div><div class="line"></div><div class="step active" aria-current="step"><span>2</span>${t('stepDetails')}</div><div class="line"></div><div class="step"><span>3</span>${t('stepReview')}</div></div><div class="application-layout"><form id="application-form" class="application-form" novalidate>${formErrorBox()}<section class="form-panel"><h2>${t('stepDetails')}</h2><div class="form-grid"><div class="field"><label for="country-btn">${t('salonCountry')}</label>${countryPicker(pickerOptions({name:'country',mode:'country',value:state.user.country||'',label:t('salonCountry'),describedBy:'country-hint country-error'}))}<small id="country-hint">${t('salonCountryHint')}</small><small id="country-error" class="field-error" aria-live="polite"></small></div>${field('identityNumber','identityNumber',{maxlength:64,autocomplete:'off',hint:'idHint',extra:`data-ltr spellcheck="false" inputmode="numeric"${needsId(state.user.country)?'':' disabled'}`,wrap:`id="identity-field"${needsId(state.user.country)?'':' hidden'}`})}${field('salonName','salonName',{minlength:2,maxlength:100,autocomplete:'organization'})}<div class="field"><label for="teamComposition">${t('teamComposition')}</label><select id="teamComposition" name="teamComposition" required><option value="">${t('chooseOne')}</option>${TEAM_COMPOSITIONS.map(c=>`<option value="${c}">${t('team_'+c)}</option>`).join('')}</select></div><div class="field"><label for="clientele">${t('clientele')}</label><select id="clientele" name="clientele" required><option value="">${t('chooseOne')}</option>${CLIENTELES.map(c=>`<option value="${c}">${t('clientele_'+c)}</option>`).join('')}</select><small>${t('salonCategoryHint')}</small></div><div class="field"><label for="timezone">${t('timezone')}</label><select id="timezone" name="timezone" required dir="ltr">${timezoneOptions('', state.user.country)}</select><small>${t('timezoneHint')}</small></div>${phoneField(state.user.country)}</div><div class="field"><label for="logo">${t('logo')}</label><div class="upload"><span id="upload-symbol" class="upload-symbol" aria-hidden="true"${state.logo?' hidden':''}>＋</span><img id="logo-preview" class="logo-preview" alt="${t('logo')}"${state.logo?` src="${state.logo}"`:' hidden'}><div class="upload-text"><strong id="upload-title">${t(state.logo?'replaceLogo':'uploadTitle')}</strong><small>${t('uploadHint')}</small><small id="logo-filename" class="upload-filename">${esc(state.logoName)}</small></div><input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="logo-error"></div><small id="logo-error" class="field-error"></small></div></section><section class="form-panel"><div class="panel-head"><h2>${t('selectedPlan')}</h2>${currencySwitch()}</div><div class="field"><label for="plan">${t('plans')}</label><select id="plan" name="plan" required>${state.catalog.plans.map(p=>`<option value="${p.id}">${p.name} · ${esc(shownPriceText(perPeriod(priceOf(p.prices))))}${priceOf(p.prices)===null?'':' '+t(periodKey())}</option>`).join('')}</select></div><div class="field"><span class="field-label" id="interval-label">${t('billingPeriod')}</span>${intervalSwitch()}</div><p class="included-note" id="included-loyalty" hidden><span aria-hidden="true">✓</span>${t('everyFeatureIncluded')}</p><div class="field" id="loyalty-control"><label for="basicOption">${t('basicOption')} <small class="muted">· <bdi>${esc(shownPriceText(perPeriod(priceOf(state.catalog.addons.loyalty))))}</bdi> ${t(periodKey())}</small></label><select id="basicOption" name="basicOption"><option value="">${t('optNone')}</option><option value="loyalty">${t('optLoyalty')}</option><option value="smart_waitlist">${t('optWaitlist')}</option></select><small>${t('basicOptionHint')}</small></div><div class="quantity-field" id="specialist-control"><label for="extraSpecialists">${t('extraSpecialists')}<br><small class="muted"><bdi>${esc(shownPriceText(perPeriod(priceOf(state.catalog.addons.specialist))))}</bdi> ${t(periodKey())}</small></label><input id="extraSpecialists" name="extraSpecialists" type="number" min="0" max="50" step="1" value="0" inputmode="numeric"></div><p class="included-note" id="unlimited-note" hidden><span aria-hidden="true">✓</span>${t('unlimitedSpecialists')}</p></section><section class="form-panel"><fieldset><legend>${t('payment')}</legend><div class="radio-options"><label class="radio-option"><input type="radio" name="paymentMethod" value="card" required><span>${t('card')}</span></label><label class="radio-option"><input type="radio" name="paymentMethod" value="bank_transfer" required><span>${t('bank_transfer')}</span></label></div><p class="payment-note" id="payment-note">${t('noCharge')}</p><label class="trial-option" id="trial-control" hidden><input type="checkbox" id="trial" name="trial"><span><b id="trial-title">${t('trialOptIn',{n:trialDays()})}</b><small>${t('trialOptInHint',{n:trialDays()})}</small></span></label></fieldset></section><p class="privacy-note">${t('privacyNote')} <a href="/privacy" target="_blank" rel="noopener" class="text-link">${t('privacyPolicy')}</a>.</p><p class="privacy-note">${t('agreeNote')} <a href="/terms" target="_blank" rel="noopener" class="text-link">${t('termsTitle')}</a> · <a href="/refund" target="_blank" rel="noopener" class="text-link">${t('refundTitle')}</a>.</p><button class="btn primary full form-submit" type="submit">${t('submit')}</button></form><aside class="order-summary" id="order-summary" aria-live="polite"></aside></div></div>`;
+  return `<div class="wrap">${titleBlock('selectedPlan','applyTitle','applyLead')}<div class="steps" aria-label="${t('applications')}"><div class="step"><span aria-hidden="true">✓</span>${t('goStep1')}</div><div class="line"></div><div class="step active" aria-current="step"><span>2</span>${t('goStep2')}</div><div class="line"></div><div class="step"><span>3</span>${t('goStep3')}</div></div><div class="application-layout"><form id="application-form" class="application-form" novalidate>${formErrorBox()}<section class="form-panel"><h2>${t('stepDetails')}</h2><div class="form-grid"><div class="field"><label for="country-btn">${t('salonCountry')}</label>${countryPicker(pickerOptions({name:'country',mode:'country',value:state.user.country||'',label:t('salonCountry'),describedBy:'country-hint country-error'}))}<small id="country-hint">${t('salonCountryHint')}</small><small id="country-error" class="field-error" aria-live="polite"></small></div>${field('identityNumber','identityNumber',{maxlength:64,autocomplete:'off',hint:'idHint',extra:`data-ltr spellcheck="false" inputmode="numeric"${needsId(state.user.country)?'':' disabled'}`,wrap:`id="identity-field"${needsId(state.user.country)?'':' hidden'}`})}${field('salonName','salonName',{minlength:2,maxlength:100,autocomplete:'organization'})}<div class="field"><label for="teamComposition">${t('teamComposition')}</label><select id="teamComposition" name="teamComposition" required><option value="">${t('chooseOne')}</option>${TEAM_COMPOSITIONS.map(c=>`<option value="${c}">${t('team_'+c)}</option>`).join('')}</select></div><div class="field"><label for="clientele">${t('clientele')}</label><select id="clientele" name="clientele" required><option value="">${t('chooseOne')}</option>${CLIENTELES.map(c=>`<option value="${c}">${t('clientele_'+c)}</option>`).join('')}</select><small>${t('salonCategoryHint')}</small></div><div class="field"><label for="timezone">${t('timezone')}</label><select id="timezone" name="timezone" required dir="ltr">${timezoneOptions('', state.user.country)}</select><small>${t('timezoneHint')}</small></div>${phoneField(state.user.country)}</div><div class="field"><label for="logo">${t('logo')}</label><div class="upload"><span id="upload-symbol" class="upload-symbol" aria-hidden="true"${state.logo?' hidden':''}>＋</span><img id="logo-preview" class="logo-preview" alt="${t('logo')}"${state.logo?` src="${state.logo}"`:' hidden'}><div class="upload-text"><strong id="upload-title">${t(state.logo?'replaceLogo':'uploadTitle')}</strong><small>${t('uploadHint')}</small><small id="logo-filename" class="upload-filename">${esc(state.logoName)}</small></div><input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="logo-error"></div><small id="logo-error" class="field-error"></small></div></section><section class="form-panel"><div class="panel-head"><h2>${t('selectedPlan')}</h2>${currencySwitch()}</div><div class="field"><label for="plan">${t('plans')}</label><select id="plan" name="plan" required>${state.catalog.plans.map(p=>`<option value="${p.id}">${p.name} · ${esc(shownPriceText(perPeriod(priceOf(p.prices))))}${priceOf(p.prices)===null?'':' '+t(periodKey())}</option>`).join('')}</select></div><div class="field"><span class="field-label" id="interval-label">${t('billingPeriod')}</span>${intervalSwitch()}</div><p class="included-note" id="included-loyalty" hidden><span aria-hidden="true">✓</span>${t('everyFeatureIncluded')}</p><div class="field" id="loyalty-control"><label for="basicOption">${t('basicOption')} <small class="muted">· <bdi>${esc(shownPriceText(perPeriod(priceOf(state.catalog.addons.loyalty))))}</bdi> ${t(periodKey())}</small></label><select id="basicOption" name="basicOption"><option value="">${t('optNone')}</option><option value="loyalty">${t('optLoyalty')}</option><option value="smart_waitlist">${t('optWaitlist')}</option></select><small>${t('basicOptionHint')}</small></div><div class="quantity-field" id="specialist-control"><label for="extraSpecialists">${t('extraSpecialists')}<br><small class="muted"><bdi>${esc(shownPriceText(perPeriod(priceOf(state.catalog.addons.specialist))))}</bdi> ${t(periodKey())}</small></label><input id="extraSpecialists" name="extraSpecialists" type="number" min="0" max="50" step="1" value="0" inputmode="numeric"></div><p class="included-note" id="unlimited-note" hidden><span aria-hidden="true">✓</span>${t('unlimitedSpecialists')}</p></section><section class="form-panel"><fieldset><legend>${t('payment')}</legend><div class="radio-options"><label class="radio-option"><input type="radio" name="paymentMethod" value="card" required><span>${t('card')}</span></label><label class="radio-option"><input type="radio" name="paymentMethod" value="bank_transfer" required><span>${t('bank_transfer')}</span></label></div><p class="payment-note" id="payment-note">${t('noCharge')}</p><label class="trial-option" id="trial-control" hidden><input type="checkbox" id="trial" name="trial"><span><b id="trial-title">${t('trialOptIn',{n:trialDays()})}</b><small>${t('trialOptInHint',{n:trialDays()})}</small></span></label></fieldset></section><p class="privacy-note">${t('privacyNote')} <a href="/privacy" target="_blank" rel="noopener" class="text-link">${t('privacyPolicy')}</a>.</p><p class="privacy-note">${t('agreeNote')} <a href="/terms" target="_blank" rel="noopener" class="text-link">${t('termsTitle')}</a> · <a href="/refund" target="_blank" rel="noopener" class="text-link">${t('refundTitle')}</a>.</p><button class="btn primary full form-submit" type="submit">${t('submit')}</button></form><aside class="order-summary" id="order-summary" aria-live="polite"></aside></div></div>`;
 }
 function selectedQuote() {
   const form = document.getElementById('application-form');
@@ -565,7 +593,7 @@ function thread(a, admin=false) {
 }
 function receipt() {
   const a = state.receipt;
-  return `<div class="wrap"><section class="receipt" tabindex="-1"><div class="receipt-check" aria-hidden="true">✓</div><h1>${t('receivedTitle')}</h1><p>${t('receivedLead')}</p><div class="reference-box"><span class="label">${t('reference')}</span><strong dir="ltr">${esc(a.id)}</strong></div><div class="summary-row"><span>${t('salonName')}</span><span>${esc(a.salonName)}</span></div><div class="summary-row"><span>${t('selectedPlan')}</span><span>${esc(a.plan[0].toUpperCase()+a.plan.slice(1))}</span></div><div class="summary-row"><span>${t(totalKey(a.quote.interval))}</span><span><bdi>${money(a.quote.total,a.quote.currency||'ILS')}</bdi></span></div>${a.quote.trialDays?`<p class="notice success trial-note">${t('trialSummary',{n:a.quote.trialDays})}</p>`:''}<div class="summary-row"><span>${t('payment')}</span><span>${t(a.paymentMethod)} · ${paymentBadge(a)}</span></div><div class="summary-row"><span>${t('status')}</span><span>${statusBadge(a)}</span></div>${stateNote(a)}${payButton(a)}${testPayButton(a)}<a class="btn ${canPayOnline(a)?'':'primary '}full" href="/applications">${t('viewApplications')}</a></section></div>`;
+  return `<div class="wrap"><section class="receipt" tabindex="-1"><div class="receipt-check" aria-hidden="true">✓</div><h1>${t('receivedTitle')}</h1><p>${t('receivedLead')}</p><div class="reference-box"><span class="label">${t('reference')}</span><strong dir="ltr">${esc(a.id)}</strong></div><div class="summary-row"><span>${t('salonName')}</span><span>${esc(a.salonName)}</span></div><div class="summary-row"><span>${t('selectedPlan')}</span><span>${esc(a.plan[0].toUpperCase()+a.plan.slice(1))}</span></div><div class="summary-row"><span>${t(totalKey(a.quote.interval))}</span><span><bdi>${money(a.quote.total,a.quote.currency||'ILS')}</bdi></span></div>${a.quote.trialDays?`<p class="notice success trial-note">${t('trialSummary',{n:a.quote.trialDays})}</p>`:''}<div class="summary-row"><span>${t('payment')}</span><span>${t(a.paymentMethod)} · ${paymentBadge(a)}</span></div><div class="summary-row"><span>${t('status')}</span><span>${statusBadge(a)}</span></div>${stateNote(a)}${payButton(a)}${testPayButton(a)}<a class="btn ${canPayOnline(a)?'':'primary '}full" href="/account">${t('viewApplications')}</a></section></div>`;
 }
 function adminActions(a) {
   if (a.status==='approved') return a.salon ? `<p class="notice success">${t('salonCreated')}: <b>${esc(a.salon.name)}</b> · <bdi>${esc(a.salon.accessCode)}</bdi> · <bdi>${esc(a.salon.slug)}</bdi></p>` : '';
@@ -701,17 +729,21 @@ function invoicesSection() {
   const name = id => state.salons.find(s=>s.applicationId===id)?.name || '';
   return `<section class="invoices-panel" aria-labelledby="invoices-title"><h2 class="section-label" id="invoices-title">${t('invoices')}</h2><div class="table-wrap"><table class="invoice-table"><thead><tr><th scope="col">${t('date')}</th><th scope="col">${t('salon')}</th><th scope="col">${t('invoice')}</th><th scope="col" class="num">${t('amount')}</th><th scope="col">${t('status')}</th><th scope="col"><span class="sr-only">PDF</span></th></tr></thead><tbody data-paginate="invoices">${state.invoices.map(i=>`<tr><td data-label="${t('date')}">${i.billedAt?date(i.billedAt):''}</td><td data-label="${t('salon')}">${esc(name(i.applicationId))}</td><td data-label="${t('invoice')}"><bdi>${esc(i.invoiceNumber || '—')}</bdi></td><td data-label="${t('amount')}" class="num"><bdi>${esc(i.totalText)}</bdi>${Number(i.refunded)?`<small class="refunded">−${cents(i.refunded, i.currency)}</small>`:''}</td><td data-label="${t('status')}"><span class="status ${['completed','paid'].includes(i.status)?'approved':i.status==='past_due'?'declined':'in_review'}">${t('inv_'+i.status)}</span></td><td>${['completed','paid'].includes(i.status)?`<button class="btn small" type="button" data-invoice-pdf="${esc(i.id)}">${t('downloadPdf')}</button>`:''}</td></tr>`).join('')}</tbody></table></div></section>`;
 }
+const openSetups = () => (state.applications || []).filter(a => !a.salon && !['approved','declined'].includes(a.status));
 function account() {
   const b = state.billing, sub = b.subscriptions[0];
   const meta = (label,value) => value ? `<div><dt>${t(label)}</dt><dd>${value}</dd></div>` : '';
   const interval = !sub?.interval ? '' : sub.frequency===1 && ['month','year'].includes(sub.interval) ? t(sub.interval==='year'?'annual':'monthly') : `${t('every')} ${sub.frequency} ${t('interval_'+sub.interval)}`;
   const change = sub?.scheduledChange && sub.status!=='canceled' ? `<p class="notice info">${t('scheduled_'+sub.scheduledChange.action)}${sub.scheduledChange.at?` <bdi>${date(sub.scheduledChange.at)}</bdi>`:''}. ${t('accessUntilChange')}</p>` : '';
   const card = sub && !state.salons.some(s=>s.billing?.subscriptionId) ? `<article class="application-card"><div class="application-card-top"><div><h2>${esc(sub.productName || t('subscription'))}</h2><span class="ref"><bdi>${esc(sub.id)}</bdi></span></div><span class="status ${subscriptionTone(sub.status)}">${t('sub_'+sub.status)}</span></div><dl class="application-meta">${meta('paidAccess',t(b.hasAccess?'accessActive':'accessInactive'))}${meta('billingPeriod',esc(interval))}${meta('nextBilling',sub.nextBilledAt?date(sub.nextBilledAt):'')}${meta('periodEnds',!sub.nextBilledAt&&sub.currentPeriodEndsAt?date(sub.currentPeriodEndsAt):'')}</dl>${change}</article>`
-    : (state.salons.length ? '' : `<div class="empty-state"><h2>${t('noSubscription')}</h2><p>${t(b.hasCustomer?'noSubscriptionText':'noBillingText')}</p>${b.hasCustomer?'':`<a class="btn primary" href="/plans">${t('explorePlans')}</a>`}</div>`);
+    : (state.salons.length || openSetups().length ? '' : `<div class="empty-state"><h2>${t('emptyTitle')}</h2><p>${t('emptyText')}</p><div class="hero-actions"><a class="btn primary" href="/try/business">${t('hm2_cta_build_short')}</a><a class="btn" href="/plans">${t('explorePlans')}</a></div></div>`);
   const portal = b.hasCustomer ? `<section class="invite-panel"><button class="btn primary" type="button" id="manage-billing">${t('manageBilling')}</button><p class="small-note">${t('manageBillingHint')}</p><p id="billing-feedback" role="status"></p></section>` : '';
   const justPaid = new URLSearchParams(location.search).get('checkout')==='complete' && !b.hasAccess ? `<div class="notice info"><p>${t('paymentProcessing')}</p><button class="btn small" type="button" id="refresh-billing">${t('refresh')}</button></div>` : '';
   const salons = state.salons.length ? `<h2 class="section-label">${t('yourSalons')}</h2><div class="salon-list" data-paginate="salons">${state.salons.map(salonCard).join('')}</div>` : '';
-  return `<div class="narrow">${titleBlock('account','accountTitle','accountLead')}<div class="application-list">${justPaid}${salons}${invoicesSection()}${card}${portal}${accountSettings()}</div></div>`;
+  // 2026-11-08: businesses still on their way to going live (payment, a check, a detail we need) are shown here; the
+  // separate "applications" page is no longer in the menu.
+  const progress = openSetups().length ? `<h2 class="section-label">${t('inProgress')}</h2><div class="application-list" data-paginate="in-progress">${openSetups().map(a=>applicationCard(a)).join('')}</div>` : '';
+  return `<div class="narrow">${titleBlock('account','accountTitle','accountLead')}<div class="application-list">${justPaid}${progress}${salons}${invoicesSection()}${card}${portal}${accountSettings()}</div></div>`;
 }
 // Name and password of the website account, and deleting it (not while a subscription is running).
 function accountSettings() {
@@ -958,6 +990,7 @@ async function submitForm(event, path) {
     for (const k of ['fullName','email']) data[k] = V.clean(data[k]);
   }
   if (path === '/api/login') data.email = V.clean(data.email).toLowerCase();
+  if (path === '/api/register/google') data.fullName = V.clean(data.fullName);
   if (path === '/api/applications') {
     if (state.logoLoading) return showError(form, {code:'processing', field:'logo'});
     if (!state.logo) return showError(form, {code:'invalidLogo', field:'logo'});
@@ -967,7 +1000,7 @@ async function submitForm(event, path) {
     Object.assign(data, {phone:phoneE164(data.phone, data.phoneCountry)?.number || data.phone, salonName:V.clean(data.salonName), teamComposition:form.elements.teamComposition.value, clientele:form.elements.clientele.value, timezone:form.elements.timezone.value, lang, currency:state.currency, interval:state.interval, plan:q.plan.id, loyalty:q.loyalty, option:q.option||'loyalty', trial:!document.getElementById('trial-control').hidden && form.elements.trial.checked, extraSpecialists:Number(form.elements.extraSpecialists.value)||0, logo:state.logo, submissionKey:state.submissionKey});
   }
   const submit = form.querySelector('button[type=submit]');
-  const busyLabel = t({'/api/applications':'submitting','/api/login':'signingIn','/api/register':'creatingAccount','/api/setup':'creatingAccount'}[path] || 'processing');
+  const busyLabel = t({'/api/applications':'submitting','/api/login':'signingIn','/api/register':'creatingAccount','/api/register/google':'creatingAccount','/api/setup':'creatingAccount'}[path] || 'processing');
   setBusy(submit, true, busyLabel);
   form.dataset.busy = 'true';
   document.getElementById('language').disabled = true;
@@ -978,7 +1011,8 @@ async function submitForm(event, path) {
       broadcast('login');
       // A full page load into the next page, built from the server for the signed-in account.
       try { sessionStorage.setItem('salonieer:flash', path === '/api/login' ? 'signedIn:' + result.user.fullName.split(' ')[0] : 'accountCreated'); } catch {}
-      location.replace(path === '/api/setup' ? '/admin' : nextPage());
+      // A new business account continues into setting up its business (the page builder, which saves to the account).
+      location.replace(path === '/api/setup' ? '/admin' : nextPage(path.startsWith('/api/register') ? '/try/business?save=1' : '/account'));
       return;
     } else {
       state.receipt = result.application; state.logo = ''; state.logoName = '';
@@ -1077,7 +1111,7 @@ const broadcast = type => { try { channel?.postMessage(type); } catch {} };
 let lastSessionCheck = 0;
 async function refreshSession() {
   const session = await api('/api/session');
-  state.user = session.user; state.csrf = session.csrf; state.checkout = session.checkout; state.platform = session.platform || null; state.google = !!session.google;
+  state.user = session.user; state.csrf = session.csrf; state.checkout = session.checkout; state.platform = session.platform || null; state.google = !!session.google; state.googleSignup = session.googleSignup || null;
   lastSessionCheck = Date.now();
   return session;
 }
@@ -1100,6 +1134,11 @@ function bind() {
   // A menu link to a section of the home page closes the menu.
   nav?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');menu?.setAttribute('aria-expanded','false');}));
   document.getElementById('logout')?.addEventListener('click',event=>logout(event.currentTarget));
+  // "Download METON" on a computer: the store menu closes on a click elsewhere or Escape.
+  document.querySelectorAll('details.app-get').forEach(d=>{
+    const close=e=>{ if(d.open&&(e.type!=='keydown'||e.key==='Escape')&&!(e.type==='click'&&d.contains(e.target))){ d.open=false; if(e.type==='keydown') d.querySelector('summary')?.focus(); } };
+    d.addEventListener('toggle',()=>{ if(d.open){ document.addEventListener('click',close); document.addEventListener('keydown',close); } else { document.removeEventListener('click',close); document.removeEventListener('keydown',close); } });
+  });
   document.querySelectorAll('[data-password]').forEach(button=>button.addEventListener('click',()=>{
     const input=document.getElementById(button.dataset.password);const visible=input.type==='password';input.type=visible?'text':'password';
     input.setAttribute('data-ltr','');button.textContent=t(visible?'hide':'show');button.setAttribute('aria-label',`${t(visible?'hide':'show')} ${t(button.dataset.password)}`);
@@ -1116,6 +1155,12 @@ function bind() {
   document.getElementById('login-form')?.addEventListener('submit',event=>submitForm(event,'/api/login'));
   const registerForm = document.getElementById('register-form') || document.getElementById('setup-form');
   if (registerForm) bindAccountForm(registerForm);
+  const googleForm = document.getElementById('google-signup-form');
+  if (googleForm) {
+    const gc = bindCountryPicker(googleForm.querySelector('[data-cpick="country"]'), pickerOptions({pinned:PINNED, onChange:()=>validateField(googleForm, 'country')}));
+    if (gc.value) gc.choose(gc.value, {silent:true});
+    googleForm.addEventListener('submit', event => submitForm(event, '/api/register/google'));
+  }
   const applicationForm = document.getElementById('application-form');
   if (applicationForm) {
     if (!drafts[route]) {
@@ -1125,8 +1170,21 @@ function bind() {
       if (['loyalty','smart_waitlist'].includes(q.get('option'))) applicationForm.elements.basicOption.value = q.get('option');
       const extra = /^\d{1,2}$/.test(q.get('extra') || '') ? Number(q.get('extra')) : 0;
       if (extra > 0 && extra <= 50) applicationForm.elements.extraSpecialists.value = String(extra);
-      // Coming from the page builder (Try METON Free): the business name is already known.
-      try { const built = JSON.parse(localStorage.getItem('meton_demo_v2') || 'null'); if (built?.name && !applicationForm.elements.salonName.value) applicationForm.elements.salonName.value = String(built.name).slice(0, 100); } catch {}
+      // Coming from the page builder (Try METON Free): the business name, its logo and who works there / who it serves
+      // are already known (shown here, so the owner can still change them).
+      try {
+        const built = JSON.parse(localStorage.getItem('meton_demo_v2') || 'null');
+        if (built?.name && !applicationForm.elements.salonName.value) applicationForm.elements.salonName.value = String(built.name).slice(0, 100);
+        const team = { male:'male', female:'female', mixed:'mixed' }[built?.providers], served = { male:'men', female:'women', mixed:'both' }[built?.customers];
+        if (team && !applicationForm.elements.teamComposition.value) applicationForm.elements.teamComposition.value = team;
+        if (served && !applicationForm.elements.clientele.value) applicationForm.elements.clientele.value = served;
+        if (!state.logo && /^data:image\/(png|jpeg|webp);base64,/.test(built?.look?.logo || '')) {
+          state.logo = built.look.logo; state.logoName = '';
+          const img = document.getElementById('logo-preview'); if (img) { img.src = state.logo; img.hidden = false; }
+          const sym = document.getElementById('upload-symbol'); if (sym) sym.hidden = true;
+          const title = document.getElementById('upload-title'); if (title) title.textContent = t('replaceLogo');
+        }
+      } catch {}
     }
     for (const name of ['plan','basicOption','extraSpecialists','paymentMethod','trial']) {
       applicationForm.querySelectorAll(`[name="${name}"]`).forEach(el=>el.addEventListener('input',syncApplication));
@@ -1457,7 +1515,7 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
     await refreshSession();
     if (token !== navToken) return;
     if (isPrivate(next) && !state.user) return go('/login?next='+encodeURIComponent(location.pathname+location.search), {replace:true});
-    if ((next==='/admin'||next.startsWith('/admin/')) && !state.user?.isAdmin) return go('/applications', {replace:true});
+    if ((next==='/admin'||next.startsWith('/admin/')) && !state.user?.isAdmin) return go('/account', {replace:true});
     if (['/login','/register'].includes(next) && state.user) return go(nextPage(), {replace:true});
     // A new page (not a re-render of the same one) starts with a fresh application form.
     if (key !== routeKey) { state.receipt = null; state.logo = ''; state.logoName = ''; state.submissionKey = uuid(); }
@@ -1484,8 +1542,8 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
     if (next==='/account') {
       // Salons come from the shared database; billing keeps working on its own if that is unavailable.
       const fresh = new URLSearchParams(location.search).get('checkout')==='complete' ? '?fresh=1' : '';
-      const [billing, salons, invoices, deletion] = await Promise.all([api('/api/billing'+fresh), api('/api/salons').catch(()=>({salons:[]})), api('/api/invoices').catch(()=>({invoices:[]})), api('/api/account/deletion').catch(()=>null)]);
-      state.billing = billing; state.salons = salons.salons || []; state.invoices = invoices.invoices || []; state.deletion = deletion;
+      const [billing, salons, invoices, deletion, apps] = await Promise.all([api('/api/billing'+fresh), api('/api/salons').catch(()=>({salons:[]})), api('/api/invoices').catch(()=>({invoices:[]})), api('/api/account/deletion').catch(()=>null), api('/api/applications').catch(()=>({applications:[]}))]);
+      state.billing = billing; state.salons = salons.salons || []; state.invoices = invoices.invoices || []; state.deletion = deletion; state.applications = apps.applications || [];
     }
     // A card payment that may have just finished is confirmed before these pages show its status.
     if (['/applications','/account'].includes(next) && payingId()) { try { await checkPayment(payingId()); } catch {} }

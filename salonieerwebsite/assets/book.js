@@ -287,6 +287,13 @@ export function runBooking(c, root, page, src, opts = {}) {
   function done() {
     const r = s.result, b = r.booking || {};
     const dev = device();
+    // opts.lean (the customer demo's journey): the result and the next step only; the private link, the reminder note
+    // and the app tip are shown later, from the customer's side.
+    if (opts.lean) return `<div class="book-card book-done">${demo ? `<p class="book-demo-note"><span class="book-demo-tag">${L(c, 'demoBadge')}</span>${L(c, 'demoDoneNote')}</p>` : ''}<div class="book-done-mark" aria-hidden="true">${ico(ICON.check, 40)}</div>
+      <h2>${opts.doneTitle || L(c, b.status === 'confirmed' ? 'okConfirmed' : 'okPending')}</h2><p class="book-done-sub">${opts.doneSub || L(c, 'okPendingSub', { business: c.esc(page.name) })}</p>
+      <div class="book-done-card">${detailRows(c, b)}${statusPill(c, b.status || 'pending')}</div>
+      ${opts.doneExtra || ''}
+      <div class="book-row book-done-actions"><button type="button" class="btn ghost" data-again>${L(c, 'bookAnother')}</button>${opts.afterDone || ''}</div></div>`;
     const link = demo ? `<section class="book-link"><h3>${L(c, 'manageTitle')}</h3><p class="book-muted">${L(c, 'manageWhy')}</p>
         <div class="book-link-box is-demo"><code dir="ltr">${c.esc(location.host)}/m/demo-${c.esc(String(r.id || '').slice(0, 10))}</code><button type="button" class="btn small" id="book-demo-open">${L(c, 'openLink')}</button></div><p class="book-fine">${L(c, 'demoLinkNote')}</p></section>`
       : `<section class="book-link"><h3>${L(c, 'manageTitle')}</h3><p class="book-muted">${L(c, 'manageWhy')}</p>

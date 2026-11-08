@@ -455,3 +455,15 @@ td .ap-pill + .ap-pill{margin-inline-start:6px}
 /* 2.40.1: Accounts (support) */
 #ap-acc-result h4{margin:18px 0 8px;font-size:.95rem}
 .ap-secret{display:inline-block;font-size:1.35rem;letter-spacing:.12em;padding:6px 12px;margin-inline-end:8px;border:1px solid var(--color-border-strong);border-radius:var(--ap-radius-sm);background:var(--color-surface);color:var(--color-text-primary);user-select:all}
+/* 2026-11-08: the Review queue */
+.ap-rv-lead{max-width:80ch;margin:0 0 18px}
+.ap-rv-sec{display:grid;gap:12px;margin-bottom:26px}
+.ap-rv-sec h2{display:flex;align-items:center;gap:10px;margin:0;font-size:1.1rem}
+.ap-rv-sec h2 b{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 8px;border-radius:999px;background:var(--color-surface-secondary,#eee);font-size:.85rem}
+.ap-rv{display:grid;gap:12px}
+.ap-rv-head{display:flex;align-items:center;gap:12px}
+.ap-rv-head>div{flex:1;min-width:0}
+.ap-rv-head h3{margin:0;font-size:1.05rem}
+.ap-rv-head p{margin:2px 0 0}
+.ap-rv-logo{width:44px;height:44px;border-radius:12px;object-fit:cover;flex:none;border:1px solid var(--color-border,#ddd)}
+.ap-rv .ap-flags{margin:0}

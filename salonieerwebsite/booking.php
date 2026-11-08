@@ -66,37 +66,59 @@ function metonSendWhatsApp(string $phone, string $code, string $lang): bool {
 }
 function metonError(int $status, string $code, array $extra = []): never { sendJson($status, ['error'=>$code] + $extra); }
 
-// ── Instant activation and light moderation (NEW-004/005/010) ────────────────────────────────────────────────────
-// Obvious spam or links in a business name or draft: such a case waits for a human in the admin inbox; every other
-// business is created the moment its card payment completes (no approval queue).
+// ── Instant activation and light moderation (NEW-004/005/010; review queue 2026-11-08) ─────────────────────────────
+// Obvious spam or links in what a business shows the public (its name, description, services, team): such a case waits
+// for a person in the admin Review queue; every other business is created the moment its payment is confirmed (no
+// approval queue). Uploaded logos are shown to the reviewer; there is no automatic image moderation.
 const METON_FLAG = '/(https?:\/\/|www\.|\.(com|net|org|ru|xyz|top|info|biz|click|link)\b|casino|viagra|cialis|crypto|bitcoin|forex|loan|porn|sex\b|escort|\bbet\b|gambl)/iu';
 function metonFlagged(string ...$texts): bool { foreach ($texts as $t) if (preg_match(METON_FLAG, $t)) return true; return false; }
+// The words that matched, for the reviewer (at most 8).
+function metonFlagWords(string ...$texts): array {
+    $out = [];
+    foreach ($texts as $t) if (preg_match_all(METON_FLAG, $t, $m)) foreach ($m[0] as $w) $out[mb_strtolower($w)] = true;
+    return array_slice(array_keys($out), 0, 8);
+}
+// Everything public in a saved page.
+function metonDraftTexts(array $d): array {
+    return array_values(array_filter([$d['name'] ?? '', $d['kind'] ?? '', $d['about'] ?? '', $d['address'] ?? '', ...array_column($d['services'] ?? [], 'name'),
+        ...array_map(fn($t) => trim(($t['name'] ?? '').' '.($t['role'] ?? '')), $d['team'] ?? [])], fn($x) => $x !== ''));
+}
 function metonDraftTable(): void {
     static $done = false; if ($done) return;
     db()->exec('CREATE TABLE IF NOT EXISTS drafts(user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,draft TEXT NOT NULL,flagged INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL)');
+    // reviewed: the draft (its exact text) a person already looked at and found fine.
+    $cols = array_column(db()->query('PRAGMA table_info(drafts)')->fetchAll(), 'name');
+    if (!in_array('reviewed_hash', $cols, true)) db()->exec('ALTER TABLE drafts ADD COLUMN reviewed_hash TEXT');
     $done = true;
 }
+const METON_PREFS = ['male', 'female', 'mixed', 'any'];
 // A draft from the Try METON Free builder, reduced to what a business setup needs.
 function metonCleanDraft(mixed $d): ?array {
     if (!is_array($d)) return null;
     $txt = fn($v, $max) => is_string($v) ? mb_substr(trim(preg_replace('/[\x00-\x1f<>{}]/u', '', $v)), 0, $max) : '';
     $id = fn($v) => is_string($v) && preg_match('/^[A-Za-z0-9_-]{1,24}$/D', $v) ? $v : '';
+    $key = fn($v) => is_string($v) && preg_match('/^[a-z_]{2,20}$/D', $v) ? $v : '';
     $time = fn($v, $def) => is_string($v) && preg_match('/^([01][0-9]|2[0-3]):[0-5][0-9]$/D', $v) ? $v : $def;
     $services = [];
     foreach (array_slice(is_array($d['services'] ?? null) ? $d['services'] : [], 0, 30) as $s) {
         if (!is_array($s) || $id($s['id'] ?? null) === '') continue;
         $services[] = ['id'=>$id($s['id']), 'name'=>$txt($s['name'] ?? '', 60), 'duration'=>max(5, min(480, (int)($s['duration'] ?? 30))), 'price'=>is_numeric($s['price'] ?? null) ? max(0, min(1000000, (float)$s['price'])) : ''];
     }
+    $h = is_array($d['hours'] ?? null) ? $d['hours'] : []; $days = [];
+    foreach (range(0, 6) as $k) $days[(string)$k] = (bool)($h['days'][(string)$k] ?? $h['days'][$k] ?? ($k !== 5));
     $sids = array_column($services, 'id'); $team = [];
     foreach (array_slice(is_array($d['team'] ?? null) ? $d['team'] : [], 0, 20) as $t) {
         if (!is_array($t) || $id($t['id'] ?? null) === '') continue;
+        // A person's own working days (only days the business is open).
+        $td = is_array($t['days'] ?? null) ? $t['days'] : [];
         $team[] = ['id'=>$id($t['id']), 'name'=>$txt($t['name'] ?? '', 60), 'role'=>$txt($t['role'] ?? '', 60),
-            'services'=>array_values(array_intersect(array_map('strval', is_array($t['services'] ?? null) ? $t['services'] : []), $sids))];
+            'services'=>array_values(array_intersect(array_map('strval', is_array($t['services'] ?? null) ? $t['services'] : []), $sids)),
+            'days'=>array_map(fn($k) => $days[$k] && (bool)($td[$k] ?? true), array_combine(array_keys($days), array_keys($days)))];
     }
-    $h = is_array($d['hours'] ?? null) ? $d['hours'] : []; $days = [];
-    foreach (range(0, 6) as $k) $days[(string)$k] = (bool)($h['days'][(string)$k] ?? $h['days'][$k] ?? ($k !== 5));
     $color = is_string($d['color'] ?? null) && preg_match('/^#[0-9a-fA-F]{6}$/D', $d['color']) ? $d['color'] : '#241D28';
-    return ['name'=>$txt($d['name'] ?? '', 60), 'kind'=>$txt($d['kind'] ?? '', 80), 'color'=>$color, 'services'=>$services, 'team'=>$team,
+    return ['name'=>$txt($d['name'] ?? '', 60), 'kind'=>$txt($d['kind'] ?? '', 80), 'sector'=>$key($d['sector'] ?? null), 'type'=>$key($d['type'] ?? null),
+        'providers'=>in_array($d['providers'] ?? null, METON_PREFS, true) ? $d['providers'] : 'any', 'customers'=>in_array($d['customers'] ?? null, METON_PREFS, true) ? $d['customers'] : 'any',
+        'about'=>$txt($d['about'] ?? '', 160), 'address'=>$txt($d['address'] ?? '', 80), 'color'=>$color, 'services'=>$services, 'team'=>$team,
         'hours'=>['from'=>$time($h['from'] ?? null, '09:00'), 'to'=>$time($h['to'] ?? null, '18:00'), 'days'=>$days], 'bookings'=>[]];
 }
 function metonDraftsApi(string $method, string $path, array|false $user): void {
@@ -110,14 +132,58 @@ function metonDraftsApi(string $method, string $path, array|false $user): void {
         rateLimit('draft-save', 120, 3600, (string)$user['id']);
         $d = metonCleanDraft(body()['draft'] ?? null);
         if (!$d) fail(400, 'invalidRequest');
-        $flag = metonFlagged($d['name'], $d['kind'], ...array_column($d['services'], 'name'), ...array_map(fn($t) => $t['name'].' '.$t['role'], $d['team']));
+        $flag = metonFlagged(...metonDraftTexts($d));
         runSql('INSERT INTO drafts(user_id,draft,flagged,updated_at) VALUES(?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET draft=excluded.draft,flagged=excluded.flagged,updated_at=excluded.updated_at',
             [(int)$user['id'], json_encode($d, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES), $flag ? 1 : 0, nowMs()]);
         sendJson(200, ['ok'=>true, 'flagged'=>$flag]);
     }
     fail(404, 'notFound');
 }
-// ── Business sign-in (BIZ-001/004) ───────────────────────────────────────────────────────────────────────────────
+// A saved page still needs a person: it was flagged and nobody has looked at this exact text yet.
+function metonDraftNeedsReview(array $row): bool { return (int)$row['flagged'] === 1 && !hash_equals((string)($row['reviewed_hash'] ?? ''), hash('sha256', (string)$row['draft'])); }
+// ── The admin Review queue: only the cases a person should look at ──────────────────────────────────────────────────
+//  * a business that is paid but could not go live by itself (flagged words, an ID number that can't be right, or an
+//    automatic step that failed) — the reviewer opens it and publishes or declines it;
+//  * a page saved during the free trial with flagged words — "looks fine" lets it go live later without a wait; "remove"
+//    deletes the saved page (it was never public).
+function metonReviewApi(string $method, string $path, array|false $user): void {
+    requireAdmin($user);
+    metonDraftTable();
+    if ($method === 'GET' && $path === '/api/admin/review') {
+        try { migrateLegacyApplications(); $apps = applicationReviewFlags(withIdentity(sbRpc('website_admin_applications', ['p_status'=>'all']))); }
+        catch (Throwable $e) { supabaseFail($e); }
+        $drafts = [];
+        foreach (rows('SELECT d.user_id,d.draft,d.flagged,d.reviewed_hash,d.updated_at,u.full_name,u.email,u.country FROM drafts d JOIN users u ON u.id=d.user_id WHERE d.flagged=1 ORDER BY d.updated_at DESC LIMIT 200') as $r) $drafts[(int)$r['user_id']] = $r;
+        $items = [];
+        foreach ($apps as $a) {
+            $paid = in_array($a['paymentStatus'] ?? '', ['paid', 'test_paid'], true);
+            if (!$paid || !empty($a['salon']) || in_array($a['status'] ?? '', ['approved', 'declined'], true)) continue;
+            $draft = $drafts[(int)($a['websiteUserId'] ?? 0)] ?? null; $dj = $draft ? json_decode($draft['draft'], true) : null;
+            $words = metonFlagWords((string)($a['salonName'] ?? ''), ...($dj ? metonDraftTexts($dj) : []));
+            $items[] = ['kind'=>'business', 'id'=>$a['id'], 'name'=>$a['salonName'] ?? '', 'owner'=>$a['fullName'] ?? '', 'email'=>$a['email'] ?? '', 'country'=>$a['country'] ?? '',
+                'logo'=>$a['logoUrl'] ?? '', 'at'=>$a['paidAt'] ?? $a['createdAt'] ?? null, 'words'=>$words, 'review'=>$a['review'] ?? null, 'status'=>$a['status'] ?? '',
+                'draft'=>$dj ? ['services'=>array_column($dj['services'] ?? [], 'name'), 'team'=>array_map(fn($t) => trim($t['name'].' '.$t['role']), $dj['team'] ?? []), 'about'=>$dj['about'] ?? ''] : null];
+            if ($draft) unset($drafts[(int)$a['websiteUserId']]);
+        }
+        foreach ($drafts as $uid => $r) {
+            if (!metonDraftNeedsReview($r)) continue;
+            $dj = json_decode($r['draft'], true) ?: [];
+            $items[] = ['kind'=>'draft', 'id'=>(string)$uid, 'name'=>$dj['name'] ?? '', 'owner'=>$r['full_name'], 'email'=>$r['email'], 'country'=>$r['country'], 'logo'=>'',
+                'at'=>gmdate('c', intdiv((int)$r['updated_at'], 1000)), 'words'=>metonFlagWords(...metonDraftTexts($dj)), 'review'=>null, 'status'=>'',
+                'draft'=>['services'=>array_column($dj['services'] ?? [], 'name'), 'team'=>array_map(fn($t) => trim($t['name'].' '.$t['role']), $dj['team'] ?? []), 'about'=>$dj['about'] ?? '']];
+        }
+        sendJson(200, ['items'=>$items]);
+    }
+    if ($method === 'POST' && preg_match('~^/api/admin/review/draft/(\d+)/(ok|remove)$~D', $path, $m)) {
+        $r = one('SELECT draft FROM drafts WHERE user_id=?', [(int)$m[1]]);
+        if (!$r) fail(404, 'notFound');
+        if ($m[2] === 'ok') runSql('UPDATE drafts SET reviewed_hash=? WHERE user_id=?', [hash('sha256', (string)$r['draft']), (int)$m[1]]);
+        else runSql('DELETE FROM drafts WHERE user_id=?', [(int)$m[1]]);
+        error_log('METON review: draft of account '.(int)$m[1].' '.$m[2].' by '.$user['email']);
+        sendJson(200, ['ok'=>true]);
+    }
+    fail(404, 'notFound');
+}// ── Business sign-in (BIZ-001/004) ───────────────────────────────────────────────────────────────────────────────
 // Forgotten password: a 6-digit code by email (support@meton.work), 15 minutes, 5 tries. The answer never says
 // whether an account exists. A reset signs the account out everywhere.
 function metonPasswordApi(string $method, string $path, array|false $session): void {
@@ -164,14 +230,50 @@ function metonPasswordApi(string $method, string $path, array|false $session): v
 // Google sign-in, switched on by GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET in the private .env (the owner creates the
 // OAuth client; redirect URI https://www.meton.work/auth/google/callback). It signs in to an EXISTING website account
 // with the same verified email; it never creates permissions and never links a second identity silently (BIZ-004).
+// 2026-11-08: a Google email with no account yet can sign up: the verified email waits 15 minutes (a one-time cookie)
+// while the person confirms their name, gender and country on /register; no password is needed (one can be set later
+// with "Forgot password").
 function metonGoogleReady(): bool { return (bool)(paddleEnv('GOOGLE_CLIENT_ID') && paddleEnv('GOOGLE_CLIENT_SECRET')); }
+function metonGoogleSignupTable(): void { db()->exec('CREATE TABLE IF NOT EXISTS google_signups(token_hash TEXT PRIMARY KEY,email TEXT NOT NULL,name TEXT NOT NULL DEFAULT \'\',expires_at INTEGER NOT NULL)'); }
+function metonGoogleSignupCookie(): string { return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? '__Host-meton-gsu' : 'meton_gsu'; }
+// The Google sign-up waiting for this browser, if any: ['email', 'name'].
+function metonGoogleSignup(): ?array {
+    $v = $_COOKIE[metonGoogleSignupCookie()] ?? '';
+    if (!is_string($v) || !preg_match('/^[a-f0-9]{64}$/D', $v)) return null;
+    metonGoogleSignupTable();
+    $r = one('SELECT email,name FROM google_signups WHERE token_hash=? AND expires_at>?', [digest($v), nowMs()]);
+    return $r ? ['email' => $r['email'], 'name' => $r['name']] : null;
+}
+function metonGoogleSignupApi(array|false $session): void {
+    $pending = metonGoogleSignup();
+    if (!$pending) fail(400, 'googleExpired');
+    rateLimit('registration', 12, 3600);
+    $d = body();
+    if (($d['website'] ?? '') !== '') fail(400, 'invalidRequest');
+    $v = ['fullName' => cleanText($d['fullName'] ?? null), 'email' => strtolower($pending['email']), 'gender' => $d['gender'] ?? null, 'region' => ''];
+    if (!validFullName($v['fullName'])) fail(400, 'invalidFullName', 'fullName');
+    if (!in_array($v['gender'], GENDERS, true)) fail(400, 'invalidGender', 'gender');
+    if (!in_array($d['country'] ?? null, countryList(), true)) fail(400, 'invalidCountry', 'country');
+    $v['country'] = $d['country'];
+    db()->exec('BEGIN IMMEDIATE');
+    try {
+        ensureAvailable($v);
+        try { runSql('INSERT INTO users(username,full_name,email,country,region,password_hash,is_admin,gender) VALUES(?,?,?,?,?,NULL,0,?)', [generatedUsername($v['email']), $v['fullName'], $v['email'], $v['country'], '', $v['gender']]); }
+        catch (PDOException $e) { if (str_contains($e->getMessage(), 'UNIQUE constraint failed')) fail(409, 'accountUnavailable'); throw $e; }
+        $id = (int)db()->lastInsertId();
+        runSql('DELETE FROM google_signups WHERE email=?', [$v['email']]);
+        db()->exec('COMMIT');
+    } catch (Throwable $e) { db()->exec('ROLLBACK'); throw $e; }
+    setcookie(metonGoogleSignupCookie(), '', ['expires' => time() - 3600, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax']);
+    sendJson(201, ['user' => userDTO(one('SELECT * FROM users WHERE id=?', [$id])), 'csrf' => newSession($id, $session)]);
+}
 function metonGoogleRoute(string $route, array|false $session): void {
     if (!metonGoogleReady()) redirectTo('/login');
     $redirect = siteUrlFor('/auth/google/callback');
     if ($route === '/auth/google') {
         $state = token(); setcookie('meton_oauth', $state, ['expires'=>time()+600, 'path'=>'/auth/google', 'secure'=>!empty($_SERVER['HTTPS']), 'httponly'=>true, 'samesite'=>'Lax']);
         redirectTo('https://accounts.google.com/o/oauth2/v2/auth?'.http_build_query(['client_id'=>paddleEnv('GOOGLE_CLIENT_ID'), 'redirect_uri'=>$redirect,
-            'response_type'=>'code', 'scope'=>'openid email', 'state'=>$state, 'prompt'=>'select_account']));
+            'response_type'=>'code', 'scope'=>'openid email profile', 'state'=>$state, 'prompt'=>'select_account']));
     }
     $state = (string)($_GET['state'] ?? ''); $code = (string)($_GET['code'] ?? '');
     if ($state === '' || !hash_equals((string)($_COOKIE['meton_oauth'] ?? ''), $state) || $code === '') redirectTo('/login?google=failed');
@@ -188,7 +290,15 @@ function metonGoogleRoute(string $route, array|false $session): void {
         || empty($claims['email_verified']) || (int)($claims['exp'] ?? 0) < time()) redirectTo('/login?google=failed');
     $email = strtolower((string)$claims['email']);
     $u = one('SELECT id FROM users WHERE email=?', [$email]);
-    if (!$u) redirectTo('/register?google=noaccount&email='.rawurlencode($email));
+    if (!$u) {
+        // A new business account with this Google email: the person confirms a few details first (no password).
+        metonGoogleSignupTable();
+        $t = token();
+        runSql('DELETE FROM google_signups WHERE expires_at<? OR email=?', [nowMs(), $email]);
+        runSql('INSERT INTO google_signups(token_hash,email,name,expires_at) VALUES(?,?,?,?)', [digest($t), $email, mb_substr(cleanText($claims['name'] ?? ''), 0, 100), nowMs() + 900000]);
+        setcookie(metonGoogleSignupCookie(), $t, ['expires' => time() + 900, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax']);
+        redirectTo('/register?google=1');
+    }
     newSession((int)$u['id'], $session);
     redirectTo('/account');
 }
@@ -198,17 +308,23 @@ function siteUrlFor(string $path): string {
     return $base.$path;
 }
 
-// Called when a CARD payment for an application completes (paddle.php). Bank transfers and admin test payments keep
-// the admin's manual approval (a person is already looking at them). Never throws: on any problem the application
-// simply stays in the admin inbox, as before.
+// Called when a payment for an application is confirmed: a card payment (paddle.php), and since 2026-11-08 also a bank
+// transfer or a test purchase an admin marks as paid (no separate approval step any more). Never throws: on any
+// problem the business simply waits in the admin Review queue.
 function metonInstantApprove(string $appId, ?int $userId): void {
     if (strtolower((string)(paddleEnv('METON_INSTANT_APPROVAL') ?? 'on')) === 'off') return;
     try {
         $a = sbRpc('website_application', ['p_id'=>$appId, 'p_user'=>null]);
         if (!is_array($a) || !empty($a['salon']) || ($a['status'] ?? '') === 'declined') return;
+        $userId = $userId ?: ((int)($a['websiteUserId'] ?? 0) ?: null);
         $draft = null;
-        if ($userId) { metonDraftTable(); $row = one('SELECT draft,flagged FROM drafts WHERE user_id=?', [$userId]); if ($row) $draft = $row; }
-        if (metonFlagged((string)($a['salonName'] ?? '')) || ($draft && (int)$draft['flagged'])) { error_log('METON instant approval '.$appId.': flagged for review'); return; }
+        if ($userId) { metonDraftTable(); $row = one('SELECT draft,flagged,reviewed_hash FROM drafts WHERE user_id=?', [$userId]); if ($row) $draft = $row; }
+        if (metonFlagged((string)($a['salonName'] ?? '')) || ($draft && metonDraftNeedsReview($draft))) { error_log('METON instant approval '.$appId.': flagged for review'); return; }
+        // Information that can't be right (an ID number that fails its check digit): a person looks first.
+        if (function_exists('applicationReviewFlags') && function_exists('withIdentity')) {
+            try { if ((applicationReviewFlags(withIdentity([$a]))[0]['review']['level'] ?? 'clear') === 'invalid') { error_log('METON instant approval '.$appId.': invalid details, for review'); return; } }
+            catch (Throwable $e) { error_log('METON instant approval '.$appId.': review check: '.$e->getMessage()); }
+        }
         $r = sbRpc('website_approve', ['p_id'=>$appId, 'p_overrides'=>(object)[], 'p_actor'=>'METON (instant)']);
         $slug = is_array($r) ? (string)($r['salon']['slug'] ?? '') : '';
         if ($slug !== '' && $draft) {

@@ -736,7 +736,7 @@ function api(string $method,string $path,array|false $session,array|false $user)
         // Grace reminders and pauses run even when the cron job isn't set up.
         billingWorkAfterResponse(600);
         if (!$session) rateLimit('guest-session',200,3600);
-        sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session),'checkout'=>checkoutConfig($user),'google'=>metonGoogleReady()]+($user&&(int)$user['is_admin']?['platform'=>platformConfig()]:[]));
+        sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session),'checkout'=>checkoutConfig($user),'google'=>metonGoogleReady()]+(!$user&&($g=metonGoogleSignup())?['googleSignup'=>$g]:[])+($user&&(int)$user['is_admin']?['platform'=>platformConfig()]:[]));
     }
     if ($method==='GET'&&$path==='/api/health') {
         $sqlite=in_array('sqlite',PDO::getAvailableDrivers(),true);$database=false;
@@ -777,12 +777,14 @@ function api(string $method,string $path,array|false $session,array|false $user)
     if (!in_array($method,['GET','HEAD'],true)) csrfAndOrigin($session);
     if (str_starts_with($path,'/api/book')||str_starts_with($path,'/api/me/')) metonBookingApi($method,$path,$session);
     if ($path==='/api/drafts') metonDraftsApi($method,$path,$user);
+    if (str_starts_with($path,'/api/admin/review')) metonReviewApi($method,$path,$user);
     if (str_starts_with($path,'/api/password/')) metonPasswordApi($method,$path,$session);
     if ($method==='POST'&&$path==='/api/billing/portal') {
         // The customer is resolved from the signed-in session user only; nothing from the request body is used.
         requireUser($user);rateLimit('billing-portal',20,3600,(string)$user['id']);
         sendJson(200,['url'=>paddlePortalUrl($user)]);
     }
+    if ($method==='POST'&&$path==='/api/register/google') { if ($user) fail(409,'alreadyLoggedIn'); metonGoogleSignupApi($session); }
     if ($method==='POST'&&$path==='/api/register') {
         if ($user) fail(409,'alreadyLoggedIn');
         rateLimit('registration',12,3600);$d=body();
@@ -1076,6 +1078,8 @@ function api(string $method,string $path,array|false $session,array|false $user)
         requireAdmin($user);
         try { sbRpc('website_mark_paid',['p_id'=>$id,'p_method'=>'test_paid','p_reference'=>'TEST','p_actor'=>$user['email'],'p_user'=>null]); }
         catch (Throwable $e) { supabaseFail($e); }
+        // As with a real payment, the business goes live at once unless something needs a review.
+        metonInstantApprove($id, null);
         sendJson(200,['application'=>sbRpc('website_application',['p_id'=>$id,'p_user'=>null])]);
     }
     if ($method==='POST'&&$path==='/api/applications') {
@@ -1148,6 +1152,9 @@ function api(string $method,string $path,array|false $session,array|false $user)
         $ref=is_string($d['reference']??null)?mb_substr(trim($d['reference']),0,120):'';
         try { $a=sbRpc('website_mark_paid',['p_id'=>$id,'p_method'=>'paid','p_reference'=>$ref!==''?$ref:'bank transfer','p_actor'=>$user['email'],'p_user'=>null]); }
         catch (Throwable $e) { supabaseFail($e); }
+        // 2026-11-08: no separate approval step: a confirmed transfer publishes the business unless it needs a review.
+        metonInstantApprove($id, null);
+        try { $a=sbRpc('website_application',['p_id'=>$id,'p_user'=>null]) ?: $a; } catch (Throwable $e) {}
         sendJson(200,['application'=>withIdentity([$a])[0]]);
     }
     if ($method==='POST'&&($id=appIdFrom($path,'/approve'))) {

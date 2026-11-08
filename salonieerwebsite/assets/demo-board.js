@@ -72,7 +72,8 @@ export function mountBoard(c, host, ctx) {
   const nowMin = () => { try { const [h, m] = new Intl.DateTimeFormat('en-GB', { timeZone: tz(), hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date()).split(':').map(Number); return h * 60 + m; } catch { return 0; } };
   const upcoming = b => b.date > today() || (b.date === today() && toMin(b.time) + b.dur > nowMin());
   const pill = b => `<span class="db-pill is-${b.status}"><span aria-hidden="true"></span>${T(c, b.status)}</span>`;
-  const tag = b => b.source === 'sample' ? `<span class="db-tag">${T(c, 'sample')}</span>` : `<span class="db-tag is-test">${b.id === st.fresh ? T(c, 'newOne') + ' · ' : ''}${T(c, 'test')}</span>`;
+  // ctx.tag(b) may name a booking itself (the customer demo marks the visitor's own request "Your booking").
+  const tag = b => ctx.tag?.(b) || (b.source === 'sample' ? `<span class="db-tag">${T(c, 'sample')}</span>` : `<span class="db-tag is-test">${b.id === st.fresh ? T(c, 'newOne') + ' · ' : ''}${T(c, 'test')}</span>`);
   const actions = b => b.status === 'pending' ? `<div class="db-actions"><button type="button" class="btn small primary" data-act="confirm" data-id="${b.id}">${ico(ICON.check, 15)}${T(c, 'confirm')}</button><button type="button" class="btn small" data-act="move" data-id="${b.id}">${T(c, 'reschedule')}</button><button type="button" class="btn small danger" data-act="decline" data-id="${b.id}">${T(c, 'decline')}</button></div>`
     : b.status === 'confirmed' ? `<div class="db-actions"><button type="button" class="btn small" data-act="move" data-id="${b.id}">${T(c, 'reschedule')}</button><button type="button" class="btn small danger" data-act="cancel" data-id="${b.id}">${T(c, 'cancel')}</button></div>` : '';
   const card = (b, { showDate = false, showSp = true } = {}) => {
@@ -144,7 +145,7 @@ export function mountBoard(c, host, ctx) {
       ${st.tab === 'requests' ? requests() : `<div class="db-tools"><div class="db-seg" role="group"><button type="button" class="${st.view === 'day' ? 'is-on' : ''}" data-view="day" aria-pressed="${st.view === 'day'}">${T(c, 'day')}</button><button type="button" class="${st.view === 'week' ? 'is-on' : ''}" data-view="week" aria-pressed="${st.view === 'week'}">${T(c, 'week')}</button></div>
         <div class="db-nav"><button type="button" class="db-arrow" data-move="-1" aria-label="${T(c, 'prev')}">${ico('<path d="M15 5.5 8.5 12l6.5 6.5"/>', 18)}</button><span class="db-when">${title()}</span><button type="button" class="db-arrow" data-move="1" aria-label="${T(c, 'next')}">${ico('<path d="m9 5.5 6.5 6.5L9 18.5"/>', 18)}</button>${st.date !== today() ? `<button type="button" class="db-today" data-move="0">${T(c, 'today')}</button>` : ''}</div></div>
         ${chips()}${st.view === 'day' ? dayView() : weekView()}`}
-      <label class="db-samples"><input type="checkbox" id="db-samples"${ctx.samples() ? ' checked' : ''}> ${T(c, 'samples')}</label></div>`;
+      ${ctx.samplesToggle === false ? '' : `<label class="db-samples"><input type="checkbox" id="db-samples"${ctx.samples() ? ' checked' : ''}> ${T(c, 'samples')}</label>`}</div>`;
     wire();
   }
   function wire() {
@@ -214,6 +215,9 @@ export function mountBoard(c, host, ctx) {
   return {
     refresh: paint,
     // A test booking just made on the booking page: show it where it landed.
-    show(id) { const b = find(id); if (!b) return paint(); st.fresh = id; st.date = b.date; st.tab = b.status === 'pending' ? 'requests' : 'schedule'; paint(); },
+    show(id, { scroll = false } = {}) {
+      const b = find(id); if (!b) return paint(); st.fresh = id; st.date = b.date; st.tab = b.status === 'pending' ? 'requests' : 'schedule'; paint();
+      if (scroll) host.querySelector('.db-appt.is-fresh')?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    },
   };
 }

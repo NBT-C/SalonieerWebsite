@@ -21,6 +21,43 @@ export function reviewPanel(a) {
     <ul class="ap-flags" data-paginate="review-${esc(a.id)}">${flags.map(f => `<li class="is-${f.level}">${pill(f.level === 'invalid' ? 'danger' : 'warn', T(f.level === 'invalid' ? 'flagInvalid' : 'flagReview'))}<span>${esc(T('flag_' + f.code, f.vars || {}))}</span></li>`).join('')}</ul></section>`;
 }
 
+// ---- Review queue (2026-11-08) ----------------------------------------------------------------------------------------
+// Only the cases a person should look at (booking.php metonReviewApi): businesses that are paid but could not go live
+// by themselves (flagged words or links, information that can't be right), and pages saved during the free trial with
+// flagged words. Everything else goes live without anyone in between.
+export async function reviewView() {
+  setTitle(T('navReview'));
+  view().innerHTML = loading();
+  const items = (await site().api('/api/admin/review')).items || [];
+  const biz = items.filter(i => i.kind === 'business'), drafts = items.filter(i => i.kind === 'draft');
+  const flagLine = f => `<li class="is-${f.level}">${pill(f.level === 'invalid' ? 'danger' : 'warn', T(f.level === 'invalid' ? 'flagInvalid' : 'flagReview'))}<span>${esc(T('flag_' + f.code, f.vars || {}))}</span></li>`;
+  const reasons = i => [...(i.words?.length ? [`<li class="is-review">${pill('warn', T('flagReview'))}<span>${esc(T('rv_words', { words: i.words.join(', ') }))}</span></li>`] : []),
+    ...((i.review?.flags) || []).map(flagLine)].join('');
+  const facts = i => i.draft ? `<dl class="ap-facts">${[[T('rv_services'), (i.draft.services || []).join(' · ')], [T('rv_team'), (i.draft.team || []).join(' · ')], [T('rv_about'), i.draft.about || '']]
+    .filter(r => r[1]).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : '';
+  const card = i => `<article class="ap-panel ap-rv" data-rv="${esc(i.kind)}:${esc(i.id)}">
+    <header class="ap-rv-head">${i.logo ? `<img class="ap-rv-logo" src="${esc(i.logo)}" alt="">` : ''}<div><h3>${esc(i.name || '—')}</h3><p class="ap-quiet">${esc(i.owner || '')} · <span dir="ltr">${esc(i.email || '')}</span>${i.at ? ' · ' + esc(fmtTime(i.at)) : ''}</p></div>${pill(i.kind === 'business' ? 'info' : 'muted', T(i.kind === 'business' ? 'rv_kindBusiness' : 'rv_kindDraft'))}</header>
+    <ul class="ap-flags">${reasons(i) || `<li><span>${esc(T('rv_noReason'))}</span></li>`}</ul>${facts(i)}
+    <div class="ap-actions">${i.kind === 'business' ? `<a class="ap-btn is-primary" href="/admin/applications/${esc(i.id)}">${esc(T('rv_open'))}</a>`
+      : `<button class="ap-btn is-primary" type="button" data-rv-ok="${esc(i.id)}">${esc(T('rv_ok'))}</button><button class="ap-btn is-danger" type="button" data-rv-remove="${esc(i.id)}">${esc(T('rv_remove'))}</button>`}<p class="ap-error" role="alert"></p></div></article>`;
+  view().innerHTML = `<p class="ap-quiet ap-rv-lead">${esc(T('rv_lead'))}</p>
+    <section class="ap-rv-sec"><h2>${esc(T('rv_businesses'))} <b>${num(biz.length)}</b></h2>${biz.length ? biz.map(card).join('') : empty(T('rv_noneBusiness'))}</section>
+    <section class="ap-rv-sec"><h2>${esc(T('rv_drafts'))} <b>${num(drafts.length)}</b></h2>${drafts.length ? drafts.map(card).join('') : empty(T('rv_noneDrafts'))}</section>`;
+  view().querySelectorAll('[data-rv-ok]').forEach(b => b.addEventListener('click', () =>
+    act(b, () => site().api(`/api/admin/review/draft/${encodeURIComponent(b.dataset.rvOk)}/ok`, { method: 'POST', body: '{}' }), T('rv_okDone')).then(() => reviewView()).catch(() => {})));
+  view().querySelectorAll('[data-rv-remove]').forEach(b => b.addEventListener('click', async () => {
+    if (!(await confirm(T('rv_remove'), T('rv_removeAsk'), { danger: true }))) return;
+    act(b, () => site().api(`/api/admin/review/draft/${encodeURIComponent(b.dataset.rvRemove)}/remove`, { method: 'POST', body: '{}' }), T('rv_removed')).then(() => reviewView()).catch(() => {});
+  }));
+}
+export async function countReview() {
+  try {
+    const n = ((await site().api('/api/admin/review')).items || []).length;
+    const badge = document.getElementById('ap-rev-count');
+    if (badge) { badge.hidden = !n; badge.textContent = num(n); }
+  } catch {}
+}
+
 // ---- Problem reports -----------------------------------------------------------------------------------------------
 const CATS = ['bug', 'booking', 'billing', 'account', 'other'];
 export async function reportsView() {

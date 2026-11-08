@@ -67,6 +67,11 @@ const W = {
     year: { ar: 'عند الدفع السنوي: {amount} سنوياً (خصم {pct})', en: 'Billed yearly: {amount} a year ({pct} off)', he: 'בחיוב שנתי: {amount} בשנה ({pct} הנחה)' } },
   startWith: { ar: 'ابدأ بباقة {plan}', en: 'Start with {plan}', he: 'התחילו עם {plan}' },
   reset: { ar: 'ابدأ من جديد', en: 'Start over', he: 'להתחיל מחדש' },
+  // 2026-11-08: the compact layout (feature groups fold; the cost breakdown folds under the answer)
+  q2pick: { ar: 'افتح القسم الذي يهمك واختر فقط ما ستستخدمه.', en: 'Open the parts that matter to you and pick only what you’ll use.', he: 'פתחו את התחומים שחשובים לכם ובחרו רק מה שתשתמשו בו.' },
+  basicsTitle: { ar: 'ما تشمله كل الباقات', en: 'What every plan already includes', he: 'מה כל חבילה כבר כוללת' },
+  picked: { ar: '{n} مختارة', en: '{n} picked', he: '{n} נבחרו' },
+  breakdown: { ar: 'تفاصيل التكلفة: Basic مقابل Pro', en: 'Cost breakdown: Basic vs Pro', he: 'פירוט העלות: Basic מול Pro' },
 };
 const L = (o, lang) => (o && (o[lang] || o.en)) || '';
 export const finderLink = lang => L(W.jump, lang);
@@ -115,8 +120,9 @@ export function applyLink(m) {
 
 // ── State (kept across re-renders: the page repaints when the period or currency changes) ───────────────────────────
 const KEY = 'salonieer_plan_finder';
-const S = { n: 1, picked: [], custom: false };
-try { const s = JSON.parse(sessionStorage.getItem(KEY) || 'null'); if (s) { S.n = clampN(s.n); S.picked = Array.isArray(s.picked) ? s.picked.filter(k => KIND[k]) : []; S.custom = s.custom === true; } } catch {}
+// open: the feature groups the visitor opened; brk: the cost breakdown is open (kept when the page repaints).
+const S = { n: 1, picked: [], custom: false, open: [], brk: false };
+try { const s = JSON.parse(sessionStorage.getItem(KEY) || 'null'); if (s) { S.n = clampN(s.n); S.picked = Array.isArray(s.picked) ? s.picked.filter(k => KIND[k]) : []; S.custom = s.custom === true; S.open = Array.isArray(s.open) ? s.open.filter(g => GROUPS.some(([id]) => id === g)) : []; S.brk = s.brk === true; } } catch {}
 const save = () => { try { sessionStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
 
 // ── The section ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -126,17 +132,20 @@ export function planFinder(ctx) {
   if (!planMath(ctx.catalog, S)) return '';
   const basics = PLAN_FEATURES.filter(f => f.included === 'all' && f.key !== 'specialists')
     .map(f => esc(L(f.t, lang)) + (f.key === 'statistics' ? ` (${esc(L(W.last30, lang))})` : '')).join(' · ');
-  const chip = k => `<label class="pf-chip" title="${esc(featureText(k, lang))}"><input type="checkbox" name="pf-need" value="${k}"${S.picked.includes(k) ? ' checked' : ''}><span>${esc(featureName(k, lang))}</span></label>`;
+  const chip = k => `<label class="pf-chip"><input type="checkbox" name="pf-need" value="${k}"${S.picked.includes(k) ? ' checked' : ''}><span><b>${esc(featureName(k, lang))}</b><small>${esc(featureText(k, lang))}</small></span></label>`;
+  // Each group of features folds away; its title says how many are picked, so a closed group still shows the choice.
+  const group = ([id, keys]) => { const n = keys.filter(k => S.picked.includes(k)).length;
+    return `<details class="pf-acc" data-pf-group="${id}"${S.open.includes(id) ? ' open' : ''}><summary><span class="pf-acc-title">${esc(L(W.groups[id], lang))}</span><span class="pf-acc-count" data-pf-count="${id}"${n ? '' : ' hidden'}>${esc(L(W.picked, lang).replace('{n}', String(n)))}</span><span class="pf-acc-sub">${esc(keys.map(k => featureName(k, lang)).join(' · '))}</span></summary><div class="pf-chips">${keys.map(chip).join('')}</div></details>`; };
   return `<section class="plan-finder" id="finder" aria-labelledby="pf-title">
     <div class="pf-head"><h2 id="pf-title">${esc(L(W.title, lang))}</h2><p class="pf-lead">${esc(L(W.lead, lang))}</p></div>
     <div class="pf-grid">
       <div class="pf-form" role="group" aria-labelledby="pf-title">
-        <div class="pf-q"><label class="pf-label" for="pf-n">${esc(L(W.q1, lang))}</label>
-          <div class="pf-stepper"><button type="button" class="pf-step" data-pf-step="-1" aria-label="${esc(L(W.fewer, lang))}" aria-controls="pf-n">−</button><input id="pf-n" type="number" inputmode="numeric" min="1" max="${MAX_SPECIALISTS}" step="1" value="${S.n}" dir="ltr" aria-describedby="pf-n-hint"><button type="button" class="pf-step" data-pf-step="1" aria-label="${esc(L(W.more, lang))}" aria-controls="pf-n">+</button></div>
-          <p class="pf-hint" id="pf-n-hint">${esc(L(W.q1hint, lang))}</p></div>
-        <fieldset class="pf-q"><legend class="pf-label">${esc(L(W.q2, lang))}</legend>
-          <p class="pf-hint">${esc(L(W.q2hint, lang))} ${basics}.</p>
-          ${GROUPS.map(([id, keys]) => `<div class="pf-group"><p class="pf-group-title">${esc(L(W.groups[id], lang))}</p><div class="pf-chips">${keys.map(chip).join('')}</div></div>`).join('')}</fieldset>
+        <div class="pf-q pf-q-n"><label class="pf-label" for="pf-n">${esc(L(W.q1, lang))}</label>
+          <div class="pf-n-row"><div class="pf-stepper"><button type="button" class="pf-step" data-pf-step="-1" aria-label="${esc(L(W.fewer, lang))}" aria-controls="pf-n">−</button><input id="pf-n" type="number" inputmode="numeric" min="1" max="${MAX_SPECIALISTS}" step="1" value="${S.n}" dir="ltr" aria-describedby="pf-n-hint"><button type="button" class="pf-step" data-pf-step="1" aria-label="${esc(L(W.more, lang))}" aria-controls="pf-n">+</button></div>
+          <p class="pf-hint" id="pf-n-hint">${esc(L(W.q1hint, lang))}</p></div></div>
+        <div class="pf-q"><p class="pf-label" id="pf-q2">${esc(L(W.q2, lang))}</p><p class="pf-hint pf-q2-hint">${esc(L(W.q2pick, lang))}</p>
+          <div class="pf-accs" role="group" aria-labelledby="pf-q2">${GROUPS.map(group).join('')}</div>
+          <details class="pf-basics"><summary>${esc(L(W.basicsTitle, lang))}</summary><p>${basics}.</p></details></div>
         <label class="pf-custom"><input type="checkbox" id="pf-custom"${S.custom ? ' checked' : ''}><span>${esc(L(W.q3, lang))}</span></label>
         <button type="button" class="text-link pf-reset" id="pf-reset">${esc(L(W.reset, lang))}</button>
       </div>
@@ -178,14 +187,18 @@ function resultHTML(ctx) {
       <p class="pf-total">${pickTotal === null ? esc(t('byAgreement')) : ctx.shownPrice(per(pickTotal), periodSmall)}</p>${other}
       <p class="pf-why">${why}</p>
       <a class="btn primary" id="pf-cta" href="${esc(applyLink(m))}">${cta}</a></div>
-    <div class="pf-cards">${card('basic')}${card('pro')}</div>`;
+    <details class="pf-break" id="pf-break"${S.brk ? ' open' : ''}><summary>${esc(L(W.breakdown, lang))}</summary><div class="pf-cards">${card('basic')}${card('pro')}</div></details>`;
 }
 
 export function bindPlanFinder(ctx) {
   const root = document.getElementById('finder');
   if (!root) return;
   const out = document.getElementById('pf-result'), input = document.getElementById('pf-n');
-  const update = () => { save(); out.innerHTML = resultHTML(ctx); };
+  const keepBreak = () => out.querySelector('#pf-break')?.addEventListener('toggle', e => { S.brk = e.target.open; save(); });
+  const counts = () => GROUPS.forEach(([id, keys]) => { const el = root.querySelector(`[data-pf-count="${id}"]`), n = keys.filter(k => S.picked.includes(k)).length; if (el) { el.textContent = L(W.picked, ctx.lang).replace('{n}', String(n)); el.hidden = !n; } });
+  const update = () => { save(); counts(); out.innerHTML = resultHTML(ctx); keepBreak(); };
+  keepBreak();
+  root.querySelectorAll('.pf-acc').forEach(d => d.addEventListener('toggle', () => { S.open = [...root.querySelectorAll('.pf-acc[open]')].map(x => x.dataset.pfGroup); save(); }));
   input.addEventListener('input', () => { if (input.value.trim() === '') return; S.n = clampN(input.value); update(); });
   input.addEventListener('change', () => { S.n = clampN(input.value); input.value = S.n; update(); });
   root.querySelectorAll('[data-pf-step]').forEach(b => b.addEventListener('click', () => { S.n = clampN(S.n + Number(b.dataset.pfStep)); input.value = S.n; update(); }));
@@ -194,7 +207,8 @@ export function bindPlanFinder(ctx) {
   }));
   document.getElementById('pf-custom').addEventListener('change', e => { S.custom = e.target.checked; update(); });
   document.getElementById('pf-reset').addEventListener('click', () => {
-    S.n = 1; S.picked = []; S.custom = false; input.value = 1;
-    root.querySelectorAll('input[type="checkbox"]').forEach(x => { x.checked = false; }); update(); input.focus();
+    S.n = 1; S.picked = []; S.custom = false; S.open = []; input.value = 1;
+    root.querySelectorAll('input[type="checkbox"]').forEach(x => { x.checked = false; });
+    root.querySelectorAll('.pf-acc[open]').forEach(x => { x.open = false; }); update(); input.focus();
   });
 }

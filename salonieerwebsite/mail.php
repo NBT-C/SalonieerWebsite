@@ -203,35 +203,45 @@ function pollReplies(): int {
 // ---- Templates ------------------------------------------------------------------------------------------------------
 function mailCopy(string $template, string $lang): array {
     $c = [
+        // 2026-11-08: no approval step: a business goes live when its payment is confirmed (a few are checked first).
         'received' => [
-            'en' => ['We received your application', "Thank you! We received your application for {salon} ({plan} plan). Reference: {ref}.\n\n{payline}\n\nApproval usually takes up to one day once payment is confirmed. You can follow it any time on your Applications page."],
-            'ar' => ['استلمنا طلبك', "شكراً لك! استلمنا طلبك لـ {salon} (باقة {plan}). رقم المرجع: {ref}.\n\n{payline}\n\nتتم الموافقة عادةً خلال يوم واحد كحد أقصى بعد تأكيد الدفع. يمكنك متابعة الطلب في أي وقت من صفحة طلباتي."],
-            'he' => ['קיבלנו את הבקשה שלך', "תודה! קיבלנו את הבקשה עבור {salon} (חבילת {plan}). אסמכתא: {ref}.\n\n{payline}\n\nהאישור לוקח בדרך כלל עד יום אחד לאחר אישור התשלום. אפשר לעקוב בדף הבקשות."]],
+            'en' => ['We saved your business details', "Thank you! We saved the details of {salon} ({plan} plan). Reference: {ref}.\n\n{payline}\n\nYou can follow everything on your account page: {site}/account"],
+            'ar' => ['حفظنا بيانات عملك', "شكراً لك! حفظنا بيانات {salon} (باقة {plan}). رقم المرجع: {ref}.\n\n{payline}\n\nيمكنك متابعة كل شيء من صفحة حسابك: {site}/account"],
+            'he' => ['שמרנו את פרטי העסק', "תודה! שמרנו את פרטי {salon} (חבילת {plan}). אסמכתא: {ref}.\n\n{payline}\n\nאפשר לעקוב אחרי הכול בדף החשבון: {site}/account"]],
         'payment_received' => [
-            'en' => ['Payment received — awaiting approval', "We received the payment for {salon} ({ref}). Your application is now awaiting approval, which usually takes up to one day. We'll email you as soon as your business is ready."],
-            'ar' => ['تم استلام الدفع — بانتظار الموافقة', "استلمنا الدفع لـ {salon} ({ref}). طلبك الآن بانتظار الموافقة، وتستغرق عادةً يوماً واحداً كحد أقصى. سنراسلك فور تجهيز منشأتك."],
-            'he' => ['התשלום התקבל — ממתין לאישור', "קיבלנו את התשלום עבור {salon} ({ref}). הבקשה ממתינה כעת לאישור, שלוקח בדרך כלל עד יום אחד. נשלח לך דוא״ל ברגע שהעסק יהיה מוכן."]],
+            'en' => ['Payment received — publishing {salon}', "We received the payment for {salon} ({ref}). Your business usually goes live within minutes; if our team needs to take a quick look first, it can take up to a day. We'll email you as soon as it's ready."],
+            'ar' => ['تم استلام الدفع — جارٍ نشر {salon}', "استلمنا الدفع لـ {salon} ({ref}). يُنشر عملك عادةً خلال دقائق؛ وإذا احتاج فريقنا إلى نظرة سريعة أولاً فقد يستغرق ذلك حتى يوم. سنراسلك فور جاهزيته."],
+            'he' => ['התשלום התקבל — מפרסמים את {salon}', "קיבלנו את התשלום עבור {salon} ({ref}). העסק עולה בדרך כלל לאוויר תוך דקות; אם הצוות שלנו צריך לבדוק קודם, זה עשוי לקחת עד יום. נשלח לך מייל ברגע שהוא מוכן."]],
         'needs_info' => [
-            'en' => ['We need a little more information', "To continue with your application for {salon} ({ref}), we need the following:\n\n{body}\n\nJust reply to this email, or answer on your Applications page."],
-            'ar' => ['نحتاج بعض المعلومات الإضافية', "لمتابعة طلبك لـ {salon} ({ref}) نحتاج ما يلي:\n\n{body}\n\nيمكنك الرد على هذا البريد مباشرة، أو الإجابة من صفحة طلباتي."],
-            'he' => ['נדרש מעט מידע נוסף', "כדי להמשיך בבקשה עבור {salon} ({ref}) נצטרך את הפרטים הבאים:\n\n{body}\n\nאפשר להשיב לדוא״ל הזה או לענות בדף הבקשות."]],
+            'en' => ['We need a little more information', "To publish {salon} ({ref}), we need the following:\n\n{body}\n\nJust reply to this email, or answer on your account page."],
+            'ar' => ['نحتاج بعض المعلومات الإضافية', "لنشر {salon} ({ref}) نحتاج ما يلي:\n\n{body}\n\nيمكنك الرد على هذا البريد مباشرة، أو الإجابة من صفحة حسابك."],
+            'he' => ['נדרש מעט מידע נוסף', "כדי לפרסם את {salon} ({ref}) נצטרך את הפרטים הבאים:\n\n{body}\n\nאפשר להשיב לדוא״ל הזה או לענות בדף החשבון."]],
         'message' => [
-            'en' => ['A message about your application', "{body}\n\n— METON ({ref})\nYou can reply to this email."],
-            'ar' => ['رسالة بخصوص طلبك', "{body}\n\n— METON ({ref})\nيمكنك الرد على هذا البريد."],
-            'he' => ['הודעה בנוגע לבקשה שלך', "{body}\n\n— METON ({ref})\nאפשר להשיב לדוא״ל הזה."]],
+            'en' => ['A message about your business', "{body}\n\n— METON ({ref})\nYou can reply to this email."],
+            'ar' => ['رسالة بخصوص عملك', "{body}\n\n— METON ({ref})\nيمكنك الرد على هذا البريد."],
+            'he' => ['הודעה בנוגע לעסק שלך', "{body}\n\n— METON ({ref})\nאפשר להשיב לדוא״ל הזה."]],
         'approved' => [
-            'en' => ['Your business is ready', "Great news — {salon} is approved and ready in the METON app.\n\nBusiness code: {code}\nPlan: {plan}\n\nTo manage your business:\n1. Install METON (App Store / Google Play) and tap Log In.\n2. Sign in with phone {phone} and the temporary password {password}. Your business appears in My Businesses as yours (business code {code}).\n3. Change the password from My Account after signing in.\nAlready have a METON account with this number? Add the business with the code {code} or the QR on your account page and enter the temporary password once to link it.\n\nYour account page shows all your business details and its QR code: {site}/account"],
-            'ar' => ['منشأتك جاهزة', "خبر سعيد — تمت الموافقة على {salon} وأصبح جاهزاً في تطبيق METON.\n\nرمز المنشأة: {code}\nالباقة: {plan}\n\nلإدارة عملك:\n1. ثبّت تطبيق METON واضغط «تسجيل الدخول».\n2. سجّل الدخول برقم الهاتف {phone} وكلمة المرور المؤقتة {password}، فتظهر منشأتك في «أعمالي» كمنشأة تملكها (رمز المنشأة {code}).\n3. غيّر كلمة المرور من «حسابي» بعد الدخول.\nلديك حساب METON بهذا الرقم؟ أضف المنشأة بالرمز {code} أو برمز QR في صفحة حسابك وأدخل كلمة المرور المؤقتة مرة واحدة لربطه.\n\nتجد كل تفاصيل منشأتك ورمز QR في صفحة حسابك: {site}/account"],
-            'he' => ['העסק שלך מוכן', "חדשות טובות — {salon} אושר ומוכן ביישום METON.\n\nקוד העסק: {code}\nחבילה: {plan}\n\nכדי לנהל את העסק:\n1. התקינו את METON ולחצו על ״התחברות״.\n2. התחברו עם הטלפון {phone} והסיסמה הזמנית {password}. העסק יופיע ב״העסקים שלי״ כעסק שלכם (קוד העסק {code}).\n3. שנו את הסיסמה מ״החשבון שלי״ לאחר הכניסה.\nכבר יש לכם חשבון METON עם המספר הזה? הוסיפו את העסק עם הקוד {code} או ה־QR בדף החשבון והזינו את הסיסמה הזמנית פעם אחת כדי לקשר אותו.\n\nכל פרטי העסק וקוד ה־QR בדף החשבון: {site}/account"]],
+            'en' => ['Your business is ready', "Great news — {salon} is live and ready in the METON app.\n\nBusiness code: {code}\nPlan: {plan}\n\nTo manage your business:\n1. Install METON (App Store / Google Play) and tap Log In.\n2. Sign in with phone {phone} and the temporary password {password}. Your business appears in My Businesses as yours (business code {code}).\n3. Change the password from My Account after signing in.\nAlready have a METON account with this number? Add the business with the code {code} or the QR on your account page and enter the temporary password once to link it.\n\nYour account page shows all your business details and its QR code: {site}/account"],
+            'ar' => ['منشأتك جاهزة', "خبر سعيد — {salon} منشور وجاهز في تطبيق METON.\n\nرمز المنشأة: {code}\nالباقة: {plan}\n\nلإدارة عملك:\n1. ثبّت تطبيق METON واضغط «تسجيل الدخول».\n2. سجّل الدخول برقم الهاتف {phone} وكلمة المرور المؤقتة {password}، فتظهر منشأتك في «أعمالي» كمنشأة تملكها (رمز المنشأة {code}).\n3. غيّر كلمة المرور من «حسابي» بعد الدخول.\nلديك حساب METON بهذا الرقم؟ أضف المنشأة بالرمز {code} أو برمز QR في صفحة حسابك وأدخل كلمة المرور المؤقتة مرة واحدة لربطه.\n\nتجد كل تفاصيل منشأتك ورمز QR في صفحة حسابك: {site}/account"],
+            'he' => ['העסק שלך מוכן', "חדשות טובות — {salon} באוויר ומוכן באפליקציית METON.\n\nקוד העסק: {code}\nחבילה: {plan}\n\nכדי לנהל את העסק:\n1. התקינו את METON ולחצו על ״התחברות״.\n2. התחברו עם הטלפון {phone} והסיסמה הזמנית {password}. העסק יופיע ב״העסקים שלי״ כעסק שלכם (קוד העסק {code}).\n3. שנו את הסיסמה מ״החשבון שלי״ לאחר הכניסה.\nכבר יש לכם חשבון METON עם המספר הזה? הוסיפו את העסק עם הקוד {code} או ה־QR בדף החשבון והזינו את הסיסמה הזמנית פעם אחת כדי לקשר אותו.\n\nכל פרטי העסק וקוד ה־QR בדף החשבון: {site}/account"]],
         // 2.40: the owner signs in with their own METON account (no temporary password).
         'approved_account' => [
-            'en' => ['Your business is ready', "Great news — {salon} is approved and ready in the METON app.\n\nBusiness code: {code}\nPlan: {plan}\n\nTo manage your business:\n1. Install METON (App Store / Google Play).\n2. Sign in with your METON account using the phone number {v:phone} — no account yet? Tap Create account and use this number. (If your app asks for a business code instead, it is an older version: enter {code} and register with this number and a password of your choice.)\n3. Your business appears in My Businesses as yours (business code {code}). No business password is needed.\n\nYour account page shows all your business details and its QR code: {site}/account"],
-            'ar' => ['منشأتك جاهزة', "خبر سعيد — تمت الموافقة على {salon} وأصبح جاهزاً في تطبيق METON.\n\nرمز المنشأة: {code}\nالباقة: {plan}\n\nلإدارة عملك:\n1. ثبّت تطبيق METON.\n2. سجّل الدخول بحساب METON الخاص بك برقم الهاتف {v:phone} — ليس لديك حساب؟ اضغط «إنشاء حساب» واستخدم هذا الرقم. (إذا طلب التطبيق رمز المنشأة بدلاً من ذلك فهو نسخة أقدم: أدخل {code} وسجّل بهذا الرقم وبكلمة مرور تختارها.)\n3. تظهر منشأتك في «أعمالي» كمنشأة تملكها (رمز المنشأة {code})، دون أي كلمة مرور للمنشأة.\n\nتجد كل تفاصيل منشأتك ورمز QR في صفحة حسابك: {site}/account"],
-            'he' => ['העסק שלך מוכן', "חדשות טובות — {salon} אושר ומוכן ביישום METON.\n\nקוד העסק: {code}\nחבילה: {plan}\n\nכדי לנהל את העסק:\n1. התקינו את METON.\n2. היכנסו עם חשבון ה־METON שלכם במספר הטלפון {v:phone} — אין חשבון? לחצו על ״יצירת חשבון״ והשתמשו במספר הזה. (אם היישום מבקש קוד עסק במקום זאת, זו גרסה ישנה: הזינו {code} והירשמו עם המספר הזה וסיסמה לבחירתכם.)\n3. העסק יופיע ב״העסקים שלי״ כעסק שלכם (קוד העסק {code}), בלי סיסמה לעסק.\n\nכל פרטי העסק וקוד ה־QR בדף החשבון: {site}/account"]],
+            'en' => ['Your business is ready', "Great news — {salon} is live and ready in the METON app.\n\nBusiness code: {code}\nPlan: {plan}\n\nTo manage your business:\n1. Install METON (App Store / Google Play).\n2. Sign in with your METON account using the phone number {v:phone} — no account yet? Tap Create account and use this number. (If your app asks for a business code instead, it is an older version: enter {code} and register with this number and a password of your choice.)\n3. Your business appears in My Businesses as yours (business code {code}). No business password is needed.\n\nYour account page shows all your business details and its QR code: {site}/account"],
+            'ar' => ['منشأتك جاهزة', "خبر سعيد — {salon} منشور وجاهز في تطبيق METON.\n\nرمز المنشأة: {code}\nالباقة: {plan}\n\nلإدارة عملك:\n1. ثبّت تطبيق METON.\n2. سجّل الدخول بحساب METON الخاص بك برقم الهاتف {v:phone} — ليس لديك حساب؟ اضغط «إنشاء حساب» واستخدم هذا الرقم. (إذا طلب التطبيق رمز المنشأة بدلاً من ذلك فهو نسخة أقدم: أدخل {code} وسجّل بهذا الرقم وبكلمة مرور تختارها.)\n3. تظهر منشأتك في «أعمالي» كمنشأة تملكها (رمز المنشأة {code})، دون أي كلمة مرور للمنشأة.\n\nتجد كل تفاصيل منشأتك ورمز QR في صفحة حسابك: {site}/account"],
+            'he' => ['העסק שלך מוכן', "חדשות טובות — {salon} באוויר ומוכן באפליקציית METON.\n\nקוד העסק: {code}\nחבילה: {plan}\n\nכדי לנהל את העסק:\n1. התקינו את METON.\n2. היכנסו עם חשבון ה־METON שלכם במספר הטלפון {v:phone} — אין חשבון? לחצו על ״יצירת חשבון״ והשתמשו במספר הזה. (אם היישום מבקש קוד עסק במקום זאת, זו גרסה ישנה: הזינו {code} והירשמו עם המספר הזה וסיסמה לבחירתכם.)\n3. העסק יופיע ב״העסקים שלי״ כעסק שלכם (קוד העסק {code}), בלי סיסמה לעסק.\n\nכל פרטי העסק וקוד ה־QR בדף החשבון: {site}/account"]],
         'declined' => [
-            'en' => ['About your application', "We're sorry — we can't approve the application for {salon} ({ref}) at this time.\n\n{body}\n\nIf you have questions, just reply to this email."],
-            'ar' => ['بخصوص طلبك', "نأسف — لا يمكننا الموافقة على طلب {salon} ({ref}) حالياً.\n\n{body}\n\nإذا كان لديك أي سؤال، رد على هذا البريد."],
-            'he' => ['בנוגע לבקשה שלך', "מצטערים — לא נוכל לאשר כרגע את הבקשה עבור {salon} ({ref}).\n\n{body}\n\nלשאלות, פשוט השיבו לדוא״ל הזה."]],
+            'en' => ['About {salon}', "We're sorry — we can't publish {salon} ({ref}) at this time.\n\n{body}\n\nIf you have questions, just reply to this email."],
+            'ar' => ['بخصوص {salon}', "نأسف — لا يمكننا نشر {salon} ({ref}) حالياً.\n\n{body}\n\nإذا كان لديك أي سؤال، رد على هذا البريد."],
+            'he' => ['בנוגע ל־{salon}', "מצטערים — לא נוכל לפרסם כרגע את {salon} ({ref}).\n\n{body}\n\nלשאלות, פשוט השיבו לדוא״ל הזה."]],
+        // ---- 2.45: emails to one address (website_outbox recipient 'direct', the address in vars.to) ----
+        'email_code' => [
+            'en' => ['Your METON code: {v:code}', "Hello {v:name},\n\nYour code to confirm this email address in your METON account: {v:code}\n\nIt expires in 10 minutes. If you didn't ask for it, you can ignore this email."],
+            'ar' => ['رمز METON الخاص بك: {v:code}', "مرحباً {v:name}،\n\nرمزك لتأكيد هذا البريد الإلكتروني في حسابك على METON: {v:code}\n\nتنتهي صلاحيته بعد 10 دقائق. إذا لم تطلبه يمكنك تجاهل هذه الرسالة."],
+            'he' => ['הקוד שלך ב-METON: {v:code}', "שלום {v:name},\n\nהקוד לאישור כתובת המייל בחשבון METON שלך: {v:code}\n\nהוא בתוקף ל-10 דקות. אם לא ביקשת אותו, אפשר להתעלם מהמייל."]],
+        'team_invite' => [
+            'en' => ['{v:inviter} invited you to join {v:salon} on METON', "{v:inviter} invited you to join the team of {v:salon} on METON as {v:role}.\n\nTo accept or decline:\n1. Open the METON app (App Store / Google Play) and sign in, or create your account.\n2. In My Account, add this email address ({v:to}) and confirm it with the code we send you.\n3. The invitation then appears in Team invitations: accept or decline it.\n\nNothing changes until you accept. The invitation is valid until {v:expires}."],
+            'ar' => ['{v:inviter} يدعوك للانضمام إلى {v:salon} على METON', "دعاك {v:inviter} للانضمام إلى فريق {v:salon} على METON بدور {v:role}.\n\nلقبول الدعوة أو رفضها:\n1. افتح تطبيق METON (App Store / Google Play) وسجّل الدخول أو أنشئ حسابك.\n2. من «حسابي» أضف هذا البريد الإلكتروني ({v:to}) وأكّده بالرمز الذي نرسله إليك.\n3. تظهر الدعوة بعدها في «دعوات الفريق»: اقبلها أو ارفضها.\n\nلا يتغير شيء حتى تقبل. الدعوة صالحة حتى {v:expires}."],
+            'he' => ['{v:inviter} הזמין/ה אותך להצטרף ל־{v:salon} ב-METON', "{v:inviter} הזמין/ה אותך להצטרף לצוות של {v:salon} ב-METON בתפקיד {v:role}.\n\nכדי לאשר או לדחות:\n1. פתחו את אפליקציית METON (App Store / Google Play) והתחברו, או צרו חשבון.\n2. ב״החשבון שלי״ הוסיפו את כתובת המייל הזו ({v:to}) ואשרו אותה עם הקוד שנשלח אליכם.\n3. ההזמנה תופיע ב״הזמנות לצוות״: אשרו או דחו אותה.\n\nשום דבר לא משתנה עד שתאשרו. ההזמנה בתוקף עד {v:expires}."]],
         // ---- Billing (website_billing.sql / billing.php) ----
         'payment_failed' => [
             'en' => ['Payment failed — {days} days left for {salon}', "We couldn't charge your card for the {salon} subscription.\n\nPlease pay within {days} days (by {date}) or {salon} will be paused: customers won't be able to book and your team won't be able to sign in. Nothing is deleted, and paying reopens it right away.\n\nUpdate your card and pay: {site}/account"],
@@ -347,13 +357,15 @@ Cleanup settings: {site}/admin/cleanup"]],
 function renderMail(array $item): array {
     $a = $item['application'] ?? [];
     $admin = $item['recipient'] === 'admin';
-    $lang = $admin ? 'en' : (in_array($a['lang'] ?? '', ['en','ar','he'], true) ? $a['lang'] : 'en');
+    // An email to one address (2.45) carries its own language.
+    $direct = $item['recipient'] === 'direct';
+    $lang = $admin ? 'en' : (in_array($direct ? ($item['vars']['lang'] ?? '') : ($a['lang'] ?? ''), ['en','ar','he'], true) ? ($direct ? $item['vars']['lang'] : $a['lang']) : 'en');
     [$subject, $body] = mailCopy($item['template'], $lang);
     $q = $a['quote'] ?? [];
     $paid = in_array($a['paymentStatus'] ?? '', ['paid','test_paid'], true);
-    $paylines = ['en'=>[$paid?'Payment is confirmed.':(($a['paymentMethod'] ?? '')==='card'?'Complete the card payment on your Applications page to start the review.':'We will contact you with the bank transfer details.')],
-        'ar'=>[$paid?'تم تأكيد الدفع.':(($a['paymentMethod'] ?? '')==='card'?'أكمل الدفع بالبطاقة من صفحة طلباتي لبدء المراجعة.':'سنتواصل معك بتفاصيل التحويل البنكي.')],
-        'he'=>[$paid?'התשלום אושר.':(($a['paymentMethod'] ?? '')==='card'?'השלימו את התשלום בכרטיס בדף הבקשות כדי להתחיל בבדיקה.':'ניצור קשר עם פרטי ההעברה הבנקאית.')]];
+    $paylines = ['en'=>[$paid?'Payment is confirmed.':(($a['paymentMethod'] ?? '')==='card'?'Complete the card payment on your account page to publish your business.':'We will send you the bank transfer details. Your business goes live once the transfer arrives.')],
+        'ar'=>[$paid?'تم تأكيد الدفع.':(($a['paymentMethod'] ?? '')==='card'?'أكمل الدفع بالبطاقة من صفحة حسابك لنشر عملك.':'سنرسل إليك تفاصيل التحويل البنكي. يُنشر عملك بعد وصول التحويل.')],
+        'he'=>[$paid?'התשלום אושר.':(($a['paymentMethod'] ?? '')==='card'?'השלימו את התשלום בכרטיס בדף החשבון כדי לפרסם את העסק.':'נשלח לך את פרטי ההעברה הבנקאית. העסק עולה לאוויר כשההעברה מתקבלת.')]];
     $vars = ['{ref}'=>$a['id'] ?? '', '{salon}'=>$a['salonName'] ?? '', '{plan}'=>ucfirst((string)($a['plan'] ?? '')), '{name}'=>$a['fullName'] ?? '',
         '{email}'=>$a['email'] ?? '', '{phone}'=>($item['template']==='approved' ? ($a['ownerPhone'] ?? '') : ($a['phone'] ?? '')),
         '{method}'=>($a['paymentMethod'] ?? '')==='card'?'card':'bank transfer', '{payment}'=>str_replace('_',' ',(string)($a['paymentStatus'] ?? '')).(!empty($item['vars']['test'])?' (TEST, no charge)':''),
@@ -366,14 +378,14 @@ function renderMail(array $item): array {
     $vars += billingMailVars($item, $lang);
     // {v:name} = a value queued with the email itself (problem reports, cleanup notices).
     foreach (($item['vars'] ?? []) as $k => $v) if (is_string($k) && is_scalar($v)) $vars['{v:'.$k.'}'] = (string)$v;
-    $subject = strtr($subject, $vars).' · '.($a['id'] ?? 'METON');
+    $subject = strtr($subject, $vars).($direct ? '' : ' · '.($a['id'] ?? 'METON'));
     $text = strtr($body, $vars);
     $dir = $lang === 'en' ? 'ltr' : 'rtl';
     $safe = nl2br(htmlspecialchars($text, ENT_QUOTES|ENT_HTML5, 'UTF-8'));
     $safe = preg_replace('~(https://[^\s<]+)~', '<a href="$1">$1</a>', $safe);
     $html = '<!doctype html><html lang="'.$lang.'" dir="'.$dir.'"><body style="margin:0;background:#f4f1ea;font-family:Arial,Helvetica,sans-serif;color:#1d1d1b">'
         .'<div style="max-width:560px;margin:0 auto;padding:28px 18px"><div style="background:#fff;border-radius:16px;padding:28px;line-height:1.7;font-size:15px;text-align:'.($dir==='rtl'?'right':'left').'">'
-        .'<div style="font-weight:700;letter-spacing:.08em;color:#1a88a4;margin-bottom:14px">SALONIEER</div>'.$safe.'</div>'
+        .'<div style="font-weight:800;letter-spacing:.08em;color:#241D28;margin-bottom:14px">METON</div>'.$safe.'</div>'
         .'<p style="font-size:12px;color:#8a857b;text-align:center;margin-top:16px">METON · '.htmlspecialchars(siteUrl()).'</p></div></body></html>';
     return [$subject, $html, $text];
 }
@@ -430,7 +442,8 @@ function mailWork(int $minSeconds = 60, bool $verbose = false): array {
             if (!$batch) break;
             foreach ($batch as $item) {
                 try {
-                    $to = $item['recipient'] === 'admin' ? adminAlertEmails() : (string)($item['application']['email'] ?? '');
+                    $to = $item['recipient'] === 'admin' ? adminAlertEmails()
+                        : ($item['recipient'] === 'direct' ? (filter_var((string)($item['vars']['to'] ?? ''), FILTER_VALIDATE_EMAIL) ?: '') : (string)($item['application']['email'] ?? ''));
                     // A salon billed by an admin may have no owner email on file: nothing to send to.
                     if ($to === '' || $to === []) { sbRpc('website_outbox_finish', ['p_id'=>$item['id'], 'p_ok'=>true, 'p_error'=>'no recipient']); continue; }
                     [$subject, $html, $text] = renderMail($item);

@@ -7,7 +7,7 @@ import { salonsView, salonView, newSalonView } from './salons.js';
 import { plansView, teamView, activityView, serviceView } from './platform.js';
 import { financeView, requestsView, discountsView } from './finance.js';
 import { billingView } from './billing.js';
-import { reportsView, cleanupView, reviewBadge, reviewPanel } from './ops.js';
+import { reportsView, cleanupView, reviewBadge, reviewPanel, reviewView, countReview } from './ops.js';
 import { faqView, appVersionsView } from './help.js';
 import { paymentsView } from './payments.js';
 import { accountsView } from './accounts.js';
@@ -86,6 +86,7 @@ export const qrSvg = text => window.SalonQR ? window.SalonQR.svg(text) : '';
 // ---- Shell ---------------------------------------------------------------------------------------------------------
 const NAV = [
   ['', 'navOverview', 'M3 12l9-8 9 8M5 10v10h14V10'],
+  ['review', 'navReview', 'M12 3.5 19 6v5.5c0 4.4-3 7.8-7 9-4-1.2-7-4.6-7-9V6zM9 12l2.2 2.2L15.5 10'],
   ['applications', 'navApplications', 'M4 4h16v16H4zM8 9h8M8 13h8M8 17h5'],
   ['salons', 'navSalons', 'M4 20V9l8-5 8 5v11M9 20v-6h6v6'],
 ['accounts', 'navAccounts', 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c0-3.3 3.6-6 8-6s8 2.7 8 6', true],
@@ -122,7 +123,7 @@ export function adminShell(c) {
 function drawNav() {
   const here = segments()[0] || '';
   document.getElementById('ap-nav').innerHTML = NAV.filter(n => !n[3] || isOwner()).map(([path, key, d]) =>
-    `<a class="ap-nav-item${here === path ? ' is-current' : ''}" href="/admin${path ? '/' + path : ''}"${here === path ? ' aria-current="page"' : ''}>${icon(d)}<span>${esc(T(key))}</span>${path === 'applications' ? '<i class="ap-count" id="ap-app-count" hidden></i>' : path === 'requests' ? '<i class="ap-count" id="ap-req-count" hidden></i>' : path === 'reports' ? '<i class="ap-count" id="ap-rep-count" hidden></i>' : ''}</a>`).join('');
+    `<a class="ap-nav-item${here === path ? ' is-current' : ''}" href="/admin${path ? '/' + path : ''}"${here === path ? ' aria-current="page"' : ''}>${icon(d)}<span>${esc(T(key))}</span>${path === 'review' ? '<i class="ap-count" id="ap-rev-count" hidden></i>' : path === 'applications' ? '<i class="ap-count" id="ap-app-count" hidden></i>' : path === 'requests' ? '<i class="ap-count" id="ap-req-count" hidden></i>' : path === 'reports' ? '<i class="ap-count" id="ap-rep-count" hidden></i>' : ''}</a>`).join('');
   document.getElementById('ap-account').innerHTML = me ? `<span class="ap-account-who"><b>${esc(sb.sessionEmail())}</b><small>${esc(T(me.role === 'owner' ? 'roleOwner' : 'roleManager'))}</small></span><button class="ap-signout" id="ap-signout" type="button">${esc(T('signOutPlatform'))}</button>` : '';
   document.getElementById('ap-signout')?.addEventListener('click', async () => { await sb.signOut(); me = null; mount(); });
 }
@@ -158,11 +159,13 @@ async function mount() {
   if (!me || !['owner', 'manager'].includes(me.role)) { await sb.signOut(); me = null; return signInView(T('errNotStaff')); }
   drawNav();
   countApplications();
+  countReview();
   if (isOwner()) countRequests();
   countReports();
   const [first, second] = segments();
   try {
     if (!first) await overview();
+    else if (first === 'review') await reviewView();
     else if (first === 'applications') await (second ? applicationView(second) : applicationsView());
     else if (first === 'salons') await (second === 'new' ? newSalonView() : second ? salonView(second) : salonsView());
     else if (first === 'accounts') await accountsView();
