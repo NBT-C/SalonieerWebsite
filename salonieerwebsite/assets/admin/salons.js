@@ -300,17 +300,19 @@ async function tabAccounts(host, s, reload) {
   const ownerRow = o => `<li><span><b>${esc(o.name || T('noName'))}</b><small dir="ltr">${esc(o.account?.phone || o.phone)}</small>
       <small>${esc(o.account ? T('accountLinked', { name: o.account.name }) : T('accountNotLinked'))}${o.specialist ? ' · ' + esc(T('specialistToo')) : ''}${o.last_seen ? ' · ' + esc(T('lastSeen', { date: fmtDate(o.last_seen) })) : ''}</small></span>
       ${o.disabled ? pill('danger', T('disabled')) : ''}${can ? `<button class="ap-link is-danger" type="button" data-remove="${esc(o.id)}">${esc(T('removeOwner'))}</button>` : ''}</li>`;
-  const pendingRow = g => `<li><span><b dir="ltr">${esc(g.phone)}</b><small>${esc(roleText(g.role))}${g.title ? ' · ' + esc(g.title) : ''} · ${esc(T('waitingLine', { by: g.created_by || 'METON', date: fmtDate(g.created_at) }))}</small>
-      ${g.last_error ? `<small class="ap-error-inline">${esc(T('accessError', { error: errorText({ message: g.last_error }) }))}</small>` : ''}</span>${pill('warn', T('waitingShort'))}
+  // 2.47: access by a number waits for an account that CONFIRMS it (a code); access by an email for an account that
+  // confirmed that address.
+  const pendingRow = g => `<li><span><b dir="ltr">${esc(g.phone || g.email)}</b><small>${esc(roleText(g.role))}${g.title ? ' · ' + esc(g.title) : ''} · ${esc(T('waitingLine', { by: g.created_by || 'METON', date: fmtDate(g.created_at) }))}</small>
+      ${g.last_error ? `<small class="ap-error-inline">${esc(g.last_error === 'phone_unconfirmed' ? T('accessPhoneUnconfirmed') : T('accessError', { error: errorText({ message: g.last_error }) }))}</small>` : ''}</span>${pill('warn', T('waitingShort'))}
       ${can ? `<span class="ap-row-actions"><button class="ap-link" type="button" data-retry="${esc(g.id)}">${esc(T('retryAccess'))}</button><button class="ap-link is-danger" type="button" data-cancel="${esc(g.id)}">${esc(T('cancelAccess'))}</button></span>` : ''}</li>`;
   // 2.46: access given to one METON account (the applicant's own) waits for that account's phone number, not a sign-up.
   const forWho = g => g.for ? (g.for.name || g.for.email || g.for.phone || T('noName')) : T('accountGone');
   const accountRow = g => `<li><span><b>${esc(forWho(g))}</b>${g.for?.email ? `<small dir="ltr">${esc(g.for.email)}</small>` : ''}<small>${esc(roleText(g.role))}${g.title ? ' · ' + esc(g.title) : ''} · ${esc(T('waitingLine', { by: g.created_by || 'METON', date: fmtDate(g.created_at) }))}</small>
       ${g.last_error && g.last_error !== 'phone_needed' ? `<small class="ap-error-inline">${esc(T('accessError', { error: g.last_error === 'account' ? T('accountGone') : g.last_error === 'phone_in_use' ? T('accountPhoneInUse') : errorText({ message: g.last_error }) }))}</small>` : ''}</span>${pill('warn', T('waitingShort'))}
       ${can ? `<span class="ap-row-actions"><button class="ap-link" type="button" data-retry="${esc(g.id)}">${esc(T('retryAccess'))}</button><button class="ap-link is-danger" type="button" data-cancel="${esc(g.id)}" data-for-account>${esc(T('cancelAccess'))}</button></span>` : ''}</li>`;
-  const byPhone = data.pending.filter(g => !g.for && g.phone), byAccount = data.pending.filter(g => g.for || !g.phone);
+  const byPhone = data.pending.filter(g => !g.for && (g.phone || g.email)), byAccount = data.pending.filter(g => g.for || !(g.phone || g.email));
   const memberRow = m => `<li><span><b>${esc(m.status === 'invited' ? T('memberInvitedName') : (m.name || '—'))}</b><small>${esc(roleText(m.role))}${m.title ? ' · ' + esc(m.title) : ''}${m.phone && m.status !== 'invited' ? ` · <bdi dir="ltr">${esc(m.phone)}</bdi>` : ''}</small></span>${pill(m.status === 'active' ? 'ok' : 'info', T('member_' + m.status))}</li>`;
-  const recentRow = g => `<li><span>${g.phone ? `<b dir="ltr">${esc(g.phone)}</b>` : `<b>${esc(forWho(g))}</b>`}<small>${esc(roleText(g.role))} · ${esc(g.status !== 'applied' ? T('recentCancelled') : g.account ? T('recentApplied', { name: g.account.name }) : T('recentAppliedSignup'))}</small></span><time>${esc(fmtTime(g.applied_at || g.cancelled_at || g.created_at))}</time></li>`;
+  const recentRow = g => `<li><span>${g.phone || g.email ? `<b dir="ltr">${esc(g.phone || g.email)}</b>` : `<b>${esc(forWho(g))}</b>`}<small>${esc(roleText(g.role))} · ${esc(g.status !== 'applied' ? T('recentCancelled') : g.account ? T('recentApplied', { name: g.account.name }) : T('recentAppliedSignup'))}</small></span><time>${esc(fmtTime(g.applied_at || g.cancelled_at || g.created_at))}</time></li>`;
   host.innerHTML = `<div class="ap-columns"><div class="ap-stack">
       <section class="ap-panel"><h3>${esc(T('accessOwners'))}</h3><p class="ap-quiet">${esc(T('accessOwnersLead'))}</p>
         ${data.owners.length ? `<ul class="ap-rows">${data.owners.map(ownerRow).join('')}</ul>` : `<p class="ap-quiet">${esc(T('noAdmins'))}</p>`}<p class="ap-error" role="alert"></p></section>
@@ -325,6 +327,12 @@ async function tabAccounts(host, s, reload) {
         ${field(T('accessRole'), `<select name="role">${ACCESS_ROLES.map(([v, k]) => `<option value="${v}">${esc(T(k))}</option>`).join('')}</select>`)}
         ${field(T('jobTitle'), `<input name="title" maxlength="80"><small>${esc(T('jobTitleHint'))}</small>`)}
         <p class="ap-note is-full" id="ap-who" aria-live="polite" hidden></p>
+        <div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit">${esc(T('giveAccessBtn'))}</button><p class="ap-error" role="alert"></p></div></form></section>
+      <section class="ap-panel"><h3>${esc(T('giveAccessEmail'))}</h3><p class="ap-quiet">${esc(T('giveAccessEmailLead'))}</p><form id="ap-give-email" class="ap-form-grid" novalidate>
+        ${field(T('email'), `<input name="email" type="email" dir="ltr" autocomplete="off" required maxlength="254" placeholder="name@example.com">`)}
+        ${field(T('accessRole'), `<select name="role">${ACCESS_ROLES.map(([v, k]) => `<option value="${v}">${esc(T(k))}</option>`).join('')}</select>`)}
+        ${field(T('jobTitle'), `<input name="title" maxlength="80"><small>${esc(T('jobTitleHint'))}</small>`)}
+        <p class="ap-note is-full" id="ap-who-email" aria-live="polite" hidden></p>
         <div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit">${esc(T('giveAccessBtn'))}</button><p class="ap-error" role="alert"></p></div></form></section>` : ''}
       ${data.recent.length ? `<section class="ap-panel"><h3>${esc(T('recentAccess'))}</h3><ol class="ap-feed">${data.recent.map(recentRow).join('')}</ol></section>` : ''}
     </div></div>`;
@@ -363,6 +371,8 @@ async function tabAccounts(host, s, reload) {
     const lines = [];
     const accounts = r.accounts || [];
     lines.push(accounts.length > 1 ? T('lookupTwo') : accounts.length ? T('lookupFound', { name: accounts[0].name, date: fmtDate(accounts[0].created_at) }) : r.signup_gets_it ? T('lookupSignupGets') : T('lookupNone'));
+    // 2.47: a number nobody confirmed with a code grants nothing yet (the access waits for that).
+    if (accounts.length === 1 && accounts[0].confirmed === false) lines.push(T('lookupUnconfirmed'));
     if (r.salon_row) lines.push(T('lookupRow', { name: r.salon_row.name || T('noName'), role: T('rowRole_' + r.salon_row.role), n: num(r.salon_row.bookings) }));
     if (r.member) lines.push(T('lookupMember', { role: roleText(r.member.role), status: T('member_' + r.member.status) }));
     if (r.pending) lines.push(T('lookupPending', { role: roleText(r.pending.role) }));
@@ -384,6 +394,38 @@ async function tabAccounts(host, s, reload) {
     if (!r) return;
     if (r.status === 'applied') toast(r.result?.status === 'already' ? T('accessAlready', { name: r.account?.name || r.salon_user?.name || '' }) : T('accessApplied', { name: r.account?.name || r.salon_user?.name || '' }));
     else toast(T('accessPending', { phone: r.phone || n.e164 }));
+    reload();
+  });
+
+  // 2.47: access by a confirmed email (applies when an account confirmed it, else waits for that).
+  const formE = document.getElementById('ap-give-email');
+  if (!formE) return;
+  const whoE = document.getElementById('ap-who-email');
+  const titleE = formE.elements.title.closest('.ap-field');
+  const syncE = () => { titleE.hidden = formE.elements.role.value !== 'other'; };
+  syncE(); formE.elements.role.addEventListener('change', syncE);
+  const validEmail = v => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v);
+  let askE = 0, timerE;
+  const lookupE = async () => {
+    const mine = ++askE, v = formE.elements.email.value.trim().toLowerCase();
+    if (!validEmail(v)) { whoE.hidden = true; return; }
+    const r = await rpc('platform_access_lookup_email', { p_slug: s.slug, p_email: v }).catch(() => null);
+    if (mine !== askE || !r) return;
+    whoE.hidden = false;
+    whoE.textContent = r.account ? T('lookupEmailFound', { name: r.account.name }) : T('lookupEmailNone');
+  };
+  formE.elements.email.addEventListener('input', () => { clearTimeout(timerE); timerE = setTimeout(lookupE, 350); });
+  formE.addEventListener('submit', async e => {
+    e.preventDefault();
+    const box = formE.querySelector('.ap-error'); box.textContent = '';
+    const email = formE.elements.email.value.trim().toLowerCase();
+    if (!validEmail(email)) { box.textContent = T('invalidEmail'); formE.elements.email.focus(); return; }
+    const role = formE.elements.role.value, title = formE.elements.title.value.trim();
+    if (role === 'other' && !title) { box.textContent = T('errJobTitle'); formE.elements.title.focus(); return; }
+    if (!(await confirm(T('giveAccess'), T('giveAccessConfirm', { phone: email, role: roleText(role) })))) return;
+    const r = await act(formE.querySelector('[type=submit]'), () => rpc('platform_access_give_email', { p_slug: s.slug, p_email: email, p_role: role, p_title: title })).catch(() => null);
+    if (!r) return;
+    toast(r.status === 'applied' ? T('accessApplied', { name: r.account?.name || '' }) : T('accessPendingEmail', { email }));
     reload();
   });
 }

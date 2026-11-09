@@ -1409,7 +1409,7 @@ function identitySection() {
     ${id.phone && !id.phoneLogin ? `<p class="small-note">${t('phoneNotForLogin')}</p>` : ''}
     ${id.google && id.emailConfirmed ? `<p class="small-note">${t('googleWorksToo')}</p>` : ''}
     ${editor}
-    <div class="id-link"><button type="button" class="btn small" data-id-edit="link">${t('linkAnother')}</button><p class="small-note">${t('linkAnotherHint')}</p></div></section>`;
+    <p class="small-note id-link">${t('idConflictHint')}</p></section>`;
 }
 function linkReview(e) {
   const o = e.other || {}, blocked = (e.blockers || []).length;

@@ -21,7 +21,7 @@ export async function accountsView() {
   view().innerHTML = `<section class="ap-panel"><h3>${esc(T('accountsTitle'))}</h3><p class="ap-quiet">${esc(T('accountsLead'))}</p>
       <form id="ap-acc-find" class="ap-form-grid" novalidate>
         ${field(T('dialCode'), `<select name="country">${countryOptions('PS', site().lang)}</select>`)}
-        ${field(T('phone'), `<input name="phone" dir="ltr" type="tel" inputmode="tel" autocomplete="off" required maxlength="24" placeholder="0599123456">`)}
+        ${field(T('phoneOrEmail'), `<input name="phone" dir="ltr" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" required maxlength="254" placeholder="0599123456 · name@example.com">`)}
         <div class="ap-actions is-full"><button class="ap-btn is-primary" type="submit">${esc(T('findAccount'))}</button><p class="ap-error" role="alert"></p></div></form></section>
     <div id="ap-acc-result" class="ap-stack"></div>`;
   const form = document.getElementById('ap-acc-find'), out = document.getElementById('ap-acc-result');
@@ -33,7 +33,7 @@ export async function accountsView() {
     const signups = r.salon_signups || [];
     if (!r.accounts.length && !signups.length) { out.innerHTML = once + empty(T('accountNoneAll', { phone: r.phone })); return wireCopy(); }
     out.innerHTML = once + r.accounts.map(a => `<section class="ap-panel" data-account="${esc(a.id)}">
-        <h3>${esc(a.name)} <small><bdi dir="ltr">${esc(a.phone)}</bdi></small></h3>
+        <h3>${esc(a.name)} <small><bdi dir="ltr">${esc([a.phone, a.email].filter(Boolean).join(' · '))}</bdi></small></h3>
         <div class="ap-pills">${pill('info', T('salonieerAccount'))}${a.status !== 'active' ? pill('danger', T('accountDisabled')) : ''}${a.locked ? pill('warn', T('accountLocked')) : ''}</div>
         <dl class="ap-facts"><div><dt>${esc(T('accCreatedOn'))}</dt><dd>${esc(fmtDate(a.created_at))}</dd></div>
           <div><dt>${esc(T('accountLastActive'))}</dt><dd>${a.last_active ? esc(fmtTime(a.last_active)) : '—'}</dd></div>
@@ -80,8 +80,10 @@ export async function accountsView() {
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const box = form.querySelector('.ap-error'); box.textContent = '';
-    const n = toE164(form.elements.phone.value, form.elements.country.value);
-    if (!n) { box.textContent = T('invalidPhoneIntl'); form.elements.phone.focus(); return; }
+    // 2.47: an account may have only an email — find by email too (platform_account_find takes either).
+    const raw = form.elements.phone.value.trim();
+    const n = raw.includes('@') ? (/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(raw) ? { e164: raw.toLowerCase() } : null) : toE164(raw, form.elements.country.value);
+    if (!n) { box.textContent = T(raw.includes('@') ? 'invalidEmail' : 'invalidPhoneIntl'); form.elements.phone.focus(); return; }
     shown = null; last = n.e164;
     const r = await act(form.querySelector('[type=submit]'), () => rpc('platform_account_find', { p_phone: n.e164 })).catch(() => null);
     if (r && !r.error) draw(r); else if (r?.error) box.textContent = T('invalidPhoneIntl');

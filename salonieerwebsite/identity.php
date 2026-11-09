@@ -28,7 +28,8 @@ function idFail(array $r, ?string $field = null): never {
         'too_soon'=>[429,'codeTooSoon'], 'too_many'=>[429,'codeTooMany'], 'wrong_code'=>[400,'wrongCode'], 'code_expired'=>[400,'codeExpired'],
         'no_code'=>[400,'codeExpired'], 'invalid_password'=>[400,'invalidPassword'], 'bad_password'=>[400,'wrongPassword'], 'same_password'=>[400,'samePassword'],
         'no_phone_codes'=>[409,'noPhoneCodes'], 'same_account'=>[400,'sameAccount'], 'link_expired'=>[400,'linkExpired'], 'link_blocked'=>[409,'linkBlocked'],
-        'only_login'=>[409,'onlyLogin'], 'website_account'=>[409,'websiteEmailNeeded'], 'invalid_name'=>[400,'invalidFullName']];
+        'only_login'=>[409,'onlyLogin'], 'website_account'=>[409,'websiteEmailNeeded'], 'invalid_name'=>[400,'invalidFullName'],
+        'link_disabled'=>[409,'linkDisabled']];
     [$status, $code] = $map[$r['code'] ?? ''] ?? [503, 'serviceUnavailable'];
     if ($code === 'serviceUnavailable') error_log('METON identity: unexpected answer '.substr(json_encode($r), 0, 300));
     if ($status === 429) header('Retry-After: '.(int)($r['retry_in'] ?? 900));
