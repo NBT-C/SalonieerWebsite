@@ -303,12 +303,19 @@ async function tabAccounts(host, s, reload) {
   const pendingRow = g => `<li><span><b dir="ltr">${esc(g.phone)}</b><small>${esc(roleText(g.role))}${g.title ? ' · ' + esc(g.title) : ''} · ${esc(T('waitingLine', { by: g.created_by || 'METON', date: fmtDate(g.created_at) }))}</small>
       ${g.last_error ? `<small class="ap-error-inline">${esc(T('accessError', { error: errorText({ message: g.last_error }) }))}</small>` : ''}</span>${pill('warn', T('waitingShort'))}
       ${can ? `<span class="ap-row-actions"><button class="ap-link" type="button" data-retry="${esc(g.id)}">${esc(T('retryAccess'))}</button><button class="ap-link is-danger" type="button" data-cancel="${esc(g.id)}">${esc(T('cancelAccess'))}</button></span>` : ''}</li>`;
+  // 2.46: access given to one METON account (the applicant's own) waits for that account's phone number, not a sign-up.
+  const forWho = g => g.for ? (g.for.name || g.for.email || g.for.phone || T('noName')) : T('accountGone');
+  const accountRow = g => `<li><span><b>${esc(forWho(g))}</b>${g.for?.email ? `<small dir="ltr">${esc(g.for.email)}</small>` : ''}<small>${esc(roleText(g.role))}${g.title ? ' · ' + esc(g.title) : ''} · ${esc(T('waitingLine', { by: g.created_by || 'METON', date: fmtDate(g.created_at) }))}</small>
+      ${g.last_error && g.last_error !== 'phone_needed' ? `<small class="ap-error-inline">${esc(T('accessError', { error: g.last_error === 'account' ? T('accountGone') : g.last_error === 'phone_in_use' ? T('accountPhoneInUse') : errorText({ message: g.last_error }) }))}</small>` : ''}</span>${pill('warn', T('waitingShort'))}
+      ${can ? `<span class="ap-row-actions"><button class="ap-link" type="button" data-retry="${esc(g.id)}">${esc(T('retryAccess'))}</button><button class="ap-link is-danger" type="button" data-cancel="${esc(g.id)}" data-for-account>${esc(T('cancelAccess'))}</button></span>` : ''}</li>`;
+  const byPhone = data.pending.filter(g => !g.for && g.phone), byAccount = data.pending.filter(g => g.for || !g.phone);
   const memberRow = m => `<li><span><b>${esc(m.status === 'invited' ? T('memberInvitedName') : (m.name || '—'))}</b><small>${esc(roleText(m.role))}${m.title ? ' · ' + esc(m.title) : ''}${m.phone && m.status !== 'invited' ? ` · <bdi dir="ltr">${esc(m.phone)}</bdi>` : ''}</small></span>${pill(m.status === 'active' ? 'ok' : 'info', T('member_' + m.status))}</li>`;
-  const recentRow = g => `<li><span><b dir="ltr">${esc(g.phone)}</b><small>${esc(roleText(g.role))} · ${esc(g.status !== 'applied' ? T('recentCancelled') : g.account ? T('recentApplied', { name: g.account.name }) : T('recentAppliedSignup'))}</small></span><time>${esc(fmtTime(g.applied_at || g.cancelled_at || g.created_at))}</time></li>`;
+  const recentRow = g => `<li><span>${g.phone ? `<b dir="ltr">${esc(g.phone)}</b>` : `<b>${esc(forWho(g))}</b>`}<small>${esc(roleText(g.role))} · ${esc(g.status !== 'applied' ? T('recentCancelled') : g.account ? T('recentApplied', { name: g.account.name }) : T('recentAppliedSignup'))}</small></span><time>${esc(fmtTime(g.applied_at || g.cancelled_at || g.created_at))}</time></li>`;
   host.innerHTML = `<div class="ap-columns"><div class="ap-stack">
       <section class="ap-panel"><h3>${esc(T('accessOwners'))}</h3><p class="ap-quiet">${esc(T('accessOwnersLead'))}</p>
         ${data.owners.length ? `<ul class="ap-rows">${data.owners.map(ownerRow).join('')}</ul>` : `<p class="ap-quiet">${esc(T('noAdmins'))}</p>`}<p class="ap-error" role="alert"></p></section>
-      ${data.pending.length ? `<section class="ap-panel"><h3>${esc(T('waitingTitle'))}</h3><p class="ap-quiet">${esc(T('waitingLead'))}</p><ul class="ap-rows">${data.pending.map(pendingRow).join('')}</ul><p class="ap-error" role="alert"></p></section>` : ''}
+      ${byPhone.length ? `<section class="ap-panel"><h3>${esc(T('waitingTitle'))}</h3><p class="ap-quiet">${esc(T('waitingLead'))}</p><ul class="ap-rows">${byPhone.map(pendingRow).join('')}</ul><p class="ap-error" role="alert"></p></section>` : ''}
+      ${byAccount.length ? `<section class="ap-panel"><h3>${esc(T('waitingPhoneTitle'))}</h3><p class="ap-quiet">${esc(T('waitingPhoneLead'))}</p><ul class="ap-rows">${byAccount.map(accountRow).join('')}</ul><p class="ap-error" role="alert"></p></section>` : ''}
       <section class="ap-panel"><h3>${esc(T('teamTitle'))}</h3><p class="ap-quiet">${esc(T('teamLead'))}</p>
         ${members.length ? `<ul class="ap-rows" data-paginate="salon-team">${members.map(memberRow).join('')}</ul>` : `<p class="ap-quiet">${esc(T('noTeam'))}</p>`}</section>
     </div><div class="ap-stack">
@@ -327,14 +334,15 @@ async function tabAccounts(host, s, reload) {
     act(b, () => rpc('platform_access_remove_owner', { p_slug: s.slug, p_user: b.dataset.remove }), T('saved')).then(reload).catch(() => {});
   }));
   host.querySelectorAll('[data-cancel]').forEach(b => b.addEventListener('click', async () => {
-    if (!(await confirm(T('cancelAccess'), T('cancelAccessConfirm'), { danger: true }))) return;
+    if (!(await confirm(T('cancelAccess'), T('forAccount' in b.dataset ? 'cancelAccountAccessConfirm' : 'cancelAccessConfirm'), { danger: true }))) return;
     act(b, () => rpc('platform_access_cancel', { p_id: b.dataset.cancel }), T('saved')).then(reload).catch(() => {});
   }));
   host.querySelectorAll('[data-retry]').forEach(b => b.addEventListener('click', async () => {
     const r = await act(b, () => rpc('platform_access_retry', { p_id: b.dataset.retry })).catch(() => null);
     if (!r) return;
     if (r.status === 'applied') toast(T('accessApplied', { name: r.account?.name || r.salon_user?.name || '' }));
-    else toast(r.error ? T('accessError', { error: errorText({ message: r.error }) }) : T('accessStillWaiting'), r.error ? 'error' : 'success');
+    else if (r.error || r.reason === 'account' || r.reason === 'phone_in_use') toast(T('accessError', { error: r.error ? errorText({ message: r.error }) : T(r.reason === 'account' ? 'accountGone' : 'accountPhoneInUse') }), 'error');
+    else toast(T(r.reason === 'phone_needed' ? 'accountStillWaiting' : 'accessStillWaiting'), 'success');
     reload();
   }));
 

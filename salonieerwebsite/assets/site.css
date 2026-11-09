@@ -1388,3 +1388,31 @@ a.app-get-btn:hover{background:#3a3140;color:var(--talc)}
   .hm2-hero .hm-app{margin-top:12px}
   .hm2-hero .hm-points{margin-top:14px;gap:6px}
 }
+
+/* ── 2.46: one METON account for the website and the app — sign in with email or phone, how the account signs in ── */
+.login-by{display:flex;width:100%;margin:2px 0 14px}
+.login-by button{flex:1;padding:9px 12px;font-size:.9rem;cursor:pointer}
+.login-by button:focus-visible{outline:2px solid var(--color-accent-text);outline-offset:2px}
+.login-one{margin-top:14px;text-align:center}
+.step-links{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;margin-top:12px}
+.step-links .text-link,.auth-footer .text-link{background:none;border:0;padding:0;cursor:pointer;font:inherit}
+.id-card{margin-top:16px}
+.id-card h3{margin-bottom:4px}
+.id-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:12px 0;border-top:1px solid var(--color-border)}
+.id-row:first-of-type{margin-top:8px}
+.id-what{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0}
+.id-what b{overflow-wrap:anywhere}
+.id-label{display:block;width:100%;font-size:.78rem;font-weight:700;letter-spacing:.02em;color:var(--color-text-secondary)}
+.id-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:700;line-height:1.6}
+.id-badge.is-on{background:color-mix(in srgb,var(--color-success) 16%,transparent);color:var(--color-success-text)}
+.id-badge.is-off{background:color-mix(in srgb,var(--color-warning) 18%,transparent);color:var(--color-warning-text)}
+.id-actions{display:flex;flex-wrap:wrap;gap:8px}
+.id-editor{margin-top:12px;padding:14px;border-radius:14px;background:var(--color-surface-sunken)}
+.id-editor .field{margin-bottom:10px}
+.id-editor-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:6px}
+.id-editor-actions .text-link{background:none;border:0;padding:0;cursor:pointer;font:inherit}
+.id-review dl{margin:8px 0}
+.id-link{margin-top:14px;padding-top:12px;border-top:1px solid var(--color-border)}
+.id-link .small-note{margin-top:6px}
+.muted{color:var(--color-text-muted)}
+@media (max-width:520px){.id-actions{width:100%}.id-actions .btn{flex:1}}

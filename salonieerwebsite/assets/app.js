@@ -333,8 +333,30 @@ function home() {
   <dialog class="sc-lightbox" id="sc-lightbox" aria-label="${t('sc_zoom')}"><button type="button" class="sc-lb-close" data-close aria-label="${t('sc_close')}">${ico('<path d="M6 6l12 12M18 6 6 18"/>', 22)}</button><img alt=""></dialog>
 </div>`;
 }
+// 2.46: one sign-in for the METON account (the same as in the app): its email or its phone number, and the password.
+// Nobody chooses "customer" or "business": what the account can open comes from its businesses and roles.
+function loginPhoneField() {
+  const guess = dialCodeOf(dialGuess()) ? dialGuess() : '';
+  return `<div class="field full-span"><label for="phone">${t('phoneNumber')}</label><div class="phone-field">${countryPicker(pickerOptions({name:'phoneCountry',mode:'dial',value:guess,label:t('countryCode')}))}<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" required aria-describedby="phone-error" dir="ltr"></div><small id="phone-error" class="field-error" aria-live="polite"></small></div>`;
+}
+const signInWith = (by, attrs = '') => `<div class="segmented login-by" role="group" aria-label="${t('signInWith')}"${attrs}>${['email','phone'].map(k=>`<button type="button" data-by="${k}" aria-pressed="${by===k}">${t(k==='email'?'byEmail':'byPhone')}</button>`).join('')}</div>`;
 function login() {
-  return `<div class="auth-split">${authIntro('welcome','loginLead')}<div class="auth-form"><section class="auth-card"><h2>${t('login')}</h2>${new URLSearchParams(location.search).has('next')?`<p class="notice info">${t('loginRequired')}</p>`:''}<form id="login-form" novalidate>${formErrorBox()}${field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com'})}${field('password','password',{type:'password',autocomplete:'current-password',maxlength:128})}<div class="login-help"><a class="text-link" href="/forgot">${t('forgot')}</a></div><button class="btn primary full" type="submit">${t('login')}</button>${state.google?`<a class="btn full google-btn" href="/auth/google">${t('withGoogle')}</a>`:''}</form><p class="auth-footer">${t('noAccount')} <a href="/register" class="text-link">${t('register')}</a></p></section></div></div>`;
+  if (state.signinStep) return signinStepView(state.signinStep);
+  const q = new URLSearchParams(location.search), by = state.loginBy === 'phone' ? 'phone' : 'email', g = q.get('google');
+  const note = g === 'password' ? `<p class="notice info">${t('googleNeedsPassword')}</p>` : g === 'failed' ? `<p class="notice warning">${t('googleFailed')}</p>` : '';
+  const prefill = by === 'email' && q.get('email') ? ` value="${esc(q.get('email'))}"` : '';
+  return `<div class="auth-split">${authIntro('welcome','loginLead')}<div class="auth-form"><section class="auth-card"><h2>${t('login')}</h2>${q.has('next')?`<p class="notice info">${t('loginRequired')}</p>`:''}${note}${signInWith(by, ' data-login-by')}<form id="login-form" novalidate data-by="${by}">${formErrorBox()}${by==='email'?field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com',extra:`spellcheck="false" autocapitalize="off"${prefill}`}):loginPhoneField()}${field('password','password',{type:'password',autocomplete:'current-password',maxlength:128})}<div class="login-help"><a class="text-link" href="/forgot">${t('forgot')}</a></div><button class="btn primary full" type="submit">${t('login')}</button>${state.google?`<a class="btn full google-btn" href="/auth/google">${t('withGoogle')}</a>`:''}</form><p class="small-note login-one">${t('loginOneAccount')}</p><p class="auth-footer">${t('noAccount')} <a href="/register" class="text-link">${t('register')}</a></p></section></div></div>`;
+}
+// One more step before the website opens: an account with a phone only adds an email (billing and the website's emails
+// need one); an email a website user from before has is confirmed by the account first. A 6-digit code by email.
+function signinStepView(s) {
+  const confirm = s.step === 'confirm', sent = confirm || s.sent;
+  return `<div class="auth-split">${authIntro('welcome','loginLead')}<div class="auth-form"><section class="auth-card"><h2>${t(confirm?'confirmEmailTitle':'addEmailTitle')}</h2><p>${t(confirm?'confirmEmailLead':'addEmailLead')}</p>
+    ${sent?`<p class="notice info">${t('codeSentTo')} <b dir="ltr">${esc(s.email)}</b></p>`:''}
+    <form id="signin-step-form" novalidate>${formErrorBox()}${sent?field('code','codeLabel',{maxlength:6,autocomplete:'one-time-code',extra:'inputmode="numeric" dir="ltr"'}):field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com',extra:'spellcheck="false" autocapitalize="off"'})}
+    <button class="btn primary full" type="submit">${t(sent?'confirmAndSignIn':'sendCode')}</button>
+    ${sent?`<div class="step-links"><button type="button" class="text-link" data-step-resend>${t('resendCode')}</button>${confirm?'':`<button type="button" class="text-link" data-step-change>${t('changeEmail')}</button>`}</div>`:''}</form>
+    <p class="auth-footer"><button type="button" class="text-link" data-step-cancel>${t('backToSignIn')}</button></p></section></div></div>`;
 }
 // Dialing country guess from the time zone, used only to preselect the phone code (the account country is never guessed).
 function dialGuess() {
@@ -640,6 +662,8 @@ function salonCard(s) {
 // keeps its old card (temporary password) until the owner hides it.
 function ownerSection(s) {
   const o = s.owner || {};
+  // 2.46: the business belongs to this METON account itself (the app and the website sign in to the same account).
+  if (o.forAccount) return `<section class="owner-login"><h3>${t('ownerLogin')}</h3><p class="small-note">${t(o.access==='applied'?'ownerAccountApplied':o.reason==='phone_needed'?'ownerAccountPhoneNeeded':'ownerAccountWaiting')}</p>${o.accountName?`<dl class="application-meta"><div><dt>${t('ownerAccount')}</dt><dd>${esc(o.accountName)}</dd></div></dl>`:''}</section>`;
   if (o.access) return `<section class="owner-login"><h3>${t('ownerLogin')}</h3><p class="small-note">${t(o.access==='applied'?'ownerAccessLinked':'ownerAccessHow')}</p><dl class="application-meta"><div><dt>${t('phone')}</dt><dd dir="ltr">${esc(o.phone)}</dd></div>${o.accountName?`<div><dt>${t('ownerAccount')}</dt><dd>${esc(o.accountName)}</dd></div>`:''}</dl></section>`;
   return `<section class="owner-login"><h3>${t('ownerLogin')}</h3><p class="small-note">${t('ownerLoginHint')}</p><dl class="application-meta"><div><dt>${t('phone')}</dt><dd dir="ltr">${esc(o.phone)}</dd></div>${o.temporaryPassword?`<div><dt>${t('tempPassword')}</dt><dd dir="ltr"><code>${esc(o.temporaryPassword)}</code></dd></div>`:''}</dl>
       ${o.temporaryPassword?`<p class="notice warning">${t('tempPasswordNote')}</p><button class="btn small" type="button" data-password-saved="${esc(s.applicationId)}">${t('passwordSaved')}</button>`:`<p class="small-note">${t('passwordHidden')}</p>`}</section>`;
@@ -757,12 +781,15 @@ function accountSettings() {
       <form id="delete-form" novalidate>${formErrorBox()}${field('deletePassword','password',{type:'password',autocomplete:'current-password'})}
       <label class="check-row delete-check"><input type="checkbox" name="understand"> <span>${t('deleteUnderstand')}</span></label>
       <button class="btn danger" type="submit">${t('deleteAccountForever')}</button></form>`;
+  // 2.46: an account made with Google has no password until the person sets one (no "current password" then).
+  const noPw = state.identity && !state.identity.hasPassword;
   return `<section class="settings-panel" aria-labelledby="settings-title"><h2 class="section-label" id="settings-title">${t('accountSettings')}</h2>
-    <div class="settings-grid"><form id="profile-form" class="settings-card" novalidate><h3>${t('profileTitle')}</h3>${formErrorBox()}${field('fullName','fullName',{autocomplete:'name',maxlength:100,placeholder:t('fullName')})}${genderField(u.gender||'')}
-      <p class="small-note">${t('signInEmail')}: <bdi>${esc(u.email)}</bdi></p><button class="btn small primary" type="submit">${t('saveProfile')}</button></form>
-    <form id="password-form" class="settings-card" novalidate><h3>${t('changePassword')}</h3>${formErrorBox()}${field('currentPassword','currentPassword',{type:'password',autocomplete:'current-password'})}
+    <div class="settings-grid"><form id="profile-form" class="settings-card" novalidate><h3>${t('profileTitle')}</h3>${formErrorBox()}${field('fullName','fullName',{autocomplete:'name',maxlength:60,placeholder:t('fullName')})}${genderField(u.gender||'')}
+      ${state.identity ? '' : `<p class="small-note">${t('signInEmail')}: <bdi>${esc(u.email)}</bdi></p>`}<button class="btn small primary" type="submit">${t('saveProfile')}</button></form>
+    <form id="password-form" class="settings-card" novalidate><h3>${t(noPw?'setPassword':'changePassword')}</h3>${formErrorBox()}${noPw?'':field('currentPassword','currentPassword',{type:'password',autocomplete:'current-password'})}
       ${field('newPassword','newPassword',{type:'password',autocomplete:'new-password',hint:'passwordHint'})}${field('newPasswordConfirm','passwordConfirm',{type:'password',autocomplete:'new-password'})}
-      <p class="small-note">${t('passwordChangeNote')}</p><button class="btn small primary" type="submit">${t('changePassword')}</button></form></div>
+      <p class="small-note">${t('passwordChangeNote')}</p><button class="btn small primary" type="submit">${t(noPw?'setPassword':'changePassword')}</button></form></div>
+    ${identitySection()}
     <section class="danger-zone" aria-labelledby="delete-title"><h3 id="delete-title">${t('deleteAccount')}</h3>${del}</section></section>`;
 }
 function support() {
@@ -898,7 +925,13 @@ function phoneE164(value, dial) {
 }
 function rulesFor(form) {
   const el = name => form.elements[name];
-  if (form.id === 'login-form') return { email: v => V.email(v), password: v => v ? null : 'requiredPassword' };
+  // 2.46: sign in with the email or the phone number of the METON account.
+  const phoneRule = v => !V.clean(v) ? 'requiredPhone' : phoneE164(v, el('phoneCountry')?.value) ? null : 'invalidPhone';
+  if (form.id === 'login-form') return form.dataset.by === 'phone' ? { phone: phoneRule, password: v => v ? null : 'requiredPassword' }
+    : { email: v => V.email(v), password: v => v ? null : 'requiredPassword' };
+  if (form.id === 'id-link-form') return { ...(form.dataset.by === 'phone' ? { phone: phoneRule } : { email: v => V.email(v) }), linkPassword: v => v ? null : 'requiredPassword' };
+  if (form.id === 'id-phone-form') return { phone: phoneRule };
+  if (form.id === 'id-email-form') return { email: v => V.email(v) };
   if (form.id === 'register-form' || form.id === 'setup-form') return {
     ...(form.id === 'setup-form' ? { setupKey: v => V.clean(v).length >= 6 ? null : 'invalidSetupKey' } : {}),
     fullName: V.fullName,
@@ -910,7 +943,7 @@ function rulesFor(form) {
   };
   if (form.id === 'profile-form') return { fullName: V.fullName };
   if (form.id === 'password-form') return {
-    currentPassword: v => v ? null : 'requiredPassword',
+    ...(el('currentPassword') ? { currentPassword: v => v ? null : 'requiredPassword' } : {}),
     newPassword: v => V.password(v, state.user?.email || ''),
     newPasswordConfirm: v => !v ? 'requiredPassword' : v === el('newPassword').value ? null : 'passwordMismatch',
   };
@@ -989,7 +1022,12 @@ async function submitForm(event, path) {
   if (path === '/api/register' || path === '/api/setup') {
     for (const k of ['fullName','email']) data[k] = V.clean(data[k]);
   }
-  if (path === '/api/login') data.email = V.clean(data.email).toLowerCase();
+  if (path === '/api/login') {
+    if (form.dataset.by === 'phone') { const n = phoneE164(data.phone, data.phoneCountry); data.identifier = n?.number || ''; data.dial = n?.countryCallingCode || ''; delete data.phone; delete data.phoneCountry; }
+    else data.identifier = data.email = V.clean(data.email).toLowerCase();
+    data.lang = lang;
+  }
+  if (path === '/api/register') data.lang = lang;
   if (path === '/api/register/google') data.fullName = V.clean(data.fullName);
   if (path === '/api/applications') {
     if (state.logoLoading) return showError(form, {code:'processing', field:'logo'});
@@ -1006,6 +1044,8 @@ async function submitForm(event, path) {
   document.getElementById('language').disabled = true;
   try {
     const result = await post(path, data, submit, busyLabel);
+    // 2.46: the account must add (or confirm) an email before the website opens.
+    if (path === '/api/login' && result.step) { form.reset(); state.signinStep = {step:result.step, ticket:result.ticket, email:result.email||'', sent:false}; render(); return; }
     if (result.user) {
       delete drafts[route]; form.reset();
       broadcast('login');
@@ -1152,7 +1192,18 @@ function bind() {
       if (name==='password' && form.elements.passwordConfirm?.value) validateField(form,'passwordConfirm');
     });
   });
-  document.getElementById('login-form')?.addEventListener('submit',event=>submitForm(event,'/api/login'));
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    document.querySelectorAll('[data-login-by] [data-by]').forEach(b => b.addEventListener('click', () => {
+      if (state.loginBy === b.dataset.by || (!state.loginBy && b.dataset.by === 'email')) return;
+      const password = loginForm.elements.password.value;
+      state.loginBy = b.dataset.by; render();
+      const again = document.getElementById('login-form'); if (again) { again.elements.password.value = password; again.querySelector(state.loginBy === 'phone' ? '#phone' : '#email')?.focus(); }
+    }));
+    if (loginForm.dataset.by === 'phone') bindPhoneField(loginForm);
+    loginForm.addEventListener('submit', event => submitForm(event, '/api/login'));
+  }
+  bindSigninStep();
   const registerForm = document.getElementById('register-form') || document.getElementById('setup-form');
   if (registerForm) bindAccountForm(registerForm);
   const googleForm = document.getElementById('google-signup-form');
@@ -1242,6 +1293,7 @@ function bind() {
   bindApplicationActions();
   bindBilling();
   bindAccountSettings();
+  bindIdentity();
   document.querySelectorAll('form[data-report]').forEach(form=>form.addEventListener('submit',async event=>{
     event.preventDefault();
     const button=form.querySelector('button[type=submit]'), feedback=form.querySelector('.status-feedback'), message=form.elements.message.value.trim();
@@ -1279,9 +1331,10 @@ function bindAccountSettings() {
     const button = password.querySelector('[type=submit]');
     setBusy(button, true, t('processing'));
     try {
-      const result = await post('/api/account/password', {currentPassword:password.elements.currentPassword.value, newPassword:password.elements.newPassword.value, newPasswordConfirm:password.elements.newPasswordConfirm.value}, button, t('processing'));
+      const result = await post('/api/account/password', {currentPassword:password.elements.currentPassword?.value || '', newPassword:password.elements.newPassword.value, newPasswordConfirm:password.elements.newPasswordConfirm.value}, button, t('processing'));
       if (result.csrf) state.csrf = result.csrf;
       password.reset(); delete drafts[route]; toast(t('passwordChanged'), 'success');
+      if (state.identity && !state.identity.hasPassword) { state.identity = {...state.identity, hasPassword:true}; render(); }
     } catch (error) { showError(password, error); }
     finally { if (button.isConnected) setBusy(button, false); }
   });
@@ -1301,6 +1354,139 @@ function bindAccountSettings() {
     } catch (error) { showError(remove, error.field === 'password' ? {...error, field:'deletePassword'} : error); if (button.isConnected) setBusy(button, false); }
   });
 }
+// 2.46: the extra sign-in step (add or confirm an email with a code).
+function bindSigninStep() {
+  const form = document.getElementById('signin-step-form'), s = state.signinStep;
+  if (!form || !s) return;
+  const send = async button => {
+    const email = s.step === 'confirm' ? s.email : V.clean(form.elements.email?.value || s.email).toLowerCase();
+    const r = await post('/api/login/email', {ticket:s.ticket, email, lang}, button, t('processing'));
+    state.signinStep = {...s, sent:true, email:r.email}; render();
+  };
+  const expired = error => { if (error.code !== 'signinExpired') return false; state.signinStep = null; render(); toast(t('signinExpired'), 'error'); return true; };
+  form.addEventListener('submit', async event => {
+    event.preventDefault(); clearErrors(form);
+    const button = form.querySelector('[type=submit]');
+    if (!(s.sent || s.step === 'confirm')) {
+      if (V.email(form.elements.email.value)) { setFieldState(form, 'email', V.email(form.elements.email.value)); return; }
+      setBusy(button, true, t('processing'));
+      try { await send(button); } catch (error) { if (!expired(error)) showError(form, error); } finally { if (button.isConnected) setBusy(button, false); }
+      return;
+    }
+    const code = String(form.elements.code.value || '').replace(/\D/g, '');
+    if (code.length !== 6) { setFieldState(form, 'code', 'enterCode'); return; }
+    setBusy(button, true, t('signingIn'));
+    try {
+      const r = await post('/api/login/verify', {ticket:s.ticket, code}, button, t('signingIn'));
+      state.signinStep = null; broadcast('login');
+      try { sessionStorage.setItem('salonieer:flash', 'signedIn:' + r.user.fullName.split(' ')[0]); } catch {}
+      location.replace(nextPage('/account'));
+    } catch (error) { if (!expired(error)) showError(form, error); if (button.isConnected) setBusy(button, false); }
+  });
+  form.querySelector('[data-step-resend]')?.addEventListener('click', async event => { try { await send(event.currentTarget); toast(t('codeResent'), 'success'); } catch (error) { if (!expired(error)) showError(form, error); } });
+  form.querySelector('[data-step-change]')?.addEventListener('click', () => { state.signinStep = {...s, sent:false}; render(); });
+  document.querySelector('[data-step-cancel]')?.addEventListener('click', () => { state.signinStep = null; render(); });
+}
+
+// 2.46: how this METON account signs in (the same in the app): its email and phone number, each confirmed with a code,
+// and another METON account of the same person linked into this one.
+function identitySection() {
+  const id = state.identity; if (!id) return '';
+  const e = state.idEdit || {};
+  const badge = (on, yes, no) => `<span class="id-badge ${on ? 'is-on' : 'is-off'}">${t(on ? yes : no)}</span>`;
+  const codeForm = (kind, target) => `<form id="id-code-form" class="id-editor" data-kind="${kind}" novalidate>${formErrorBox()}<p class="notice info">${t('codeSentTo')} <b dir="ltr">${esc(target)}</b></p>${field('code','codeLabel',{maxlength:6,autocomplete:'one-time-code',extra:'inputmode="numeric" dir="ltr"'})}<div class="id-editor-actions"><button class="btn small primary" type="submit">${t('confirmCode')}</button><button class="btn small" type="button" data-id-resend>${t('resendCode')}</button><button class="text-link" type="button" data-id-cancel>${t('tm_cancel')}</button></div></form>`;
+  let editor = '';
+  if (e.kind === 'email') editor = e.stage === 'code' ? codeForm('email', e.value) : `<form id="id-email-form" class="id-editor" novalidate>${formErrorBox()}${field('email', id.email ? 'newEmail' : 'email', {type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com',extra:'spellcheck="false" autocapitalize="off"'})}<div class="id-editor-actions"><button class="btn small primary" type="submit">${t('sendCode')}</button><button class="text-link" type="button" data-id-cancel>${t('tm_cancel')}</button></div></form>`;
+  if (e.kind === 'phone') editor = e.stage === 'code' ? codeForm('phone', e.value) : `<form id="id-phone-form" class="id-editor" novalidate>${formErrorBox()}${loginPhoneField()}<p class="small-note">${t(id.phoneCodes ? 'phoneCodeByWhatsapp' : 'phoneNoCodesYet')}</p><div class="id-editor-actions"><button class="btn small primary" type="submit">${t(id.phoneCodes ? 'sendCode' : 'savePhone')}</button><button class="text-link" type="button" data-id-cancel>${t('tm_cancel')}</button></div></form>`;
+  const by = e.by === 'phone' ? 'phone' : 'email';
+  if (e.kind === 'link') editor = e.stage === 'review' ? linkReview(e) : `<form id="id-link-form" class="id-editor" data-by="${by}" novalidate>${formErrorBox()}<p class="small-note">${t('linkLead')}</p>${signInWith(by, ' data-link-by')}${by==='email'?field('email','email',{type:'email',autocomplete:'off',maxlength:254,placeholder:'you@example.com',extra:'spellcheck="false" autocapitalize="off"'}):loginPhoneField()}${field('linkPassword','linkPassword',{type:'password',autocomplete:'off',maxlength:128})}<div class="id-editor-actions"><button class="btn small primary" type="submit">${t('continue')}</button><button class="text-link" type="button" data-id-cancel>${t('tm_cancel')}</button></div></form>`;
+  const emailRow = id.email ? `<b dir="ltr">${esc(id.email)}</b> ${badge(id.emailConfirmed, 'idConfirmed', 'idNotConfirmed')}` : `<span class="muted">${t('idNoEmail')}</span>`;
+  const phoneRow = id.phone ? `<b dir="ltr">${esc(id.phone)}</b> ${badge(id.phoneConfirmed || id.phoneLogin, id.phoneConfirmed ? 'idConfirmed' : 'idSignsIn', 'idNotConfirmed')}` : `<span class="muted">${t('idNoPhone')}</span>`;
+  return `<section class="settings-card id-card" aria-labelledby="id-title"><h3 id="id-title">${t('signInMethods')}</h3><p class="small-note">${t('signInMethodsLead')}</p>
+    <div class="id-row"><div class="id-what"><span class="id-label">${t('email')}</span>${emailRow}</div><div class="id-actions">${id.email && !id.emailConfirmed ? `<button type="button" class="btn small" data-id-confirm-email>${t('confirmEmail')}</button>` : ''}<button type="button" class="btn small" data-id-edit="email">${t(id.email ? 'changeEmail' : 'addEmail')}</button></div></div>
+    ${id.emailPending ? `<p class="small-note">${t('emailPendingNote', {email: id.emailPending})}</p>` : ''}
+    <div class="id-row"><div class="id-what"><span class="id-label">${t('phoneNumber')}</span>${phoneRow}</div><div class="id-actions"><button type="button" class="btn small" data-id-edit="phone">${t(id.phone ? 'changePhone' : 'addPhone')}</button></div></div>
+    ${id.phone && !id.phoneLogin ? `<p class="small-note">${t('phoneNotForLogin')}</p>` : ''}
+    ${id.google && id.emailConfirmed ? `<p class="small-note">${t('googleWorksToo')}</p>` : ''}
+    ${editor}
+    <div class="id-link"><button type="button" class="btn small" data-id-edit="link">${t('linkAnother')}</button><p class="small-note">${t('linkAnotherHint')}</p></div></section>`;
+}
+function linkReview(e) {
+  const o = e.other || {}, blocked = (e.blockers || []).length;
+  const list = (o.businesses || []).map(b => `<li>${esc(b.name)}${b.owned ? ` · ${t('owner')}` : ''}</li>`).join('');
+  const why = (e.blockers || []).map(b => `<li>${esc(t('linkBlock_' + b.code, {list: (b.businesses || []).join(', ')}))}</li>`).join('');
+  return `<div class="id-editor id-review"><p><b>${t('linkFound')}</b></p><dl class="application-meta"><div><dt>${t('fullName')}</dt><dd>${esc(o.name || '')}</dd></div>${o.email ? `<div><dt>${t('email')}</dt><dd dir="ltr">${esc(o.email)}</dd></div>` : ''}${o.phone ? `<div><dt>${t('phoneNumber')}</dt><dd dir="ltr">${esc(o.phone)}</dd></div>` : ''}</dl>
+    ${list ? `<p class="small-note">${t('linkBusinesses')}</p><ul class="block-list">${list}</ul>` : ''}
+    ${blocked ? `<div class="notice warning"><p>${t('linkBlocked')}</p><ul class="block-list">${why}</ul></div>` : `<p class="small-note">${t('linkWhatHappens')}</p>`}
+    <div class="id-editor-actions">${blocked ? '' : `<button class="btn small primary" type="button" data-id-link-go>${t('linkConfirm')}</button>`}<button class="text-link" type="button" data-id-cancel>${t('tm_cancel')}</button></div></div>`;
+}
+function bindIdentity() {
+  const card = document.querySelector('.id-card'); if (!card) return;
+  const set = edit => { state.idEdit = edit; render(); document.querySelector('.id-editor input:not([type=hidden])')?.focus(); };
+  const apply = r => { if (r.identity) state.identity = r.identity; if (r.user) state.user = r.user; };
+  card.querySelectorAll('[data-id-edit]').forEach(b => b.addEventListener('click', () => set({kind:b.dataset.idEdit, stage:'enter'})));
+  card.querySelectorAll('[data-id-cancel]').forEach(b => b.addEventListener('click', () => set(null)));
+  card.querySelector('[data-id-confirm-email]')?.addEventListener('click', async ev => {
+    try { const r = await post('/api/account/email', {email:state.identity.email, lang}, ev.currentTarget, t('processing')); apply(r); set({kind:'email', stage:'code', value:state.identity.email}); }
+    catch (error) { toast(t(error.code || 'serverError'), 'error'); }
+  });
+  card.querySelectorAll('[data-link-by] [data-by]').forEach(b => b.addEventListener('click', () => set({...state.idEdit, by:b.dataset.by})));
+  const emailForm = document.getElementById('id-email-form');
+  emailForm?.addEventListener('submit', async ev => {
+    ev.preventDefault(); clearErrors(emailForm); if (!validateForm(emailForm)) return;
+    const value = V.clean(emailForm.elements.email.value).toLowerCase(), button = emailForm.querySelector('[type=submit]');
+    setBusy(button, true, t('processing'));
+    try { const r = await post('/api/account/email', {email:value, lang}, button, t('processing')); apply(r); set(r.status === 'verified' ? null : {kind:'email', stage:'code', value}); }
+    catch (error) { showError(emailForm, error); if (button.isConnected) setBusy(button, false); }
+  });
+  const phoneForm = document.getElementById('id-phone-form');
+  if (phoneForm) {
+    bindPhoneField(phoneForm);
+    phoneForm.addEventListener('submit', async ev => {
+      ev.preventDefault(); clearErrors(phoneForm); if (!validateForm(phoneForm)) return;
+      const n = phoneE164(phoneForm.elements.phone.value, phoneForm.elements.phoneCountry.value), button = phoneForm.querySelector('[type=submit]');
+      setBusy(button, true, t('processing'));
+      try {
+        const r = await post('/api/account/phone', {phone:n.number, dial:n.countryCallingCode, lang}, button, t('processing')); apply(r);
+        if (r.status === 'code_sent') set({kind:'phone', stage:'code', value:n.number}); else { set(null); toast(t(r.status === 'saved' ? 'phoneSavedUnconfirmed' : 'phoneConfirmed'), 'success'); }
+      } catch (error) { showError(phoneForm, error); if (button.isConnected) setBusy(button, false); }
+    });
+  }
+  const codeForm = document.getElementById('id-code-form');
+  if (codeForm) {
+    const kind = codeForm.dataset.kind;
+    codeForm.addEventListener('submit', async ev => {
+      ev.preventDefault(); clearErrors(codeForm);
+      const code = String(codeForm.elements.code.value || '').replace(/\D/g, ''), button = codeForm.querySelector('[type=submit]');
+      if (code.length !== 6) { setFieldState(codeForm, 'code', 'enterCode'); return; }
+      setBusy(button, true, t('processing'));
+      try { const r = await post(`/api/account/${kind}/verify`, {code}, button, t('processing')); apply(r); set(null); toast(t(kind === 'email' ? 'emailConfirmed' : 'phoneConfirmed'), 'success'); }
+      catch (error) { showError(codeForm, error); if (button.isConnected) setBusy(button, false); }
+    });
+    codeForm.querySelector('[data-id-resend]')?.addEventListener('click', async ev => {
+      try { const v = state.idEdit.value; const r = await post(`/api/account/${kind}`, kind === 'email' ? {email:v, lang} : {phone:v, dial:'', lang}, ev.currentTarget, t('processing')); apply(r); toast(t('codeResent'), 'success'); }
+      catch (error) { showError(codeForm, error); }
+    });
+  }
+  const linkForm = document.getElementById('id-link-form');
+  if (linkForm) {
+    if (linkForm.dataset.by === 'phone') bindPhoneField(linkForm);
+    linkForm.addEventListener('submit', async ev => {
+      ev.preventDefault(); clearErrors(linkForm); if (!validateForm(linkForm)) return;
+      const phone = linkForm.dataset.by === 'phone' ? phoneE164(linkForm.elements.phone.value, linkForm.elements.phoneCountry.value) : null;
+      const button = linkForm.querySelector('[type=submit]'); setBusy(button, true, t('processing'));
+      try {
+        const r = await post('/api/account/link', {identifier: phone ? phone.number : V.clean(linkForm.elements.email.value).toLowerCase(), dial: phone ? phone.countryCallingCode : '', password: linkForm.elements.linkPassword.value}, button, t('processing'));
+        set({kind:'link', stage:'review', ticket:r.ticket, other:r.other, blockers:r.blockers});
+      } catch (error) { showError(linkForm, error.field === 'identifier' ? {...error, field:null} : error); if (button.isConnected) setBusy(button, false); }
+    });
+  }
+  card.querySelector('[data-id-link-go]')?.addEventListener('click', async ev => {
+    try { const r = await post('/api/account/link/finish', {ticket:state.idEdit.ticket}, ev.currentTarget, t('processing')); apply(r); set(null); toast(t('linkDone'), 'success'); loadRoute({quiet:true}); }
+    catch (error) { toast(t(error.code || 'serverError'), 'error'); }
+  });
+}
+
 // Account page: salon billing actions. Each one re-reads the account so the cards show what Paddle now says.
 async function billingAction(button, path, data={}) {
   setBusy(button, true, t('processing'));
@@ -1519,7 +1705,7 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
     if (['/login','/register'].includes(next) && state.user) return go(nextPage(), {replace:true});
     // A new page (not a re-render of the same one) starts with a fresh application form.
     if (key !== routeKey) { state.receipt = null; state.logo = ''; state.logoName = ''; state.submissionKey = uuid(); }
-    if (['/apply','/s','/me','/try'].includes(next)) await loadPhoneLib();
+    if (['/apply','/s','/me','/try','/login','/account'].includes(next)) await loadPhoneLib();
     if (['/','/plans','/apply'].includes(next)) {
       // The visitor's country picks the currency approximate prices are shown in (payments are always in USD).
       let tz = '';
@@ -1542,8 +1728,12 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
     if (next==='/account') {
       // Salons come from the shared database; billing keeps working on its own if that is unavailable.
       const fresh = new URLSearchParams(location.search).get('checkout')==='complete' ? '?fresh=1' : '';
-      const [billing, salons, invoices, deletion, apps] = await Promise.all([api('/api/billing'+fresh), api('/api/salons').catch(()=>({salons:[]})), api('/api/invoices').catch(()=>({invoices:[]})), api('/api/account/deletion').catch(()=>null), api('/api/applications').catch(()=>({applications:[]}))]);
+      const userAt = state.user;
+      const [billing, salons, invoices, deletion, apps, identity] = await Promise.all([api('/api/billing'+fresh), api('/api/salons').catch(()=>({salons:[]})), api('/api/invoices').catch(()=>({invoices:[]})), api('/api/account/deletion').catch(()=>null), api('/api/applications').catch(()=>({applications:[]})), api('/api/account/identity').catch(()=>null)]);
       state.billing = billing; state.salons = salons.salons || []; state.invoices = invoices.invoices || []; state.deletion = deletion; state.applications = apps.applications || [];
+      // 2.46: how the METON account signs in (null when the website signs in on its own). The user it reads is not
+      // used when a change saved meanwhile (e.g. the profile) already replaced it: that answer is newer.
+      state.identity = identity?.identity || null; if (identity?.user && state.user === userAt) state.user = identity.user;
     }
     // A card payment that may have just finished is confirmed before these pages show its status.
     if (['/applications','/account'].includes(next) && payingId()) { try { await checkPayment(payingId()); } catch {} }

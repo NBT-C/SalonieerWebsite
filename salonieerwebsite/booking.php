@@ -188,10 +188,23 @@ function metonReviewApi(string $method, string $path, array|false $user): void {
 // whether an account exists. A reset signs the account out everywhere.
 function metonPasswordApi(string $method, string $path, array|false $session): void {
     db()->exec('CREATE TABLE IF NOT EXISTS password_codes(email TEXT PRIMARY KEY,code_hash TEXT NOT NULL,expires_at INTEGER NOT NULL,attempts INTEGER NOT NULL DEFAULT 0,sent_at INTEGER NOT NULL)');
+    // 2.46: an email that signs in to a METON account resets that account's password (the same in the app); only a
+    // website user that has not moved yet keeps the website's own code below, and moves with its new password.
+    $shared = function (string $email): bool {
+        if (!identityOn()) return false;
+        $local = one('SELECT account_id FROM users WHERE email=?', [$email]);
+        return !$local || !empty($local['account_id']);
+    };
     if ($method === 'POST' && $path === '/api/password/code') {
         $d = body(); $email = strtolower(cleanText($d['email'] ?? null));
         if (!validEmail($email)) fail(400, 'invalidEmail', 'email');
         rateLimit('pw-code-ip', 20, 3600); rateLimit('pw-code', 5, 3600, $email);
+        if ($shared($email)) {
+            $r = idCall('website_account_reset_start', ['p_identifier'=>$email, 'p_dial'=>'', 'p_lang'=>metonLang($d['lang'] ?? null)]);
+            if (isset($r['error']) && ($r['code'] ?? '') !== 'too_soon') idFail($r, 'email');
+            mailWorkAfterResponse(0);
+            sendJson(200, ['ok'=>true]);
+        }
         $u = one('SELECT id,full_name FROM users WHERE email=?', [$email]);
         $prev = one('SELECT sent_at FROM password_codes WHERE email=?', [$email]);
         if ($u && (!$prev || (int)$prev['sent_at'] < nowMs() - 45000)) {
@@ -212,6 +225,15 @@ function metonPasswordApi(string $method, string $path, array|false $session): v
     if ($method === 'POST' && $path === '/api/password/reset') {
         $d = body(); $email = strtolower(cleanText($d['email'] ?? null)); $code = preg_replace('/[^0-9]/', '', (string)($d['code'] ?? ''));
         rateLimit('pw-reset-ip', 30, 3600);
+        if (validEmail($email) && $shared($email)) {
+            if ($problem = passwordProblem($d['password'] ?? null, $email)) fail(400, $problem, 'password');
+            if (($d['password'] ?? null) !== ($d['passwordConfirm'] ?? null)) fail(400, 'passwordMismatch', 'passwordConfirm');
+            $r = idCall('website_account_reset_finish', ['p_identifier'=>$email, 'p_dial'=>'', 'p_code'=>$code, 'p_password'=>(string)$d['password']]);
+            if (isset($r['error'])) idFail($r, in_array($r['code'] ?? '', ['invalid_password'], true) ? 'password' : 'code');
+            $u = one('SELECT id FROM users WHERE account_id=?', [$r['account']['id'] ?? '']);
+            if ($u) { runSql('UPDATE users SET password_hash=? WHERE id=?', [password_hash((string)$d['password'], PASSWORD_DEFAULT), $u['id']]); runSql('DELETE FROM sessions WHERE user_id=?', [$u['id']]); }
+            sendJson(200, ['ok'=>true]);
+        }
         $row = validEmail($email) ? one('SELECT * FROM password_codes WHERE email=?', [$email]) : false;
         if (!$row || (int)$row['expires_at'] < nowMs() || (int)$row['attempts'] >= 5) fail(400, 'codeExpired', 'code');
         runSql('UPDATE password_codes SET attempts=attempts+1 WHERE email=?', [$email]);
@@ -223,6 +245,9 @@ function metonPasswordApi(string $method, string $path, array|false $session): v
         runSql('UPDATE users SET password_hash=? WHERE id=?', [password_hash((string)$d['password'], PASSWORD_DEFAULT), $u['id']]);
         runSql('DELETE FROM sessions WHERE user_id=?', [$u['id']]);
         runSql('DELETE FROM password_codes WHERE email=?', [$email]);
+        // A website user from before moves to its METON account now, with the new password.
+        $moved = one('SELECT * FROM users WHERE id=?', [$u['id']]);
+        if ($moved) identityMoveOne($moved, (string)$d['password']);
         sendJson(200, ['ok'=>true]);
     }
     fail(404, 'notFound');
@@ -255,15 +280,24 @@ function metonGoogleSignupApi(array|false $session): void {
     if (!in_array($v['gender'], GENDERS, true)) fail(400, 'invalidGender', 'gender');
     if (!in_array($d['country'] ?? null, countryList(), true)) fail(400, 'invalidCountry', 'country');
     $v['country'] = $d['country'];
+    // 2.46: a METON account made with the email Google confirmed (no password until the person sets one).
+    $accountId = null;
+    if (identityOn()) {
+        ensureAvailable($v);
+        $r = idCall('website_account_google_signup', ['p_email'=>$v['email'], 'p_name'=>$v['fullName'], 'p_gender'=>$v['gender'], 'p_country'=>$v['country']]);
+        if (($r['status'] ?? '') !== 'ok') { if (($r['code'] ?? '') === 'email_taken') fail(409, 'accountUnavailable'); idFail($r, 'fullName'); }
+        $accountId = $r['account']['id'];
+    }
     db()->exec('BEGIN IMMEDIATE');
     try {
         ensureAvailable($v);
-        try { runSql('INSERT INTO users(username,full_name,email,country,region,password_hash,is_admin,gender) VALUES(?,?,?,?,?,NULL,0,?)', [generatedUsername($v['email']), $v['fullName'], $v['email'], $v['country'], '', $v['gender']]); }
+        try { runSql('INSERT INTO users(username,full_name,email,country,region,password_hash,is_admin,gender,account_id) VALUES(?,?,?,?,?,NULL,0,?,?)', [generatedUsername($v['email']), $v['fullName'], $v['email'], $v['country'], '', $v['gender'], $accountId]); }
         catch (PDOException $e) { if (str_contains($e->getMessage(), 'UNIQUE constraint failed')) fail(409, 'accountUnavailable'); throw $e; }
         $id = (int)db()->lastInsertId();
         runSql('DELETE FROM google_signups WHERE email=?', [$v['email']]);
         db()->exec('COMMIT');
     } catch (Throwable $e) { db()->exec('ROLLBACK'); throw $e; }
+    if ($accountId) { $m = idCall('website_account_map', ['p_website_user'=>$id, 'p_account'=>$accountId]); if (($m['status'] ?? '') !== 'ok') error_log('METON identity: map '.$id); }
     setcookie(metonGoogleSignupCookie(), '', ['expires' => time() - 3600, 'path' => '/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Lax']);
     sendJson(201, ['user' => userDTO(one('SELECT * FROM users WHERE id=?', [$id])), 'csrf' => newSession($id, $session)]);
 }
@@ -289,6 +323,21 @@ function metonGoogleRoute(string $route, array|false $session): void {
     if (!is_array($claims) || ($claims['aud'] ?? '') !== paddleEnv('GOOGLE_CLIENT_ID') || !in_array($claims['iss'] ?? '', ['https://accounts.google.com', 'accounts.google.com'], true)
         || empty($claims['email_verified']) || (int)($claims['exp'] ?? 0) < time()) redirectTo('/login?google=failed');
     $email = strtolower((string)$claims['email']);
+    // 2.46: Google leads to the METON account that signs in with this email. One that never confirmed it needs its
+    // own password once (whoever set that password never proved the email); that sign-in confirms it.
+    if (identityOn()) {
+        $g = idCall('website_account_google', ['p_email'=>$email]);
+        if (($g['status'] ?? '') === 'ok') {
+            $u = idUserFor($g['account']);
+            if (is_array($u)) { newSession((int)$u['id'], $session); redirectTo('/account'); }
+            if ($u === null || $u === 'confirm') { identityGoogleProofSet($email); redirectTo('/login?google=password&email='.rawurlencode($email)); }
+            redirectTo('/login?google=failed');
+        }
+        if (($g['status'] ?? '') === 'needs_password') { identityGoogleProofSet($email); redirectTo('/login?google=password&email='.rawurlencode($email)); }
+        // 'new': no METON account signs in with this email. A website user from before with it (not moved) signs in as before.
+        $legacy = one('SELECT id FROM users WHERE email=? AND account_id IS NULL', [$email]);
+        if ($legacy) { newSession((int)$legacy['id'], $session); redirectTo('/account'); }
+    }
     $u = one('SELECT id FROM users WHERE email=?', [$email]);
     if (!$u) {
         // A new business account with this Google email: the person confirms a few details first (no password).

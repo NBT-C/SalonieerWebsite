@@ -22,6 +22,13 @@ function adminAlertEmails(): array {
     return array_values(array_unique(array_filter($list, fn($a) => filter_var($a, FILTER_VALIDATE_EMAIL))));
 }
 function siteUrl(): string { return rtrim(mailSetting('SITE_URL','https://salonieer.com'),'/'); }
+// 2.46: links to METON pages in emails (account, admin) go to the METON domain, where people use the site (the
+// session cookie is per domain). siteUrl() itself stays as configured: payment links (Paddle's approved checkout
+// domain), the Paddle webhook and the mail server greeting use it and move only with Paddle's settings.
+function metonSiteUrl(): string {
+    $s = siteUrl();
+    return preg_match('~^https?://(www\.)?salonieer\.com$~i', $s) ? 'https://www.meton.work' : $s;
+}
 const APP_REF_PATTERN = '/SLN-[A-F0-9]{8}-[A-F0-9]{4}/';
 
 // ---- Transport ----------------------------------------------------------------------------------------------------
@@ -225,10 +232,12 @@ function mailCopy(string $template, string $lang): array {
             'ar' => ['منشأتك جاهزة', "خبر سعيد — {salon} منشور وجاهز في تطبيق METON.\n\nرمز المنشأة: {code}\nالباقة: {plan}\n\nلإدارة عملك:\n1. ثبّت تطبيق METON واضغط «تسجيل الدخول».\n2. سجّل الدخول برقم الهاتف {phone} وكلمة المرور المؤقتة {password}، فتظهر منشأتك في «أعمالي» كمنشأة تملكها (رمز المنشأة {code}).\n3. غيّر كلمة المرور من «حسابي» بعد الدخول.\nلديك حساب METON بهذا الرقم؟ أضف المنشأة بالرمز {code} أو برمز QR في صفحة حسابك وأدخل كلمة المرور المؤقتة مرة واحدة لربطه.\n\nتجد كل تفاصيل منشأتك ورمز QR في صفحة حسابك: {site}/account"],
             'he' => ['העסק שלך מוכן', "חדשות טובות — {salon} באוויר ומוכן באפליקציית METON.\n\nקוד העסק: {code}\nחבילה: {plan}\n\nכדי לנהל את העסק:\n1. התקינו את METON ולחצו על ״התחברות״.\n2. התחברו עם הטלפון {phone} והסיסמה הזמנית {password}. העסק יופיע ב״העסקים שלי״ כעסק שלכם (קוד העסק {code}).\n3. שנו את הסיסמה מ״החשבון שלי״ לאחר הכניסה.\nכבר יש לכם חשבון METON עם המספר הזה? הוסיפו את העסק עם הקוד {code} או ה־QR בדף החשבון והזינו את הסיסמה הזמנית פעם אחת כדי לקשר אותו.\n\nכל פרטי העסק וקוד ה־QR בדף החשבון: {site}/account"]],
         // 2.40: the owner signs in with their own METON account (no temporary password).
+        // 2.46: the business belongs to the applicant's own METON account (the same as on the website); the phone
+        // number typed for the owner also gets owner access, as before.
         'approved_account' => [
-            'en' => ['Your business is ready', "Great news — {salon} is live and ready in the METON app.\n\nBusiness code: {code}\nPlan: {plan}\n\nTo manage your business:\n1. Install METON (App Store / Google Play).\n2. Sign in with your METON account using the phone number {v:phone} — no account yet? Tap Create account and use this number. (If your app asks for a business code instead, it is an older version: enter {code} and register with this number and a password of your choice.)\n3. Your business appears in My Businesses as yours (business code {code}). No business password is needed.\n\nYour account page shows all your business details and its QR code: {site}/account"],
-            'ar' => ['منشأتك جاهزة', "خبر سعيد — {salon} منشور وجاهز في تطبيق METON.\n\nرمز المنشأة: {code}\nالباقة: {plan}\n\nلإدارة عملك:\n1. ثبّت تطبيق METON.\n2. سجّل الدخول بحساب METON الخاص بك برقم الهاتف {v:phone} — ليس لديك حساب؟ اضغط «إنشاء حساب» واستخدم هذا الرقم. (إذا طلب التطبيق رمز المنشأة بدلاً من ذلك فهو نسخة أقدم: أدخل {code} وسجّل بهذا الرقم وبكلمة مرور تختارها.)\n3. تظهر منشأتك في «أعمالي» كمنشأة تملكها (رمز المنشأة {code})، دون أي كلمة مرور للمنشأة.\n\nتجد كل تفاصيل منشأتك ورمز QR في صفحة حسابك: {site}/account"],
-            'he' => ['העסק שלך מוכן', "חדשות טובות — {salon} באוויר ומוכן באפליקציית METON.\n\nקוד העסק: {code}\nחבילה: {plan}\n\nכדי לנהל את העסק:\n1. התקינו את METON.\n2. היכנסו עם חשבון ה־METON שלכם במספר הטלפון {v:phone} — אין חשבון? לחצו על ״יצירת חשבון״ והשתמשו במספר הזה. (אם היישום מבקש קוד עסק במקום זאת, זו גרסה ישנה: הזינו {code} והירשמו עם המספר הזה וסיסמה לבחירתכם.)\n3. העסק יופיע ב״העסקים שלי״ כעסק שלכם (קוד העסק {code}), בלי סיסמה לעסק.\n\nכל פרטי העסק וקוד ה־QR בדף החשבון: {site}/account"]],
+            'en' => ['Your business is ready', "Great news — {salon} is live and ready in the METON app.\n\nBusiness code: {code}\nPlan: {plan}\n\nTo manage your business:\n1. Install METON (App Store / Google Play).\n2. Sign in with the same email and password you use on the METON website.\n3. Your business is in My Businesses as yours (business code {code}). If the app asks for your phone number first, add it: businesses keep a phone number for everyone.\n\nOwner access also goes to the METON account with the phone number {v:phone}.\n\nYour account page shows all your business details and its QR code: {site}/account"],
+            'ar' => ['منشأتك جاهزة', "خبر سعيد — {salon} منشور وجاهز في تطبيق METON.\n\nرمز المنشأة: {code}\nالباقة: {plan}\n\nلإدارة عملك:\n1. ثبّت تطبيق METON.\n2. سجّل الدخول بالبريد الإلكتروني وكلمة المرور نفسيهما اللذين تستخدمهما على موقع METON.\n3. منشأتك في «أعمالي» كمنشأة تملكها (رمز المنشأة {code}). إذا طلب التطبيق رقم هاتفك أولاً فأضفه: تحفظ الأعمال رقم هاتف لكل من فيها.\n\nيحصل حساب METON صاحب الرقم {v:phone} أيضاً على وصول المالك.\n\nتجد كل تفاصيل منشأتك ورمز QR في صفحة حسابك: {site}/account"],
+            'he' => ['העסק שלך מוכן', "חדשות טובות — {salon} באוויר ומוכן באפליקציית METON.\n\nקוד העסק: {code}\nחבילה: {plan}\n\nכדי לנהל את העסק:\n1. התקינו את METON.\n2. היכנסו עם אותו מייל ואותה סיסמה שבהם אתם משתמשים באתר METON.\n3. העסק נמצא ב״העסקים שלי״ כעסק שלכם (קוד העסק {code}). אם האפליקציה מבקשת קודם מספר טלפון, הוסיפו אותו: עסקים שומרים מספר טלפון לכל מי שבהם.\n\nגם חשבון ה-METON עם מספר הטלפון {v:phone} מקבל גישת בעלים.\n\nכל פרטי העסק וקוד ה־QR בדף החשבון: {site}/account"]],
         'declined' => [
             'en' => ['About {salon}', "We're sorry — we can't publish {salon} ({ref}) at this time.\n\n{body}\n\nIf you have questions, just reply to this email."],
             'ar' => ['بخصوص {salon}', "نأسف — لا يمكننا نشر {salon} ({ref}) حالياً.\n\n{body}\n\nإذا كان لديك أي سؤال، رد على هذا البريد."],
@@ -238,6 +247,15 @@ function mailCopy(string $template, string $lang): array {
             'en' => ['Your METON code: {v:code}', "Hello {v:name},\n\nYour code to confirm this email address in your METON account: {v:code}\n\nIt expires in 10 minutes. If you didn't ask for it, you can ignore this email."],
             'ar' => ['رمز METON الخاص بك: {v:code}', "مرحباً {v:name}،\n\nرمزك لتأكيد هذا البريد الإلكتروني في حسابك على METON: {v:code}\n\nتنتهي صلاحيته بعد 10 دقائق. إذا لم تطلبه يمكنك تجاهل هذه الرسالة."],
             'he' => ['הקוד שלך ב-METON: {v:code}', "שלום {v:name},\n\nהקוד לאישור כתובת המייל בחשבון METON שלך: {v:code}\n\nהוא בתוקף ל-10 דקות. אם לא ביקשת אותו, אפשר להתעלם מהמייל."]],
+        // ---- 2.46: one METON account for the website and the app ----
+        'signin_code' => [
+            'en' => ['Your METON sign-in code: {v:code}', "Hello {v:name},\n\nYour code to finish signing in to METON: {v:code}\n\nEntering it also confirms this email address on your account. It expires in 10 minutes. If you didn't try to sign in, change your password from your account page: {site}/account"],
+            'ar' => ['رمز الدخول إلى METON: {v:code}', "مرحباً {v:name}،\n\nرمزك لإكمال تسجيل الدخول إلى METON: {v:code}\n\nإدخاله يؤكد أيضاً هذا البريد الإلكتروني في حسابك. تنتهي صلاحيته بعد 10 دقائق. إذا لم تحاول تسجيل الدخول، غيّر كلمة المرور من صفحة حسابك: {site}/account"],
+            'he' => ['קוד הכניסה שלך ל-METON: {v:code}', "שלום {v:name},\n\nהקוד שלך להשלמת הכניסה ל-METON: {v:code}\n\nהזנתו גם מאמתת את כתובת המייל הזו בחשבון. הוא בתוקף ל-10 דקות. אם לא ניסית להתחבר, שנו את הסיסמה מדף החשבון: {site}/account"]],
+        'reset_code' => [
+            'en' => ['Your METON code: {v:code}', "Hello {v:name},\n\nYour code to set a new METON password: {v:code}\n\nIt expires in 15 minutes and works in the METON app and on the website. If you didn't ask for it, you can ignore this email; your password stays the same."],
+            'ar' => ['رمز METON الخاص بك: {v:code}', "مرحباً {v:name}،\n\nرمزك لتعيين كلمة مرور جديدة لحساب METON: {v:code}\n\nتنتهي صلاحيته بعد 15 دقيقة ويعمل في تطبيق METON وعلى الموقع. إذا لم تطلبه يمكنك تجاهل هذه الرسالة، وتبقى كلمة مرورك كما هي."],
+            'he' => ['הקוד שלך ב-METON: {v:code}', "שלום {v:name},\n\nהקוד שלך להגדרת סיסמה חדשה ל-METON: {v:code}\n\nהוא בתוקף ל-15 דקות ופועל באפליקציית METON ובאתר. אם לא ביקשת אותו, אפשר להתעלם מהמייל; הסיסמה נשארת כפי שהיא."]],
         'team_invite' => [
             'en' => ['{v:inviter} invited you to join {v:salon} on METON', "{v:inviter} invited you to join the team of {v:salon} on METON as {v:role}.\n\nTo accept or decline:\n1. Open the METON app (App Store / Google Play) and sign in, or create your account.\n2. In My Account, add this email address ({v:to}) and confirm it with the code we send you.\n3. The invitation then appears in Team invitations: accept or decline it.\n\nNothing changes until you accept. The invitation is valid until {v:expires}."],
             'ar' => ['{v:inviter} يدعوك للانضمام إلى {v:salon} على METON', "دعاك {v:inviter} للانضمام إلى فريق {v:salon} على METON بدور {v:role}.\n\nلقبول الدعوة أو رفضها:\n1. افتح تطبيق METON (App Store / Google Play) وسجّل الدخول أو أنشئ حسابك.\n2. من «حسابي» أضف هذا البريد الإلكتروني ({v:to}) وأكّده بالرمز الذي نرسله إليك.\n3. تظهر الدعوة بعدها في «دعوات الفريق»: اقبلها أو ارفضها.\n\nلا يتغير شيء حتى تقبل. الدعوة صالحة حتى {v:expires}."],
@@ -374,7 +392,7 @@ function renderMail(array $item): array {
         '{code}'=>$a['salon']['accessCode'] ?? '',
         '{created}'=>isset($a['createdAt']) ? gmdate('Y-m-d H:i', strtotime((string)$a['createdAt'])).' UTC' : '', '{country}'=>$a['country'] ?? '', '{lang}'=>strtoupper((string)($a['lang'] ?? '')),
         '{idlast4}'=>($a['idLast4'] ?? '') !== '' ? $a['idLast4'] : 'not asked (business outside Israel/Palestine)', '{category}'=>ucfirst((string)($a['salonCategory'] ?? '')), '{timezone}'=>$a['timezone'] ?? '', '{logo}'=>$a['logoUrl'] ?? '',
-        '{loyalty}'=>!empty($q['loyalty']) ? 'yes' : (in_array($a['plan'] ?? '', ['business','enterprise'], true) ? 'included' : 'no'), '{extra}'=>(string)(int)($q['extraSpecialists'] ?? 0), '{password}'=>(string)($item['vars']['password'] ?? ''), '{body}'=>(string)($item['vars']['body'] ?? ''), '{site}'=>siteUrl()];
+        '{loyalty}'=>!empty($q['loyalty']) ? 'yes' : (in_array($a['plan'] ?? '', ['business','enterprise'], true) ? 'included' : 'no'), '{extra}'=>(string)(int)($q['extraSpecialists'] ?? 0), '{password}'=>(string)($item['vars']['password'] ?? ''), '{body}'=>(string)($item['vars']['body'] ?? ''), '{site}'=>metonSiteUrl()];
     $vars += billingMailVars($item, $lang);
     // {v:name} = a value queued with the email itself (problem reports, cleanup notices).
     foreach (($item['vars'] ?? []) as $k => $v) if (is_string($k) && is_scalar($v)) $vars['{v:'.$k.'}'] = (string)$v;
@@ -386,7 +404,7 @@ function renderMail(array $item): array {
     $html = '<!doctype html><html lang="'.$lang.'" dir="'.$dir.'"><body style="margin:0;background:#f4f1ea;font-family:Arial,Helvetica,sans-serif;color:#1d1d1b">'
         .'<div style="max-width:560px;margin:0 auto;padding:28px 18px"><div style="background:#fff;border-radius:16px;padding:28px;line-height:1.7;font-size:15px;text-align:'.($dir==='rtl'?'right':'left').'">'
         .'<div style="font-weight:800;letter-spacing:.08em;color:#241D28;margin-bottom:14px">METON</div>'.$safe.'</div>'
-        .'<p style="font-size:12px;color:#8a857b;text-align:center;margin-top:16px">METON · '.htmlspecialchars(siteUrl()).'</p></div></body></html>';
+        .'<p style="font-size:12px;color:#8a857b;text-align:center;margin-top:16px">METON · '.htmlspecialchars(metonSiteUrl()).'</p></div></body></html>';
     return [$subject, $html, $text];
 }
 
@@ -416,7 +434,7 @@ function billingMailVars(array $item, string $lang): array {
     }
     $amount = $v['preview']['immediate'] ?? null;
     return ['{days}'=>(string)(int)($v['daysLeft'] ?? 7), '{date}'=>$date, '{change}'=>$change, '{note}'=>trim((string)($v['note'] ?? '')),
-        '{link}'=>(string)($v['link'] ?? siteUrl().'/account'),
+        '{link}'=>(string)($v['link'] ?? metonSiteUrl().'/account'),
         '{amount}'=>isset($v['amount']) ? centsToMoney((string)$v['amount'], (string)($v['currency'] ?? 'USD')) : '',
         '{amountline}'=>is_string($amount) && $amount !== '' ? strtr($words['charged'], ['{x}'=>$amount]) : '',
         '{reasontext}'=>$words[($v['reason'] ?? '') === 'canceled' ? 'canceled' : 'past_due']];
@@ -436,11 +454,24 @@ function mailWork(int $minSeconds = 60, bool $verbose = false): array {
     if (!supabaseReady() || !mailReady()) return $report + ['skipped'=>'not configured'];
     if (!workerClaim('mail', $minSeconds)) return $report + ['skipped'=>'busy or too soon'];
     try {
+        // 2.46: the database learns whether phone codes can go out (WhatsApp set up in the private .env).
+        $whatsapp = function_exists('metonChannel') && metonChannel() === 'whatsapp';
+        try { sbRpc('website_identity_channels', ['p_whatsapp'=>$whatsapp]); } catch (Throwable $e) { error_log('METON channels: '.$e->getMessage()); }
         $started = microtime(true);
         while (microtime(true) - $started < 20) {
             $batch = sbRpc('website_outbox_claim', ['p_limit'=>10]);
             if (!$batch) break;
             foreach ($batch as $item) {
+                // A phone code goes by WhatsApp (never by email); without WhatsApp it is dropped (nobody can receive it).
+                if (($item['template'] ?? '') === 'phone_code') {
+                    $phone = (string)($item['vars']['phone'] ?? ''); $code = (string)($item['vars']['code'] ?? '');
+                    $sent = $whatsapp && preg_match('/^\+[1-9][0-9]{6,14}$/D', $phone) && preg_match('/^[0-9]{6}$/D', $code)
+                        && metonSendWhatsApp($phone, $code, metonLang($item['vars']['lang'] ?? 'en'));
+                    try { sbRpc('website_outbox_finish', ['p_id'=>$item['id'], 'p_ok'=>$sent || !$whatsapp, 'p_error'=>$sent ? '' : ($whatsapp ? 'whatsapp failed' : 'no phone channel')]); }
+                    catch (Throwable $e) { error_log('METON phone code '.$item['id'].': '.$e->getMessage()); }
+                    $sent ? $report['sent']++ : $report['failed']++;
+                    continue;
+                }
                 try {
                     $to = $item['recipient'] === 'admin' ? adminAlertEmails()
                         : ($item['recipient'] === 'direct' ? (filter_var((string)($item['vars']['to'] ?? ''), FILTER_VALIDATE_EMAIL) ?: '') : (string)($item['application']['email'] ?? ''));

@@ -28,6 +28,7 @@ require __DIR__.'/billing.php';
 require __DIR__.'/ops.php';
 // METON 2.44: business booking pages, private booking links, My bookings.
 require __DIR__.'/booking.php';
+require __DIR__.'/identity.php';
 
 final class HttpFailure extends RuntimeException {
     public function __construct(public int $status, public string $errorCode, public ?string $field = null) {
@@ -152,6 +153,13 @@ SQL);
         $cols=array_column($db->query('PRAGMA table_info(users)')->fetchAll(),'name');
         if (!in_array('gender',$cols,true)) $db->exec("ALTER TABLE users ADD COLUMN gender TEXT CHECK (gender IN ('male','female'))");
         $db->exec('PRAGMA user_version=9');
+    }
+    if ((int)$db->query('PRAGMA user_version')->fetchColumn() < 10) {
+        // 2.46: each website user is linked to its METON account (shared with the app); identity.php.
+        $cols=array_column($db->query('PRAGMA table_info(users)')->fetchAll(),'name');
+        if (!in_array('account_id',$cols,true)) $db->exec('ALTER TABLE users ADD COLUMN account_id TEXT');
+        $db->exec('CREATE UNIQUE INDEX IF NOT EXISTS users_account ON users(account_id) WHERE account_id IS NOT NULL');
+        $db->exec('PRAGMA user_version=10');
     }
     return $db;
 }
@@ -735,6 +743,8 @@ function api(string $method,string $path,array|false $session,array|false $user)
         mailWorkAfterResponse(60);
         // Grace reminders and pauses run even when the cron job isn't set up.
         billingWorkAfterResponse(600);
+        // 2.46: website users from before move to their METON accounts (once).
+        if (identityOn() && setting('identity_import')!=='done') afterResponse('identityImport');
         if (!$session) rateLimit('guest-session',200,3600);
         sendJson(200,['user'=>userDTO($user),'csrf'=>$session?$session['csrf']:newSession(null,$session),'checkout'=>checkoutConfig($user),'google'=>metonGoogleReady()]+(!$user&&($g=metonGoogleSignup())?['googleSignup'=>$g]:[])+($user&&(int)$user['is_admin']?['platform'=>platformConfig()]:[]));
     }
@@ -766,6 +776,8 @@ function api(string $method,string $path,array|false $session,array|false $user)
         sendJson(200,billingSummary($user));
     }
     if ($method==='GET'&&$path==='/api/challenge') { rateLimit('challenge',120,3600);sendJson(200,newChallenge()); }
+    // 2.46: the app's "send the code now" (it can only make already-queued mail go out).
+    if ($method==='GET'&&$path==='/api/outbox/kick') identityKick();
     if ($method==='POST'&&$path==='/api/logout') {
         // Idempotent: a second click, an expired session or another tab's logout all end signed out without an error.
         if ($session && $session['user_id']!==null) {
@@ -787,6 +799,8 @@ function api(string $method,string $path,array|false $session,array|false $user)
     if ($method==='POST'&&$path==='/api/register/google') { if ($user) fail(409,'alreadyLoggedIn'); metonGoogleSignupApi($session); }
     if ($method==='POST'&&$path==='/api/register') {
         if ($user) fail(409,'alreadyLoggedIn');
+        // 2.46: the account is a METON account (website and app); identity.php.
+        if (identityOn()) identityRegister($session);
         rateLimit('registration',12,3600);$d=body();
         // Hidden field people never see; filled in only by form-filling bots.
         if (($d['website']??'')!=='') fail(400,'invalidRequest');
@@ -810,7 +824,16 @@ function api(string $method,string $path,array|false $session,array|false $user)
         } catch (Throwable $e) { db()->exec('ROLLBACK');throw $e; }
         sendJson(201,['user'=>userDTO(one('SELECT * FROM users WHERE id=?',[$id])),'csrf'=>newSession($id,$session)]);
     }
+    // 2.46: sign in with an email or a phone number of the METON account (identity.php); two more steps when the
+    // account must add or confirm an email for the website.
+    if ($method==='POST'&&$path==='/api/login/email'&&identityOn()) identityLoginEmail();
+    if ($method==='POST'&&$path==='/api/login/verify'&&identityOn()) identityLoginVerify($session);
+    if (str_starts_with($path,'/api/account/identity')||in_array($path,['/api/account/email','/api/account/email/verify','/api/account/phone','/api/account/phone/verify','/api/account/link','/api/account/link/finish'],true)) {
+        if (!identityOn()) fail(404,'notFound');
+        identityApi($method,$path,$user);
+    }
     if ($method==='POST'&&$path==='/api/login') {
+        if (identityOn()) identityLogin($session);
         rateLimit('login-ip',40,900);$d=body();
         $email=strtolower(cleanText($d['email']??null));$password=$d['password']??null;
         if (!validEmail($email) || !is_string($password) || $password==='' || strlen($password)>512) fail(401,'invalidCredentials');
@@ -855,6 +878,11 @@ function api(string $method,string $path,array|false $session,array|false $user)
         // Gender is optional here: an account made before 2.41 keeps it empty until the person chooses.
         $gender=$d['gender']??null;
         if ($gender!==null && !in_array($gender,GENDERS,true)) fail(400,'invalidGender','gender');
+        // 2.46: the name is the METON account's (the app and every business it is linked to show it too).
+        if (identityOn() && !empty($user['account_id'])) {
+            $r=idCall('website_account_profile',['p_account'=>$user['account_id'],'p_name'=>$name,'p_gender'=>$gender??'']);
+            if (isset($r['error'])) idFail($r,'fullName');
+        }
         runSql('UPDATE users SET full_name=?,gender=COALESCE(?,gender) WHERE id=?',[$name,$gender,$user['id']]);
         sendJson(200,['user'=>userDTO(one('SELECT * FROM users WHERE id=?',[$user['id']]))]);
     }
@@ -862,6 +890,18 @@ function api(string $method,string $path,array|false $session,array|false $user)
         // The current password is required; every other signed-in device is signed out.
         requireUser($user);rateLimit('account-password',10,3600,(string)$user['id']);$d=body();
         $current=$d['currentPassword']??null;
+        // 2.46: the METON account's password (the same in the app); an account without one (Google) sets its first.
+        if (identityOn() && !empty($user['account_id'])) {
+            $new=$d['newPassword']??null;
+            if ($problem=passwordProblem($new,(string)$user['email'])) fail(400,$problem,'newPassword');
+            if ($new!==($d['newPasswordConfirm']??null)) fail(400,'passwordMismatch','newPasswordConfirm');
+            $r=idCall('website_account_password',['p_account'=>$user['account_id'],'p_current'=>is_string($current)?$current:'','p_new'=>$new]);
+            if (isset($r['error'])) idFail($r,($r['code']??'')==='bad_password'?'currentPassword':'newPassword');
+            db()->exec('BEGIN IMMEDIATE');
+            try { runSql('UPDATE users SET password_hash=? WHERE id=?',[password_hash($new,PASSWORD_DEFAULT),$user['id']]);runSql('DELETE FROM sessions WHERE user_id=?',[$user['id']]);db()->exec('COMMIT'); }
+            catch (Throwable $e) { db()->exec('ROLLBACK');throw $e; }
+            sendJson(200,['ok'=>true,'csrf'=>newSession((int)$user['id'],false)]);
+        }
         if (!is_string($current)||$current===''||strlen($current)>512||!verifyHash($current,$user['password_hash'])) fail(400,'wrongPassword','currentPassword');
         $new=$d['newPassword']??null;
         if ($problem=passwordProblem($new,$user['email'])) fail(400,$problem,'newPassword');
@@ -882,10 +922,19 @@ function api(string $method,string $path,array|false $session,array|false $user)
         requireUser($user);rateLimit('account-delete',5,3600,(string)$user['id']);$d=body();
         if ((int)$user['is_admin']) fail(409,'adminCannotDelete');
         if (($d['confirm']??null)!=='DELETE') fail(400,'confirmDelete','confirm');
-        if (!is_string($d['password']??null)||$d['password']===''||strlen($d['password'])>512||!verifyHash($d['password'],$user['password_hash'])) fail(400,'wrongPassword','password');
+        // 2.46: the METON account's password (Google-only accounts set one first); the METON account is deleted too.
+        $account=identityOn() && !empty($user['account_id']) ? identityAccountOf($user) : null;
+        if ($account) {
+            if (empty($account['has_password'])) fail(409,'setPasswordFirst','password');
+            $ok=is_string($d['password']??null) && $d['password']!=='' && strlen($d['password'])<=512
+                && (idCall('website_account_login',['p_identifier'=>$account['email'] ?: $account['phone'],'p_password'=>$d['password'],'p_dial'=>''])['status']??'')==='ok';
+            if (!$ok) fail(400,'wrongPassword','password');
+        }
+        elseif (!is_string($d['password']??null)||$d['password']===''||strlen($d['password'])>512||!verifyHash($d['password'],$user['password_hash'])) fail(400,'wrongPassword','password');
         try {
             if (accountDeletionStatus($user)['blocking']) fail(409,'activeSubscription');
             if (supabaseReady()) sbRpc('website_account_closed',['p_user'=>(int)$user['id']]);
+            if ($account) { $r=sbRpc('website_account_delete',['p_account'=>$account['id']]); if (($r['status']??'')!=='ok') throw new RuntimeException('account delete failed'); }
         } catch (HttpFailure $e) { throw $e; } catch (Throwable $e) { supabaseFail($e); }
         db()->exec('BEGIN IMMEDIATE');
         try { runSql('DELETE FROM users WHERE id=?',[$user['id']]);db()->exec('COMMIT'); }
@@ -1213,6 +1262,8 @@ if (defined('SALONIEER_CRON')) {
     try { fxRates(); } catch (Throwable $e) { error_log('Salonieer cron rates: '.$e->getMessage()); }
     billingWork(0, true);
     mailWork(0, true);
+    // 2.46: website users from before move to their METON accounts (once; also after a page load).
+    try { identityImport(); } catch (Throwable $e) { error_log('Salonieer cron identity: '.$e->getMessage()); }
     exit;
 }
 header('X-Content-Type-Options: nosniff');header('X-Frame-Options: DENY');header('Referrer-Policy: same-origin');
