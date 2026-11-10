@@ -4,8 +4,10 @@ declare(strict_types=1);
 // v2.0). The rules live in Supabase (backend/meton_web.sql in Salonieer-KMP, website_meton_* functions); this file:
 //  * keeps who verified which number in this browser session (SQLite book_verify), never in the browser;
 //  * sends the verification code — WhatsApp Cloud API (Meta, direct) when WHATSAPP_TOKEN and WHATSAPP_PHONE_NUMBER_ID
-//    are set in the private .env. Without them the booking page takes requests marked "phone not verified" for the
-//    business (and My bookings is unavailable), until a code channel is configured;
+//    are set in the private .env. Without them (2.47, owner decision 2026-11-10) online booking and My bookings are
+//    paused: a booking is never taken with a number nobody proved;
+//  * signed in on the website, the booking goes into that METON account; a guest can later add one booking to an
+//    account from its private link (/api/book/claim);
 //  * sets the 90-day trusted-browser cookie (HttpOnly) bound to the verified number;
 //  * never logs or returns a code. Demo pages never call these endpoints (their verification is simulated in the page).
 if (!defined('SALONIEER')) { http_response_code(404); exit; }
@@ -35,6 +37,13 @@ function metonVerify(array|false $session): array|false {
     if (!$session) return false;
     metonTables();
     return one('SELECT * FROM book_verify WHERE session_hash=? AND expires_at>?', [$session['token_hash'], nowMs()]);
+}
+// 2.47: the METON account of the website user signed in on this browser (null for a guest).
+function metonAccountOf(array|false $session): ?array {
+    if (!$session || empty($session['user_id'])) return null;
+    $u = one('SELECT id, full_name, account_id FROM users WHERE id=?', [$session['user_id']]);
+    $id = is_array($u) ? metonUuid((string)($u['account_id'] ?? '')) : '';
+    return $id !== '' ? ['id'=>$id, 'name'=>(string)($u['full_name'] ?? '')] : null;
 }
 function metonLang(mixed $v): string { return in_array($v, ['ar','en','he'], true) ? $v : 'en'; }
 function metonE164(mixed $v): string { $v = is_string($v) ? trim($v) : ''; return preg_match('/^\+[1-9][0-9]{6,14}$/D', $v) ? $v : ''; }
@@ -394,7 +403,9 @@ function metonBookingApi(string $method, string $path, array|false $session): vo
         if (!preg_match('/^[A-Za-z0-9_-]{2,64}$/D', $code)) fail(400, 'invalidRequest');
         $p = metonRpc('website_meton_page', ['p_code'=>$code]);
         if (empty($p['found'])) fail(404, 'notFound');
-        sendJson(200, ['page'=>$p, 'verify'=>metonChannel()]);
+        // 2.47: signed in on the website → the booking goes into that METON account (shown as "Booking as …").
+        $acc = metonAccountOf($session);
+        sendJson(200, ['page'=>$p, 'verify'=>metonChannel(), 'account'=>$acc ? ['name'=>$acc['name']] : null]);
     }
     if ($method === 'GET' && $path === '/api/book/times') {
         rateLimit('book-times', 900, 3600);
@@ -427,11 +438,8 @@ function metonBookingApi(string $method, string $path, array|false $session): vo
                 sendJson(200, ['state'=>'verified', 'trusted'=>true, 'name'=>metonHint($slug, (string)$t['customer_id'], (string)$t['phone'])]);
             }
         }
-        if (metonChannel() === 'none') {
-            if ($purpose === 'my_bookings') metonError(409, 'verifyUnavailable');
-            runSql('INSERT INTO book_verify(session_hash,phone,otp_id,customer_id,verified_at,expires_at) VALUES(?,?,?,?,?,?)', [$sh, $phone, null, null, null, nowMs()+1800000]);
-            sendJson(200, ['state'=>'unverified']);
-        }
+        // 2.47 (2026-11-10): no code channel, no booking — a number is never taken unverified.
+        if (metonChannel() === 'none') metonError(409, 'verifyUnavailable');
         $o = metonRpc('website_meton_otp_start', ['p_phone'=>$phone, 'p_purpose'=>$purpose]);
         if (($o['error'] ?? '') === 'too_soon') metonError(429, 'codeTooSoon', ['wait'=>(int)($o['wait'] ?? 45)]);
         if (($o['error'] ?? '') === 'limit') metonError(429, 'tooManyAttempts');
@@ -461,26 +469,39 @@ function metonBookingApi(string $method, string $path, array|false $session): vo
         if ($prior && hash_equals($prior['session_hash'], $sh)) sendJson(201, json_decode($prior['response'], true));
         if (!$row) metonError(409, 'verifyFirst');
         $customer = (string)($row['customer_id'] ?? '');
-        if ($customer === '' && metonChannel() !== 'none') metonError(409, 'verifyFirst');
+        if ($customer === '') metonError(409, 'verifyFirst');
+        $acc = metonAccountOf($session);
         $slug = metonSlug($d['slug'] ?? ''); $svc = metonUuid($d['service'] ?? ''); $sp = metonUuid($d['specialist'] ?? '');
         $date = (string)($d['date'] ?? ''); $time = (string)($d['time'] ?? '');
         if ($slug === '' || $svc === '' || $sp === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date) || !preg_match('/^\d{2}:\d{2}$/D', $time)) fail(400, 'invalidRequest');
         rateLimit('book-create', 20, 3600);
         $r = metonRpc('website_meton_book', ['p_slug'=>$slug, 'p_service'=>$svc, 'p_barber'=>$sp, 'p_date'=>$date, 'p_time'=>$time, 'p_phone'=>$row['phone'],
-            'p_name'=>mb_substr(is_string($d['name'] ?? null) ? $d['name'] : '', 0, 80), 'p_customer'=>$customer !== '' ? $customer : null,
-            'p_request_key'=>$key, 'p_note'=>mb_substr(is_string($d['note'] ?? null) ? $d['note'] : '', 0, 300)]);
+            'p_name'=>mb_substr(is_string($d['name'] ?? null) ? $d['name'] : '', 0, 80), 'p_customer'=>$customer,
+            'p_request_key'=>$key, 'p_note'=>mb_substr(is_string($d['note'] ?? null) ? $d['note'] : '', 0, 300), 'p_account'=>$acc ? $acc['id'] : null]);
         $err = (string)($r['error'] ?? '');
         if ($err !== '') {
             $map = ['slot_taken'=>'slotTaken', 'invalid_name'=>'invalidName', 'use_app'=>'useApp', 'unavailable'=>'bookingUnavailable', 'busy'=>'tryAgain',
-                'not_verified'=>'verifyFirst', 'invalid_phone'=>'invalidPhone', 'rejected'=>'bookingRejected'];
+                'not_verified'=>'verifyFirst', 'invalid_phone'=>'invalidPhone', 'rejected'=>'bookingRejected', 'account'=>'accountNotMoved'];
             metonError(409, $map[$err] ?? 'bookingRejected', array_filter(['detail'=>is_string($r['message'] ?? null) ? mb_substr($r['message'], 0, 200) : null, 'field'=>$err === 'invalid_name' ? 'name' : null]));
         }
         if (!empty($r['duplicate'])) sendJson(200, ['duplicate'=>true]);
         $res = ['booking'=>['status'=>(string)($r['status'] ?? 'pending'), 'date'=>(string)($r['date'] ?? $date), 'time'=>(string)($r['time'] ?? $time),
             'service'=>(string)($r['service'] ?? ''), 'specialist'=>(string)($r['specialist'] ?? ''), 'name'=>(string)($r['name'] ?? ''), 'verified'=>!empty($r['verified'])],
-            'manage'=>'/m/'.(string)$r['link_token']];
+            'manage'=>'/m/'.(string)$r['link_token'], 'inAccount'=>!empty($r['account'])];
         runSql('INSERT OR REPLACE INTO book_results(request_key,session_hash,response,created_at) VALUES(?,?,?,?)', [$key, $sh, json_encode($res, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES), nowMs()]);
         sendJson(201, $res);
+    }
+    // 2.47: "Add this booking to my METON account" — the private link proves this one booking; the person signs in.
+    if ($method === 'POST' && $path === '/api/book/claim') {
+        $d = body(); $t = (string)($d['t'] ?? '');
+        if (!preg_match('/^[a-f0-9]{48}$/D', $t)) metonError(409, 'linkInvalid');
+        $acc = metonAccountOf($session);
+        if (!$acc) fail(401, 'loginRequired');
+        rateLimit('book-claim', 30, 3600);
+        $r = metonRpc('website_meton_claim', ['p_link'=>$t, 'p_account'=>$acc['id']]);
+        $err = (string)($r['error'] ?? '');
+        if ($err !== '') metonError(409, ['other_account'=>'claimOther', 'account'=>'accountNotMoved', 'use_app'=>'useApp', 'unavailable'=>'bookingUnavailable'][$err] ?? 'linkInvalid');
+        sendJson(200, ['ok'=>true]);
     }
     if ($method === 'POST' && $path === '/api/book/cancel') {
         $d = body(); $t = (string)($d['t'] ?? '');

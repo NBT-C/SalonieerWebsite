@@ -167,7 +167,7 @@ async function api(path, options = {}) {
 }
 function nextPage(fallback='/account') {
   const value = new URLSearchParams(location.search).get('next');
-  if (!value || !/^\/(plans|apply|applications|account|admin|try\/business)(\?[^\r\n\\]*)?$/.test(value)) return fallback;
+  if (!value || !/^\/(plans|apply|applications|account|admin|try\/business|m\/[a-f0-9]{48})(\?[^\r\n\\]*)?$/.test(value)) return fallback;
   return value;
 }
 function setLanguage(value) {
@@ -371,7 +371,7 @@ const needsId = country => ID_COUNTRIES.includes(country);
 function pickerOptions(extra) { return { t, esc, lang, countryName, dialCodeOf, ...extra }; }
 // Phone with a country-code picker (the code starts at the given country).
 function phoneField(country) {
-  return `<div class="field full-span"><label for="phone">${t('phone')}</label><div class="phone-field">${countryPicker(pickerOptions({name:'phoneCountry',mode:'dial',value:dialCodeOf(country)?country:(dialCodeOf(dialGuess())?dialGuess():''),label:t('countryCode')}))}<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="24" required aria-describedby="phone-hint phone-error" dir="ltr"></div><small id="phone-hint">${t('salonPhoneHint')}</small><small id="phone-error" class="field-error" aria-live="polite"></small></div>`;
+  return `<div class="field full-span"><label for="phone">${t('bizPhoneOptional')}</label><div class="phone-field">${countryPicker(pickerOptions({name:'phoneCountry',mode:'dial',value:dialCodeOf(country)?country:(dialCodeOf(dialGuess())?dialGuess():''),label:t('countryCode')}))}<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="24" aria-describedby="phone-hint phone-error" dir="ltr"></div><small id="phone-hint">${t('salonPhoneHint')}</small><small id="phone-error" class="field-error" aria-live="polite"></small></div>`;
 }
 // The person's gender (male / female); it describes the account holder, not a salon.
 function genderField(value='') {
@@ -950,7 +950,8 @@ function rulesFor(form) {
   if (form.id === 'delete-form') return { deletePassword: v => v ? null : 'requiredPassword' };
   if (form.id === 'application-form') return { country: v => v ? null : 'requiredCountry',
     ...(needsId(el('country').value) ? { identityNumber: V.idNumber } : {}), salonName: V.salonName,
-    phone: v => !V.clean(v) ? 'requiredPhone' : phoneE164(v, el('phoneCountry').value) ? null : 'invalidPhone' };
+    // 2.47: optional (contact only; the business belongs to the applicant's account).
+    phone: v => !V.clean(v) ? null : phoneE164(v, el('phoneCountry').value) ? null : 'invalidPhone' };
   return {};
 }
 // The visible control for a field (country pickers keep their value in a hidden input).

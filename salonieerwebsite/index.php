@@ -1166,7 +1166,9 @@ function api(string $method,string $path,array|false $session,array|false $user)
         $timezone=$d['timezone']??defaultTimezone($country);if (!validTimezone($timezone)) fail(400,'invalidTimezone','timezone');
         // The salon's contact and owner sign-in number; the same number may be used on any number of applications.
         $dial=is_string($d['phoneCountry']??null)&&in_array($d['phoneCountry'],countryList(),true)?$d['phoneCountry']:$country;
-        $phone=normalizePhone($d['phone']??null,$dial);if ($phone===null) fail(400,'invalidPhone','phone');
+        // 2.47: optional — the business belongs to the applicant's METON account; a number given here is contact only.
+        $rawPhone=trim((string)($d['phone']??''));
+        $phone=$rawPhone===''?'':normalizePhone($rawPhone,$dial);if ($phone===null) fail(400,'invalidPhone','phone');
         if (!supabaseReady()) fail(503,'serviceUnavailable');
         // The same submission (a retried click) always maps to the same reference, so it is saved once.
         $key=strtoupper(hash('sha256',$user['id'].':'.$d['submissionKey']));

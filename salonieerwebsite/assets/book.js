@@ -102,6 +102,17 @@ export const W = {
   bookingRejected: { en: 'The business couldn’t accept this request.', ar: 'لم يتمكن العمل من قبول هذا الطلب.', he: 'העסק לא יכול לקבל את הבקשה.' },
   tryAgain: { en: 'Something went wrong. Try again.', ar: 'حدث خطأ. حاول مرة أخرى.', he: 'משהו השתבש. נסו שוב.' },
   verifyFirst: { en: 'Please confirm your number first.', ar: 'يرجى تأكيد رقمك أولاً.', he: 'נא לאמת קודם את המספר.' },
+  // 2.47 (2026-11-10): every booking needs a number confirmed by a code; bookings can join a METON account
+  verifyUnavailable: { en: 'Online booking is paused while phone verification is being set up. Contact the business to book.', ar: 'الحجز عبر الإنترنت متوقف مؤقتاً إلى أن يُفعَّل تأكيد رقم الهاتف. تواصل مع العمل للحجز.', he: 'ההזמנה המקוונת מושהית עד שאימות מספר הטלפון יופעל. פנו לעסק כדי להזמין.' },
+  contactBiz: { en: 'Contact the business', ar: 'تواصل مع العمل', he: 'יצירת קשר עם העסק' },
+  bookingAs: { en: 'Booking as {name} · this booking goes into your METON account.', ar: 'تحجز باسم {name} · يُحفظ هذا الحجز في حساب METON الخاص بك.', he: 'מזמינים בתור {name} · ההזמנה תישמר בחשבון METON שלך.' },
+  inAccount: { en: 'This booking is in your METON account. You can also see it in the METON app.', ar: 'هذا الحجز في حساب METON الخاص بك، ويمكنك رؤيته في تطبيق METON أيضاً.', he: 'ההזמנה הזו בחשבון METON שלך. אפשר לראות אותה גם באפליקציית METON.' },
+  claimTitle: { en: 'Keep this booking in your METON account', ar: 'احفظ هذا الحجز في حساب METON', he: 'שמירת ההזמנה בחשבון METON' },
+  claimBody: { en: 'Optional. Sign in or create an account, and this booking appears in your account and in the METON app. Only this booking is added.', ar: 'اختياري. سجّل الدخول أو أنشئ حساباً، فيظهر هذا الحجز في حسابك وفي تطبيق METON. يُضاف هذا الحجز وحده.', he: 'לא חובה. התחברו או צרו חשבון, וההזמנה תופיע בחשבון ובאפליקציית METON. רק ההזמנה הזו תתווסף.' },
+  claimBtn: { en: 'Add this booking to my METON account', ar: 'أضف هذا الحجز إلى حسابي في METON', he: 'הוספת ההזמנה לחשבון METON שלי' },
+  claimed: { en: 'This booking is now in your METON account.', ar: 'أصبح هذا الحجز في حساب METON الخاص بك.', he: 'ההזמנה נמצאת עכשיו בחשבון METON שלך.' },
+  claimOther: { en: 'This booking is already in another METON account.', ar: 'هذا الحجز موجود في حساب METON آخر.', he: 'ההזמנה הזו כבר נמצאת בחשבון METON אחר.' },
+  accountNotMoved: { en: 'We couldn’t open your METON account. Sign in again.', ar: 'تعذّر فتح حسابك في METON. سجّل الدخول من جديد.', he: 'לא הצלחנו לפתוח את חשבון METON שלך. התחברו שוב.' },
   // demos
   demoBadge: { en: 'Demo', ar: 'تجربة', he: 'הדגמה' },
   demoDoneNote: { en: 'Demo: this booking request was not sent to anyone, and no time was taken.', ar: 'تجربة: لم يُرسل طلب الحجز هذا لأي أحد، ولم يُحجز أي وقت.', he: 'הדגמה: בקשת ההזמנה הזו לא נשלחה לאף אחד, ושום זמן לא נתפס.' },
@@ -242,11 +253,13 @@ export function runBooking(c, root, page, src, opts = {}) {
   };
   const err = () => s.err ? `<p class="book-error" role="alert">${c.esc(s.err)}</p>` : '';
   const backBtn = to => `<button type="button" class="btn ghost book-back" data-go="${to}">${ico(ICON.back, 16)}${L(c, 'back')}</button>`;
-  const blocked = !set.open ? (set.closed_message || L(c, 'closed')) : set.online_booking === false ? L(c, 'offline') : !bookable.length ? L(c, 'noServices') : set.new_customers === false ? L(c, 'noNew') : '';
+  // 2.47: every booking needs a number confirmed by a code; without a code channel the page says so (no unverified requests).
+  const blocked = !set.open ? (set.closed_message || L(c, 'closed')) : set.online_booking === false ? L(c, 'offline') : !bookable.length ? L(c, 'noServices') : set.new_customers === false ? L(c, 'noNew')
+    : !demo && src.verify === 'none' ? L(c, 'verifyUnavailable') : '';
   const title = (n, k) => `<h2><span class="book-n" aria-hidden="true">${n}</span>${L(c, k)}</h2>`;
 
   function view() {
-    if (blocked && !demo) return `<div class="book-card"><p class="book-empty">${c.esc(blocked)}</p></div>`;
+    if (blocked && !demo) return `<div class="book-card"><p class="book-empty">${c.esc(blocked)}</p>${contactsHtml(c, page)}</div>`;
     if (blocked && demo) return `<div class="book-card"><p class="book-empty">${c.esc(L(c, 'noServices'))}</p></div>`;
     if (s.step === 'done') return done();
     let body = '';
@@ -273,7 +286,7 @@ export function runBooking(c, root, page, src, opts = {}) {
       <button type="button" class="btn ghost book-back" data-go="phone">${ico(ICON.back, 16)}${L(c, 'changeNumber')}</button>`;
     if (s.step === 'name') {
       const asking = s.hint && s.useHint;
-      body = `${title(4, 'nameTitle')}${s.trusted ? `<p class="book-muted">${L(c, 'trusted')}</p>` : ''}
+      body = `${title(4, 'nameTitle')}${s.trusted ? `<p class="book-muted">${L(c, 'trusted')}</p>` : ''}${opts.account ? `<p class="book-hint book-as">${L(c, 'bookingAs', { name: `<bdi>${c.esc(opts.account)}</bdi>` })}</p>` : ''}
         <p class="book-muted book-number"><bdi dir="ltr">${c.esc(s.phone)}</bdi> · <button type="button" class="text-link" id="book-change-phone">${L(c, 'change')}</button></p>
         <form class="book-form" id="book-name-form" novalidate>${asking ? `<p class="book-areyou">${L(c, 'areYou', { name: `<bdi>${c.esc(s.hint)}</bdi>` })}</p><div class="book-row"><button type="button" class="btn primary" id="book-yes">${L(c, 'yesMe')}</button><button type="button" class="btn" id="book-no">${L(c, 'notMe')}</button></div>`
           : `<label class="book-field"><span>${L(c, 'fullName')}</span><input name="name" autocomplete="name" maxlength="60" required value="${c.esc(s.name || '')}"></label>`}
@@ -302,8 +315,9 @@ export function runBooking(c, root, page, src, opts = {}) {
       <h2>${L(c, b.status === 'confirmed' ? 'okConfirmed' : 'okPending')}</h2>${b.status !== 'confirmed' ? `<p class="book-done-sub">${L(c, 'okPendingSub', { business: c.esc(page.name) })}</p>` : ''}
       <div class="book-done-card">${detailRows(c, b)}${statusPill(c, b.status || 'pending')}</div>
       ${opts.doneExtra || ''}${link}
-      <p class="book-hint">${L(c, 'browserOnly')}</p>
-      ${store('meton_account_tip') === 'off' ? '' : `<section class="book-account" id="book-account"><h3>${L(c, 'accountTitle')}</h3><p>${L(c, 'accountBody')}</p>
+      ${r.inAccount ? `<p class="book-hint book-in-account">${L(c, 'inAccount')}</p>` : `<p class="book-hint">${L(c, 'browserOnly')}</p>
+      <section class="book-account book-claim"><h3>${L(c, 'claimTitle')}</h3><p>${L(c, 'claimBody')}</p><div class="book-row"><a class="btn small" id="book-claim" href="${c.esc(r.manage + '?claim=1')}">${L(c, 'claimBtn')}</a></div></section>`}
+      ${r.inAccount || store('meton_account_tip') === 'off' ? '' : `<section class="book-account" id="book-account"><h3>${L(c, 'accountTitle')}</h3><p>${L(c, 'accountBody')}</p>
         <div class="book-row">${dev !== 'ios' ? `<a class="btn small" href="${STORE.android}" rel="noopener">Google Play</a>` : ''}${dev !== 'android' ? `<a class="btn small" href="${STORE.ios}" rel="noopener">App Store</a>` : ''}<button type="button" class="btn small ghost" id="book-account-close">${L(c, 'notNow')}</button></div></section>`}
       <div class="book-row book-done-actions"><button type="button" class="btn ghost" data-again>${L(c, 'bookAnother')}</button>${opts.afterDone || ''}</div></div>`;
   }
@@ -431,6 +445,16 @@ export function runBooking(c, root, page, src, opts = {}) {
   return { state: s, repaint: paint, reset: () => { Object.assign(s, { step: 'service', svc: null, sp: null, autoSp: false, date: null, time: null, key: rid(), result: null, err: '' }); paint(); } };
 }
 
+// The business's PUBLIC contact numbers (2.47; none is fine): call, and WhatsApp where the business marked it.
+export function contactsHtml(c, page) {
+  const list = (page?.settings?.contact_numbers || []).filter(x => x && /^\+?[0-9]{6,15}$/.test(String(x.number || '')));
+  if (!list.length) return '';
+  return `<section class="book-contacts"><h3>${L(c, 'contactBiz')}</h3><div class="book-row">${list.map(x => {
+    const n = String(x.number), tag = x.label ? `${c.esc(x.label)} · ` : '';
+    return `<a class="btn small ghost" href="tel:${c.esc(n)}">${tag}<bdi dir="ltr">${c.esc(n)}</bdi></a>${x.whatsapp ? `<a class="btn small ghost" href="https://wa.me/${c.esc(n.replace(/\D/g, ''))}" target="_blank" rel="noopener">WhatsApp · <bdi dir="ltr">${c.esc(n)}</bdi></a>` : ''}`;
+  }).join('')}</div></section>`;
+}
+
 function liveSource(c, page, verify) {
   return {
     mode: 'live', verify,
@@ -480,7 +504,7 @@ export async function bindBook(c) {
   if (!data?.page) { root.innerHTML = `<div class="book"><div class="book-card"><p class="book-empty">${L(c, 'notFound')}</p></div></div>`; return; }
   document.title = data.page.name;
   const tz = data.page.timezone || '';
-  runBooking(c, root, data.page, liveSource(c, data.page, data.verify), { country: tz === 'Asia/Jerusalem' ? 'IL' : 'PS' });
+  runBooking(c, root, data.page, liveSource(c, data.page, data.verify), { country: tz === 'Asia/Jerusalem' ? 'IL' : 'PS', account: data.account?.name || '' });
 }
 
 // ── /m/<token> ───────────────────────────────────────────────────────────────────────────────────────────────────
@@ -488,7 +512,13 @@ export const managePage = c => `<section class="book-shell" id="manage-root"><p 
 export async function bindManage(c) {
   const root = document.getElementById('manage-root'); if (!root) return;
   const t = (location.pathname.match(/^\/m\/([a-f0-9]{48})\/?$/) || [])[1] || '';
-  const paint = async () => {
+  // 2.47: "Add this booking to my METON account" — the link proves this one booking; the website asks to sign in first
+  // (and comes back here with ?claim=1).
+  const claim = async () => {
+    try { await c.api('/api/book/claim', { method: 'POST', body: JSON.stringify({ t }) }); c.toast(L(c, 'claimed'), 'success'); return true; }
+    catch (e) { if (e?.status !== 401) c.toast(W[e?.code] ? L(c, e.code) : L(c, 'tryAgain'), 'error'); return false; }
+  };
+  const paint = async (note = '') => {
     let b = null; try { b = (await c.api('/api/book/manage?t=' + t)).booking; } catch {}
     if (!document.body.contains(root)) return;
     if (b?.business?.name) document.title = b.business.name;
@@ -497,8 +527,28 @@ export async function bindManage(c) {
       catch (e) { c.toast(L(c, e?.code === 'cancelClosed' ? 'mCancelClosed' : 'tryAgain'), 'error'); }
       paint();
     } });
+    const card = root.querySelector('#m-card');
+    if (card && b?.valid) {
+      card.insertAdjacentHTML('beforeend', note ? `<p class="book-hint book-in-account">${note}</p>`
+        : `<section class="book-account book-claim"><h3>${L(c, 'claimTitle')}</h3><p>${L(c, 'claimBody')}</p><div class="book-row"><button type="button" class="btn small" id="m-claim">${L(c, 'claimBtn')}</button></div></section>`);
+      root.querySelector('#m-claim')?.addEventListener('click', async ev => {
+        const btn = ev.currentTarget; btn.disabled = true;
+        // Not signed in: the website sends the person to sign in and back here (?claim=1 finishes it).
+        history.replaceState(null, '', here + '?claim=1');
+        const done = await claim();
+        if (location.pathname !== here) return;            // gone to sign in
+        history.replaceState(null, '', here);
+        if (done) paint(L(c, 'claimed')); else btn.disabled = false;
+      });
+    }
   };
-  paint();
+  const here = location.pathname;
+  if (new URLSearchParams(location.search).get('claim') === '1') {
+    const done = await claim();
+    if (location.pathname !== here) return;                // gone to sign in (it comes back here with ?claim=1)
+    history.replaceState(null, '', here);
+    paint(done ? L(c, 'claimed') : '');
+  } else paint();
 }
 
 // ── /me ───────────────────────────────────────────────────────────────────────────────────────────────────────────
