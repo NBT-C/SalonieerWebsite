@@ -1,0 +1,11 @@
+# 2.34: app links. Both files are read by Android / iOS over HTTPS, as JSON,
+# without redirects.
+<Files "apple-app-site-association">
+  ForceType application/json
+</Files>
+<Files "assetlinks.json">
+  ForceType application/json
+</Files>
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=3600"
+</IfModule>

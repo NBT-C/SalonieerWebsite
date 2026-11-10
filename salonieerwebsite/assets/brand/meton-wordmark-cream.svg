@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -2 514 104" role="img" aria-labelledby="title">
+  <title id="title">METON wordmark</title>
+  <g fill="#FAF4EB">
+    <path d="M0 100V0h23l36 48L95 0h23v100H94V39L67 80H51L24 39v61Z"/>
+    <path d="M132 0h74v21h-50v17h43v21h-43v20h50v21h-74Z"/>
+    <path d="M214 0h82v22h-29v78h-24V22h-29Z"/>
+    <path fill-rule="evenodd" d="M354-2c31 0 53 22 53 52s-22 52-53 52-53-22-53-52 22-52 53-52Zm0 23c-17 0-28 12-28 29s11 29 28 29 28-12 28-29-11-29-28-29Z"/>
+    <path d="M419 0h23l48 60V0h24v100h-22l-49-61v61h-24Z"/>
+  </g>
+</svg>

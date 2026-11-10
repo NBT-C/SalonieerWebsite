@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.salonieer.app",
+      "sha256_cert_fingerprints": [
+        "DF:16:F0:F0:76:2A:D0:79:CB:D9:83:16:73:0E:80:72:AF:BF:2B:F7:7B:4B:09:BE:9F:DB:D9:4E:97:87:E9:EA"
+      ]
+    }
+  }
+]

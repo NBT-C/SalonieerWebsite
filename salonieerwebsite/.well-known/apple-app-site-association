@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["V9BBAN25BP.com.salonieer.app"],
+        "components": [
+          { "/": "/s/*", "comment": "A salon's own link" },
+          { "/": "/invite", "comment": "Team invitations" }
+        ]
+      }
+    ]
+  }
+}
