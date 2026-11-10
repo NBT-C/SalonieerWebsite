@@ -667,7 +667,7 @@ function importMap(): string {
 function importMapHash(): string { return "'sha256-".base64_encode(hash('sha256',importMap(),true))."'"; }
 function pageHtml(): string {
     $html=(string)file_get_contents(__DIR__.'/page.html');
-    foreach (['/assets/app.js','/assets/app.css','/assets/site.css'] as $asset) $html=str_replace('"'.$asset.'"','"'.$asset.'?v='.(@filemtime(__DIR__.$asset)?:0).'"',$html);
+    foreach (['/assets/app.js','/assets/app.css','/assets/site.css','/assets/cobalt.css','/assets/theme-boot.js'] as $asset) $html=str_replace('"'.$asset.'"','"'.$asset.'?v='.(@filemtime(__DIR__.$asset)?:0).'"',$html);
     $html=str_replace('<script type="module"','<script type="importmap">'.importMap().'</script>'.PHP_EOL.'  <script type="module"',$html);
     [$attrs,$style,$bg]=themeHead();
     if ($attrs) $html=preg_replace('/<html lang="en" dir="ltr"/','<html lang="en" dir="ltr"'.$attrs,$html,1);
@@ -828,7 +828,7 @@ function api(string $method,string $path,array|false $session,array|false $user)
     // account must add or confirm an email for the website.
     if ($method==='POST'&&$path==='/api/login/email'&&identityOn()) identityLoginEmail();
     if ($method==='POST'&&$path==='/api/login/verify'&&identityOn()) identityLoginVerify($session);
-    if (str_starts_with($path,'/api/account/identity')||in_array($path,['/api/account/email','/api/account/email/verify','/api/account/phone','/api/account/phone/verify','/api/account/link','/api/account/link/finish'],true)) {
+    if (str_starts_with($path,'/api/account/identity')||in_array($path,['/api/account/email','/api/account/email/verify','/api/account/phone','/api/account/phone/verify','/api/account/link','/api/account/link/finish','/api/account/notifications','/api/account/notifications/read','/api/account/invites/decide'],true)) {
         if (!identityOn()) fail(404,'notFound');
         identityApi($method,$path,$user);
     }

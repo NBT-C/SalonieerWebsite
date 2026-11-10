@@ -1,0 +1,236 @@
+/* =========================================================================
+   SALONIEER 2.34 — the operations release (last layer).
+   Schedule timeline / all-specialists columns / restored week grid, the
+   bell and its panel, compact notifications, permission sections, photos,
+   ratings, salon setup and link, booking for a customer, receipts and the
+   cash drawer. Theme tokens only (palette.css / brand.css), so light, dark
+   and salon colours all work; logical properties for Arabic / Hebrew / English.
+   ========================================================================= */
+
+/* ---------- schedule: compact facts instead of big tiles ---------- */
+.sch-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;color:var(--ink-2)}
+.sch-chips>span{display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:0 10px;border-radius:999px;background:var(--card);box-shadow:0 0 0 1px var(--line)}
+.sch-chips>span.warn{color:var(--st-pending-ink)}
+.sch-chips>span.ok{color:var(--st-completed-ink)}
+.sch-chips>span.muted{color:var(--muted)}
+.sch-chips .btn{margin-inline-start:auto;min-height:34px}
+
+/* ---------- schedule: the day of one specialist (timeline) ---------- */
+.tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;position:relative}
+.tl-row{position:relative;display:grid;grid-template-columns:62px minmax(0,1fr);gap:10px;min-height:var(--h,56px)}
+.tl-time{display:flex;flex-direction:column;gap:2px;padding-top:12px;font-variant-numeric:tabular-nums;text-align:end}
+.tl-time b{font-size:14.5px;font-weight:800;color:var(--ink);line-height:1.15}
+.tl-time small{font-size:11.5px;color:var(--muted)}
+.tl .sch-card{display:flex;flex-direction:column;gap:4px;height:100%;min-height:0;box-sizing:border-box}
+.tl-bk.is-now .sch-card{box-shadow:0 0 0 2px var(--st-noshow)}
+.tl-gap{grid-template-columns:62px minmax(0,1fr)}
+.tl-gap .tl-gap-body{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;width:100%;height:100%;box-sizing:border-box;padding:10px 14px;border-radius:14px;
+  border:0;background:none;font:inherit;font-size:13px;color:var(--muted);text-align:start;position:relative}
+.tl-gap .tl-label{display:inline-flex;align-items:center;gap:6px;font-weight:750}
+.tl-gap bdi{font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.tl-free .tl-gap-body{border:1.5px dashed var(--line-strong);color:var(--st-completed-ink)}
+.tl-break .tl-gap-body{background:var(--panel)}
+.tl-leave .tl-gap-body{background:repeating-linear-gradient(135deg,var(--panel) 0 10px,transparent 10px 20px);box-shadow:inset 0 0 0 1px var(--line)}
+.tl-off .tl-gap-body{background:var(--panel-2,var(--panel));opacity:.85}
+/* A folded stretch is NOT drawn to scale: a torn edge says so. */
+.tl-fold{min-height:0}
+.tl-fold .tl-rail{grid-column:1;align-self:stretch;background:linear-gradient(var(--line-strong),var(--line-strong)) center/2px 100% no-repeat;opacity:.5}
+.tl-fold .tl-gap-body{cursor:pointer;min-height:52px;
+  -webkit-mask:linear-gradient(-45deg,transparent 5px,#000 0) 0 0/12px 51% repeat-x,linear-gradient(45deg,transparent 5px,#000 0) 0 100%/12px 51% repeat-x;
+          mask:linear-gradient(-45deg,transparent 5px,#000 0) 0 0/12px 51% repeat-x,linear-gradient(45deg,transparent 5px,#000 0) 0 100%/12px 51% repeat-x}
+.tl-fold-note{display:inline-flex;align-items:center;gap:4px;font-style:normal;font-size:11.5px;color:var(--muted);margin-inline-start:auto}
+.tl-open .tl-gap-body{cursor:pointer}
+.tl-gap-body:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.tl-ticks{position:absolute;inset:0;pointer-events:none}
+.tl-ticks i{position:absolute;inset-inline:0;top:var(--at);border-top:1px dotted var(--line-strong)}
+.tl-ticks i b{position:absolute;inset-inline-end:8px;top:-9px;font-size:10.5px;font-weight:650;color:var(--muted);background:var(--bg);padding:0 4px;border-radius:6px}
+.tl-now{position:absolute;inset-inline:0;top:var(--at);z-index:2;display:flex;align-items:center;pointer-events:none;color:var(--st-noshow)}
+.tl-now::before{content:"";position:absolute;inset-inline:0;height:2px;background:currentColor;border-radius:2px}
+.tl-now span{position:relative;margin-inline-start:4px;padding:1px 8px;border-radius:999px;background:currentColor;font-size:11px;font-weight:800;font-style:normal}
+.tl-now span{color:#fff;background:var(--st-noshow)}
+.tl-now-row{position:relative;height:22px}
+.sch-gone{margin-top:4px}
+.sch-gone summary{cursor:pointer;font-size:13px;color:var(--muted);padding:8px 2px}
+.tl-small .tl-row{min-height:0}
+
+/* ---------- schedule: all specialists on one time axis ---------- */
+.tg-wrap{overflow:auto;max-height:min(76dvh,980px);border-radius:16px;background:var(--card);box-shadow:0 0 0 1px var(--line);-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;scroll-padding-inline-start:58px;overscroll-behavior-x:contain}
+.tg{display:grid;grid-template-columns:58px repeat(var(--cols),minmax(150px,1fr));min-width:max-content;width:100%}
+.tg-head{display:contents}
+.tg-corner,.tg-col-head{position:sticky;top:0;z-index:4;background:var(--card);box-shadow:0 1px 0 var(--line)}
+.tg-corner{inset-inline-start:0;z-index:5}
+.tg-col-head{display:flex;align-items:center;gap:8px;min-height:58px;padding:8px 10px;border:0;font:inherit;color:var(--ink);text-align:start;cursor:pointer;scroll-snap-align:start}
+.tg-col-head[disabled],.tg-col-head:not([data-sch-barber]){cursor:default}
+.tg-av{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:color-mix(in srgb,var(--c) 18%,var(--card));color:var(--c);font-weight:800;box-shadow:0 0 0 2px var(--c)}
+.tg-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.tg-col-name{display:flex;flex-direction:column;min-width:0}
+.tg-col-name b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tg-col-name small{font-size:11.5px;color:var(--muted)}
+.tg-body{display:contents}
+.tg-times{position:sticky;inset-inline-start:0;z-index:3;grid-column:1;grid-row:2;height:var(--h);background:var(--card);box-shadow:1px 0 0 var(--line)}
+.tg-times span{position:absolute;inset-inline-end:6px;transform:translateY(-50%);font-size:11px;font-weight:650;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tg-times span:first-child{transform:none}
+.tg-col{position:relative;grid-row:2;height:var(--h);border-inline-start:1px solid var(--line)}
+.tg-line{position:absolute;inset-inline:0;border-top:1px solid var(--line);opacity:.7}
+.tg-blk{position:absolute;inset-inline:0;display:flex;align-items:flex-start;justify-content:center;padding-top:4px;font-size:11px;color:var(--muted)}
+.tg-blk span{display:inline-flex;align-items:center;gap:4px;font-weight:650}
+.tg-shut{background:repeating-linear-gradient(135deg,var(--panel) 0 8px,transparent 8px 16px)}
+.tg-break{background:var(--panel)}
+.tg-leave{background:repeating-linear-gradient(45deg,var(--panel) 0 10px,var(--panel-2,var(--panel)) 10px 20px)}
+.tg-ev{position:absolute;inset-inline:4px;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:1px;padding:5px 8px;border-radius:10px;border:0;border-inline-start:3px solid var(--st-c,var(--line-strong));
+  background:color-mix(in srgb,var(--st-c,var(--brand)) 14%,var(--card));color:var(--ink);font:inherit;text-align:start;cursor:pointer;overflow:hidden;z-index:1;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.tg-ev b{font-size:12.5px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:none}
+/* 2.41: time first (what staff scan for), then the customer, then the service — each one line, never cut mid-word */
+.tg-ev-time{display:flex;align-items:center;gap:4px;min-width:0;flex:none;font-size:11px;font-weight:750;line-height:1.25;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-ev-time bdi{overflow:hidden;text-overflow:ellipsis}
+/* A Latin name in an Arabic / Hebrew salon (and the other way round) is cut at its own end, aligned like the column */
+.tg-ev b[dir=auto],.tg-ev small[dir=auto],.tg-col-name b[dir=auto]{text-align:match-parent}
+.tg-ev-flag{display:inline-flex;flex:none;color:var(--st-pending)}
+.tg-ev.tight{padding-block:4px;gap:1px}
+.tg-line.half{border-top-style:dashed;opacity:.35}
+.tg-ev small{font-size:11px;line-height:1.25;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tg-ev.tight small{display:none}
+.tg-ev.ev-pending{--st-c:var(--st-pending)}.tg-ev.ev-confirmed{--st-c:var(--st-confirmed)}.tg-ev.ev-completed{--st-c:var(--st-completed)}
+.tg-ev.ev-noshow{--st-c:var(--st-noshow)}.tg-ev.ev-cancelled,.tg-ev.ev-expired{--st-c:var(--st-cancelled)}
+.tg-ev:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+.tg-now{position:absolute;inset-inline-start:58px;inset-inline-end:0;grid-column:1/-1;grid-row:2;height:2px;background:var(--st-noshow);z-index:3;pointer-events:none}
+.tg-body{position:relative}
+.tg{position:relative}
+
+/* ---------- schedule: the restored week grid ---------- */
+.cal-cell[data-state="leave"],.lg-surface[data-state="leave"]{background:repeating-linear-gradient(45deg,var(--panel) 0 8px,color-mix(in srgb,var(--st-noshow) 8%,var(--panel)) 8px 16px)}
+button.cal-hcell{border:0;font:inherit;color:inherit;cursor:pointer;background:var(--card)}
+.cal-wrap{scrollbar-width:thin}
+
+/* ---------- the bell ---------- */
+.bell-btn{position:relative}
+.bell-dot{position:absolute;top:7px;inset-inline-end:8px;width:9px;height:9px;border-radius:50%;background:var(--st-noshow);box-shadow:0 0 0 2px var(--card)}
+.bell-count{position:absolute;top:-3px;inset-inline-start:-4px;min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--brand);color:var(--on-brand,#fff);
+  font-style:normal;font-size:11px;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px var(--card)}
+.bell-dot[hidden],.bell-count[hidden]{display:none}
+.admin-chrome-actions{display:flex;align-items:center;gap:6px}
+/* admin-studio.css hides the first icon button of the header; the bell is that button now. */
+.admin-chrome-actions .iconbtn.bell-btn{display:grid!important;place-items:center}
+.bell-panel{display:flex;flex-direction:column;gap:10px;min-height:0}
+.bell-tabs{display:flex;gap:4px}
+.bell-tabs button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px}
+.bell-tab-n{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--st-pending);color:#1d1400;font-style:normal;font-size:11px;font-weight:800;display:inline-grid;place-items:center}
+.bell-tab-n:empty,.bell-tab-n[hidden]{display:none}
+.bell-body{display:flex;flex-direction:column;gap:10px;max-height:min(68dvh,640px);overflow:auto}
+.bell-list{display:flex;flex-direction:column;gap:8px}
+.bell-list .sec-label{display:flex;align-items:center;gap:6px;margin-top:6px}
+.bell-list .sec-label em{font-style:normal;font-size:11.5px;color:var(--muted)}
+.bell-req{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border-radius:14px;border:0;background:var(--card);box-shadow:0 0 0 1px var(--line);font:inherit;color:var(--ink);text-align:start;cursor:pointer}
+.bell-req span{display:flex;flex-direction:column;min-width:0;flex:1}
+.bell-req b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bell-req small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bell-req.prominent{box-shadow:0 0 0 2px var(--st-pending);background:color-mix(in srgb,var(--st-pending) 9%,var(--card))}
+.bell-all{align-self:stretch}
+
+/* ---------- compact notifications ---------- */
+.studio-notification.sn-compact{padding:12px 14px;gap:6px}
+.sn-compact .studio-notification-heading h3{font-size:14.5px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.sn-compact .sn-lead{margin:0;font-size:13px;line-height:1.5;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.sn-compact.expanded .sn-lead{display:none}
+.sn-more{display:flex;flex-direction:column;gap:8px}
+.sn-more[hidden]{display:none}
+.sn-full{margin:0;white-space:pre-line;font-size:13px;line-height:1.55;color:var(--ink-2)}
+.sn-compact .studio-notification-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sn-toggle{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 10px;border-radius:999px;border:0;background:var(--panel);color:var(--ink-2);font:inherit;font-size:12.5px;font-weight:650;cursor:pointer}
+.sn-toggle[aria-expanded="true"] svg{transform:rotate(180deg)}
+.sn-toggle:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.studio-related ol{margin:4px 0 0;padding-inline-start:18px}
+
+/* ---------- permissions in sections ---------- */
+.tm-perms{display:flex;flex-direction:column;gap:8px}
+details.tm-perm-group{border-radius:14px;background:var(--card);box-shadow:0 0 0 1px var(--line);padding:0;border:0}
+details.tm-perm-group>summary{display:flex;align-items:center;gap:8px;min-height:48px;padding:0 14px;cursor:pointer;list-style:none;font-weight:750;color:var(--ink)}
+details.tm-perm-group>summary::-webkit-details-marker{display:none}
+details.tm-perm-group>summary .tm-perm-title{flex:1;min-width:0}
+details.tm-perm-group>summary>svg:last-child{transition:transform .15s}
+details.tm-perm-group[open]>summary>svg:last-child{transform:rotate(180deg)}
+.tm-perm-count{font-style:normal;font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.tm-perm-items{display:flex;flex-direction:column;gap:2px;padding:0 10px 10px}
+.tm-perm-items .tm-perm{display:flex;align-items:center;gap:10px;min-height:42px;padding:4px 6px;border-radius:10px}
+.tm-perm-items .tm-perm span{flex:1;min-width:0;font-size:13.5px;line-height:1.4}
+.tm-perm-all{border-bottom:1px solid var(--line);margin-bottom:4px}
+.tm-sensitive{font-style:normal;font-size:11px;font-weight:750;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--st-noshow) 12%,var(--card));color:var(--st-noshow-ink,var(--st-noshow))}
+details.tm-perm-group>summary:focus-visible{outline:2px solid var(--brand);outline-offset:-2px;border-radius:14px}
+
+/* ---------- people's photos: one round shape everywhere ---------- */
+.tm-av,.av-sm,.avatar-lg,.rate-av{aspect-ratio:1/1;border-radius:50%!important;object-fit:cover!important;object-position:center!important}
+.avatar-initial{display:grid!important;place-items:center;background:var(--brand-soft);color:var(--brand-ink);font-weight:800}
+.avatar-lg.avatar-initial{font-size:32px}
+.tm-photo-field{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.tm-photo{width:76px;height:76px;flex:none;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand-ink);font-size:28px;font-weight:800;box-shadow:0 0 0 1px var(--line)}
+.tm-photo img{width:100%;height:100%;object-fit:cover}
+.crop-preview.round canvas{border-radius:50%}
+.studio-portrait img{object-fit:cover;object-position:center 30%}
+
+/* ---------- rating card ---------- */
+.rate-card{display:flex;flex-direction:column;gap:10px}
+.rate-head{display:flex;align-items:center;gap:12px}
+.rate-head>svg{flex:none;color:var(--brand)}
+.rate-av{width:44px;height:44px;flex:none;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand-ink);font-weight:800}
+.rate-head div{display:flex;flex-direction:column;min-width:0}
+.rate-head small{color:var(--muted);font-size:12.5px}
+.rate-stars{display:flex;gap:4px;justify-content:center}
+.rate-stars button{width:48px;height:48px;border:0;border-radius:12px;background:none;color:var(--line-strong);cursor:pointer;display:grid;place-items:center}
+.rate-stars button.on{color:var(--star,#e2a523)}
+.rate-stars button:focus-visible{outline:2px solid var(--brand)}
+.rate-chosen{margin:0;text-align:center;font-weight:700;color:var(--ink-2)}
+.rating-specs{margin-top:8px}
+
+/* ---------- salon setup + link ---------- */
+.setup-sheet{display:flex;flex-direction:column;gap:12px}
+.setup-head{display:flex;align-items:flex-start;gap:12px}
+.setup-head>svg{flex:none;color:var(--brand);margin-top:4px}
+.setup-head h3{margin:0}
+.setup-head p{margin:2px 0 0}
+.setup-choice{border-radius:14px;background:var(--card);box-shadow:0 0 0 1px var(--line);padding:4px 4px 10px}
+.setup-explain{margin:0;padding:0 14px;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:1.5;color:var(--ink-2)}
+.salon-link{display:flex;flex-direction:column;gap:8px}
+.salon-link-url{padding:10px 12px;border-radius:12px;background:var(--panel);font-family:ui-monospace,monospace;font-size:13.5px;word-break:break-all;color:var(--ink)}
+
+/* ---------- booking for a customer ---------- */
+.bf-box{display:flex;flex-direction:column;gap:10px}
+.bf-box .seg{align-self:flex-start}
+.bf-list{display:flex;flex-direction:column;gap:6px}
+.bf-item{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:12px;border:0;background:var(--card);box-shadow:0 0 0 1px var(--line);font:inherit;color:var(--ink);text-align:start;cursor:pointer}
+.bf-item span{display:flex;flex-direction:column;min-width:0;flex:1}
+.bf-item small{font-size:12px;color:var(--muted)}
+.bf-item em{font-style:normal;font-size:11px;color:var(--muted);flex:none}
+.bf-item.on{box-shadow:0 0 0 2px var(--brand);background:var(--brand-soft)}
+.bf-none{margin:0}
+.bp-rating{display:flex;justify-content:center;margin-top:6px}
+.bp-rating:empty{display:none}
+
+/* ---------- receipts ---------- */
+.biz-receipt-link{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:var(--panel);font-size:13px;color:var(--ink-2)}
+.biz-receipt-link span{flex:1;min-width:0}
+.biz-receipt-link.warn{background:color-mix(in srgb,var(--st-pending) 12%,var(--card));color:var(--st-pending-ink)}
+.btn.line.danger-line{color:var(--danger,#c0392b);border-color:var(--danger,#c0392b)}
+.biz-kind{font-weight:750}
+.biz-line-edit{flex-wrap:wrap;gap:8px}
+.biz-line-edit-fields{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin-inline-start:auto}
+.biz-line-edit-fields label{display:flex;flex-direction:column;gap:2px;font-size:11.5px;color:var(--muted)}
+.biz-line-edit-fields .input{width:96px;min-height:40px}
+.biz-line-net{min-width:72px;text-align:end;font-variant-numeric:tabular-nums;align-self:center}
+
+/* ---------- cash drawer ---------- */
+.cash-now .biz-panel-head{align-items:flex-start}
+.cash-expected{font-size:24px;font-weight:850;color:var(--ink);font-variant-numeric:tabular-nums}
+.cash-lines li.strong{font-weight:800;border-top:1px solid var(--line);padding-top:8px;margin-top:4px}
+.cash-compare{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:12px;background:var(--panel)}
+.cash-compare:empty{display:none}
+
+@media (max-width:520px){
+  .tl-row,.tl-gap{grid-template-columns:52px minmax(0,1fr);gap:8px}
+  .tl-time b{font-size:13.5px}
+  /* 2.41: two whole specialists side by side on a phone (one or two fill the width), the rest a swipe away */
+  .tg{grid-template-columns:50px repeat(var(--cols),minmax(140px,max(150px,calc((100vw - 90px) / var(--cols)))));min-width:0;width:max-content}
+  .tg-wrap{scroll-snap-type:x mandatory;scroll-padding-inline-start:50px}
+  .tg-now{inset-inline-start:50px}
+  .biz-line-edit-fields{margin-inline-start:0;width:100%}
+}
+@media print{.bell-btn,.sn-toggle{display:none!important}.sn-more{display:flex!important}}

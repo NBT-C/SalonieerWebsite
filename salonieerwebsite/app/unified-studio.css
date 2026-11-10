@@ -1,0 +1,331 @@
+/* ========================================================================
+   SALONIEER UNIFIED STUDIO
+   The final visual authority for customer, specialist, salon-admin and
+   platform-admin experiences. One material language, one navigation model.
+   ======================================================================== */
+
+body{
+  --bg:#090908;--card:#111110;--panel:#151411;--panel-2:#1c1a15;--field:#0d0d0c;
+  --ink:#f4f0e7;--ink-2:#c5c0b5;--ink-3:#999386;--muted:#827d71;
+  --line:#2b2923;--line-2:#201f1b;--line-strong:#454137;
+  --black:#090908;--black-2:#111110;
+  --ok:#63d89d;--ok-bg:#103120;--warn:#ffc64b;--warn-bg:#362a08;
+  --danger:#ff756b;--danger-bg:#3a1715;--info:#62a8ff;--info-bg:#10263b;--muted-bg:#1c1b18;
+  --studio-forest:#111110;--studio-lime:var(--brand);--studio-cream:#f4f0e7;--studio-peach:#c99a64;
+  --shadow:0 18px 55px rgba(0,0,0,.34);--nav-shadow:0 18px 44px rgba(0,0,0,.34);--shadow-card:none;--shadow-pop:0 30px 90px rgba(0,0,0,.65);
+  background:var(--bg)!important;color:var(--ink)!important;color-scheme:dark;
+}/* Salonieer gold is reserved for the global platform. Salon screens inherit
+   the identity applied by SalonTheme from that salon's own saved settings. */
+html.platform-studio body{
+  --brand:#d2aa1c;--brand-ink:#f2d84d;--brand-soft:#2d270a;--brand-line:#554811;--on-brand:#090908;
+  --detail:#d2aa1c;--detail-ink:#f2d84d;
+}
+body,.shell,.view,.page{background:var(--bg)!important}.view{min-height:100dvh}.page{padding-bottom:106px!important}.content{max-width:1120px!important;padding-inline:20px!important}.center-col{max-width:680px!important}
+h1,h2,h3,h4,b,strong{color:var(--ink)}p{color:var(--ink-2)}.muted,.tiny{color:var(--muted)!important}a{color:var(--brand-ink)}
+.header{height:74px!important;background:var(--bg)!important;border-bottom:1px solid var(--line)!important}.hwrap{max-width:1120px!important;padding-inline:20px!important}.header h1{font-size:18px!important;color:var(--ink)!important}.hsub{color:var(--muted)!important}.iconbtn,.bell,.hbtn{background:var(--card)!important;border:1px solid var(--line)!important;color:var(--muted)!important;border-radius:11px!important;box-shadow:none!important}.iconbtn:hover,.bell:hover,.hbtn:hover{color:var(--brand-ink)!important;border-color:var(--brand-line)!important}.dot,.nav-dot{background:var(--brand-ink)!important;box-shadow:0 0 0 3px var(--bg)!important}
+.backbar{max-width:1120px!important;margin:auto!important;padding:18px 20px!important;border-bottom:1px solid var(--line)!important}.backbar h2{color:var(--ink)!important}/* Shared material and controls ------------------------------------------- */
+.card,.svc,.bcard,.prod,.booking-card,.ticket,.summary,.phead,.hero,.list,.agenda-card,.cal-wrap,.lrow,.collapsible,.studio-device-details,.reservation-card,.reservation-customer{background:var(--card)!important;color:var(--ink)!important;border:1px solid var(--line)!important;border-radius:11px!important;box-shadow:none!important}
+.btn{min-height:44px;border-radius:10px!important;background:var(--brand)!important;border-color:var(--brand)!important;color:var(--on-brand)!important;font-weight:750!important;box-shadow:none!important}.btn.line,.btn.ghost{background:transparent!important;border-color:var(--line)!important;color:var(--ink)!important}.btn.dark{background:var(--brand)!important;color:var(--on-brand)!important}.btn.danger{background:var(--danger)!important;border-color:var(--danger)!important;color:#120807!important}.btn:hover{filter:brightness(1.08);transform:none!important}.btn:active{transform:scale(.98)!important}
+.input,.select,.textarea{background:var(--field)!important;border:1px solid var(--line)!important;color:var(--ink)!important;border-radius:9px!important;box-shadow:none!important}.input::placeholder,.textarea::placeholder{color:var(--ink-3)!important}.input:focus,.select:focus,.textarea:focus{border-color:var(--brand)!important;box-shadow:0 0 0 3px var(--brand-soft)!important}.field>label,label{color:var(--muted)}
+.badge,.role-pill{border-radius:999px!important;border:1px solid transparent!important;font-weight:750!important}.badge.warn{background:var(--warn-bg)!important;color:var(--warn)!important}.badge.info{background:var(--info-bg)!important;color:var(--info)!important}.badge.ok{background:var(--ok-bg)!important;color:var(--ok)!important}.badge.danger{background:var(--danger-bg)!important;color:var(--danger)!important}.badge.muted{background:var(--muted-bg)!important;color:var(--muted)!important}
+.seg,.chips,.steps{background:var(--panel)!important;border:1px solid var(--line)!important;border-radius:11px!important}.seg button,.chip{color:var(--muted)!important}.seg button.on,.chip.active{background:var(--brand-soft)!important;color:var(--brand-ink)!important;border-color:var(--brand-line)!important}
+.empty,.banner{background:var(--card)!important;border:1px dashed var(--line-strong)!important;border-radius:13px!important;color:var(--muted)!important}.empty .ec,.banner .ec{background:var(--brand-soft)!important;color:var(--brand-ink)!important}.empty h3,.banner h3{color:var(--ink)!important}
+.sk{background:linear-gradient(90deg,#12110f,#211f19,#12110f)!important;background-size:220% 100%!important}.toast{background:var(--ink)!important;color:var(--bg)!important;border-radius:10px!important}.toast.ok{background:var(--ok)!important;color:#07140d!important}.toast.err{background:var(--danger)!important;color:#160807!important}/* One navbar on every customer/specialist page -------------------------- */
+#navhost{position:fixed!important;z-index:1000!important;inset:0!important;width:100%!important;height:100dvh!important;pointer-events:none!important;overflow:visible!important;transform:none!important;contain:none!important}
+#navhost:empty{display:none!important}
+#navhost .appnav,#navhost .control-sidebar{pointer-events:auto!important;visibility:visible!important;opacity:1!important}
+.shell:has(.appnav) .view{padding-inline-start:0!important}.appnav{position:fixed!important;z-index:95!important;left:50%!important;right:auto!important;top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;transform:translateX(-50%)!important;width:min(610px,calc(100% - 20px))!important;height:auto!important;padding:7px!important;display:block!important;border:1px solid var(--line)!important;border-radius:21px!important;background:var(--card)!important;box-shadow:var(--nav-shadow,0 18px 44px rgba(0,0,0,.34))!important}.nav-brand{display:none!important}.nav-items{display:flex!important;flex-direction:row!important;gap:4px!important;width:100%!important}.navitem{position:relative!important;flex:1 1 0!important;min-width:0!important;min-height:54px!important;padding:7px 4px!important;display:flex!important;flex-direction:row!important;justify-content:center!important;align-items:center!important;gap:7px!important;border-radius:15px!important;color:var(--muted)!important;font-size:9px!important;background:transparent!important}.nav-symbol{width:28px!important;height:28px!important;display:grid!important;place-items:center!important}.navitem.active{background:var(--brand-soft)!important;color:var(--brand-ink)!important;box-shadow:none!important}.navitem.active::after{content:"";position:absolute;bottom:4px;left:35%;right:35%;height:2px;border-radius:3px;background:var(--brand)}.navitem:hover{color:var(--brand-ink)!important}
+#navhost .appnav{position:absolute!important;inset-inline:auto!important;left:max(10px,calc((100% - 610px)/2))!important;right:max(10px,calc((100% - 610px)/2))!important;width:auto!important;transform:none!important;top:auto!important}/* Salon launcher, authentication and selection -------------------------- */
+.platform-gate,.auth,.auth-form,.splash{background:var(--bg)!important;color:var(--ink)!important}.platform-shell-card,.auth-box,.control-login{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:18px!important;box-shadow:var(--shadow)!important}.platform-shell-card{position:relative;overflow:hidden}.platform-shell-card::before,.auth-box::before,.control-login::before{content:"";position:absolute;width:140px;height:140px;border:1px solid #4a3e0d;border-radius:50%;inset-inline-start:-75px;top:-85px;opacity:.55;pointer-events:none}.platform-brand-name,.platform-copy h1,.auth-head{color:var(--ink)!important}.platform-brand-name small{color:var(--brand-ink)!important}.platform-copy p,.auth-sub,.auth-note{color:var(--muted)!important}.platform-primary,.platform-secondary{background:var(--brand)!important;color:var(--on-brand)!important;border:1px solid var(--brand)!important;border-radius:10px!important}.platform-secondary{background:transparent!important;color:var(--ink)!important;border-color:var(--line)!important}.platform-field input{background:var(--field)!important;border-color:var(--line)!important;color:var(--ink)!important;border-radius:9px!important}.platform-field input:focus{border-color:var(--brand)!important}.platform-or{color:var(--muted)!important}.platform-or span{background:var(--line)!important}.platform-salon-card,.platform-manage-card{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:11px!important;color:var(--ink)!important}.platform-salon-card strong{color:var(--brand-ink)!important}.platform-salon-card small,.platform-manage-copy small{color:var(--muted)!important}.platform-salon-avatar{background:var(--brand-soft)!important;color:var(--brand-ink)!important;border-color:var(--brand-line)!important}.platform-manage-card.current{outline:1px solid var(--brand)!important}.auth-brand img,.splash img{border-radius:15px!important}.splash .rib{background:var(--brand)!important}/* Every salon home -------------------------------------------------------- */
+.studio-home-top.stage{background:var(--bg)!important;border-bottom:1px solid var(--line)!important}.studio-identity img{border-radius:10px!important}.studio-identity b{color:var(--ink)!important}.studio-eyebrow{color:var(--brand-ink)!important;letter-spacing:2px!important}.stage-actions .hbtn{background:var(--card)!important}.studio-notice,.studio-appointment{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:11px!important;color:var(--ink)!important}.studio-notice>svg,.studio-date{background:var(--brand-soft)!important;color:var(--brand-ink)!important}.studio-notice p{color:var(--muted)!important}.studio-section-head h2{color:var(--ink)!important}.studio-count{background:var(--brand-soft)!important;border-color:var(--brand-line)!important;color:var(--brand-ink)!important}.studio-search{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:10px!important}.studio-search:focus-within{outline:none!important;border-color:var(--brand)!important;box-shadow:0 0 0 3px var(--brand-soft)!important}.studio-search input{color:var(--ink)!important}.studio-team-grid{gap:12px!important}.studio-specialist{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:12px!important;padding:7px!important}.studio-portrait{background:var(--panel)!important;border-radius:8px!important}.studio-specialist-link,.studio-specialist-info b{color:var(--ink)!important}.studio-specialist-info small{color:var(--muted)!important}.studio-book-link{color:var(--brand-ink)!important;border-color:var(--line)!important}/* Booking flow, services, appointments and products ---------------------- */
+.bprofile,.phead,.hero{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:13px!important}.bprofile .photo,.phead img{background:var(--panel)!important;border-color:var(--line)!important}.svc{padding:18px!important}.svc h3,.bcard h3,.prod h3{color:var(--ink)!important}.svc p,.bcard p,.prod p{color:var(--muted)!important}.svc-price,.price{color:var(--brand-ink)!important}.steps{padding:8px!important}.step-num{background:var(--panel-2)!important;color:var(--muted)!important}.step.active .step-num,.step.done .step-num{background:var(--brand)!important;color:var(--on-brand)!important}.days,.slots{gap:7px!important}.day,.slot{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:9px!important;color:var(--ink)!important}.day.active,.day.selected,.slot.selected{background:var(--brand)!important;border-color:var(--brand)!important;color:var(--on-brand)!important}.slot:disabled{background:#0d0d0c!important;color:#4c4840!important}.summary .box{background:var(--panel)!important;border-color:var(--line)!important;border-radius:9px!important}.ticket{border-top:2px solid var(--brand)!important}.ticket::before,.ticket::after{background:var(--bg)!important}.booking-card{border-inline-start:3px solid var(--brand)!important}.booking-card .kv,.kv{color:var(--muted)!important}.pgrid{gap:12px!important}.prod{overflow:hidden!important}.prod img{background:var(--panel)!important}.prod .pbody{background:var(--card)!important}.gallery-main,.thumb{background:var(--panel)!important;border-color:var(--line)!important}.thumb.active{border-color:var(--brand)!important}
+.reservation-page{background:var(--bg)!important}.reservation-hero{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:16px!important}.reservation-hero::after{border-color:#4a3e0d!important}.reservation-date-tile{background:var(--brand-soft)!important;border-color:var(--brand-line)!important;color:var(--brand-ink)!important}.reservation-row small,.reservation-note small,.reservation-customer small{color:var(--muted)!important}.reservation-note{background:var(--panel)!important;border-color:var(--line)!important}/* Settings, profiles and notifications ----------------------------------- */
+.settings-intro{color:var(--muted)!important}.studio-account{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:14px!important;color:var(--ink)!important}.studio-account::before{content:"";position:absolute;inset-block:0;inset-inline-start:0;width:3px;background:var(--brand)}.studio-account .pa-mini{border-radius:10px!important;background:var(--brand-soft)!important;color:var(--brand-ink)!important;border-color:var(--brand-line)!important}.studio-account .muted{color:var(--muted)!important}.studio-account .role-pill{background:var(--brand-soft)!important;color:var(--brand-ink)!important}.lrow{min-height:68px!important;background:var(--card)!important;border-color:var(--line)!important}.lrow .ic{background:var(--panel)!important;border:1px solid var(--line)!important;color:var(--brand-ink)!important;border-radius:9px!important}.lrow .t{color:var(--ink)!important}.switch .track{background:var(--panel-2)!important;border-color:var(--line)!important}.switch input:checked~.track{background:var(--brand)!important}.studio-filter{background:var(--card)!important;border-color:var(--line)!important;color:var(--muted)!important;border-radius:999px!important}.studio-filter[aria-pressed=true]{background:var(--brand-soft)!important;color:var(--brand-ink)!important;border-color:var(--brand-line)!important}.studio-notification{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:11px!important}.studio-notification.is-unread{background:linear-gradient(110deg,var(--brand-soft),var(--card) 38%)!important;border-color:var(--brand-line)!important}.studio-notification::before{background:var(--brand)!important}.studio-notification-heading>span{background:var(--panel)!important;border-color:var(--line)!important;color:var(--brand-ink)!important;border-radius:9px!important}.studio-notification-heading h3{color:var(--ink)!important}.studio-notification-body{color:var(--ink-2)!important}.studio-detail,.studio-notification-details{background:var(--panel)!important;border-color:var(--line)!important}.studio-notification-footer{border-color:var(--line)!important}.studio-device-details summary{color:var(--ink)!important}/* Specialist workspace --------------------------------------------------- */
+.bd-tabs,.bd-filters{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:11px!important}.bd-tab{color:var(--muted)!important}.bd-tab.active{background:var(--brand-soft)!important;color:var(--brand-ink)!important}.dstat{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:9px!important}.dstat .n{color:var(--ink)!important}.cal-hcell,.cal-time,.agenda-head{background:var(--card)!important;color:var(--muted)!important}.cal-cell{border-color:var(--line)!important}.cal-hcell.today{background:var(--brand-soft)!important;color:var(--brand-ink)!important}/* Global Salonieer Admin / platform -------------------------------------- */
+html.platform-studio body,html.platform-studio .view,html.platform-studio .page{background:var(--bg)!important}.control,.control:has(.control-sidebar){max-width:1280px!important;padding:24px 20px 110px!important;gap:15px!important}.control-top{min-height:68px;padding:0 2px;border-bottom:1px solid var(--line)}.control-top h1{color:var(--ink)!important;font-size:26px!important}.control-kicker{color:var(--brand-ink)!important}.control-hero{min-height:190px;padding:34px 36px!important;background:var(--card)!important;border:1px solid var(--line)!important;border-radius:18px!important;color:var(--ink)!important}.control-hero::before{content:"";position:absolute;width:150px;height:150px;border:1px solid #4a3e0d;border-radius:50%;inset-inline-start:-80px;top:-88px;opacity:.55}.control-hero::after{display:block!important;inset-inline-start:0!important;inset-block:0!important;width:3px!important;background:var(--brand)!important}.control-hero h2{color:var(--ink)!important;font-size:clamp(28px,4vw,40px)!important}.control-hero p{color:var(--muted)!important}.control-hero-mark{opacity:.22}.control .control-stats{gap:10px!important}.control-stats .stat{min-height:120px;padding:18px!important;background:var(--card)!important;border:1px solid var(--line)!important;border-top:2px solid var(--brand)!important;border-radius:9px!important}.control-stats .stat:nth-child(2){border-top-color:var(--ok)!important}.control-stats .stat:nth-child(3){border-top-color:var(--danger)!important}.control-stats .n{color:var(--ink)!important;font-family:'Noto Sans Arabic',sans-serif!important;font-weight:800!important}.stat-index{color:var(--muted)!important}.control-toolbar{padding:12px!important;background:var(--card)!important;border:1px solid var(--line)!important;border-radius:11px!important}.control-results{color:var(--muted)!important}.control-grid{gap:11px!important}.control-salon{background:var(--card)!important;border:1px solid var(--line)!important;border-top:2px solid var(--brand)!important;border-radius:10px!important;padding:19px!important}.control-salon h2{color:var(--ink)!important}.control-salon-avatar{background:var(--brand-soft)!important;border:1px solid var(--brand-line)!important;border-bottom:2px solid var(--salon-color)!important;border-radius:9px!important}.control-code{color:var(--muted)!important}.control-salon-bottom{border-color:var(--line)!important}.control-empty{border-color:var(--line-strong)!important;color:var(--muted)!important}.control-empty h2{color:var(--ink)!important}.control-page{background:var(--card)!important;border-color:var(--line)!important;color:var(--muted)!important}.control-page.active{background:var(--brand-soft)!important;border-color:var(--brand-line)!important;color:var(--brand-ink)!important}.control-footer{border-color:var(--line)!important;color:var(--muted)!important}.control-table{background:var(--card)!important;border-color:var(--line)!important;border-radius:10px!important}.control-table th{background:var(--panel)!important;color:var(--muted)!important}.control-table th,.control-table td{border-color:var(--line)!important;color:var(--ink)!important}.control-checks label{background:var(--panel)!important;border-color:var(--line)!important;color:var(--ink)!important}.control-login{position:relative;color:var(--ink)!important}.control-login h1{color:var(--ink)!important}.control-login p{color:var(--muted)!important}.control-error{color:var(--danger)!important}/* Convert the old global-admin sidebar into the same floating dock. */
+.control-sidebar{position:fixed!important;z-index:96!important;left:50%!important;right:auto!important;top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;transform:translateX(-50%)!important;width:min(720px,calc(100% - 20px))!important;height:auto!important;inset-inline:auto!important;padding:7px!important;border:1px solid var(--line)!important;border-radius:21px!important;background:var(--card)!important;box-shadow:var(--nav-shadow,0 18px 44px rgba(0,0,0,.34))!important;overflow:visible!important}.control-wordmark,.control-sidebar-label,.control-sidebar-foot{display:none!important}.control-nav{display:flex!important;flex-direction:row!important;gap:4px!important;width:100%!important}.control-nav-item{position:relative!important;flex:1 1 0!important;min-width:0!important;max-width:none!important;min-height:54px!important;padding:7px 4px!important;display:flex!important;flex-direction:row!important;justify-content:center!important;gap:7px!important;border:0!important;border-radius:15px!important;color:var(--muted)!important;background:transparent!important;font-size:9px!important}.control-nav-icon{width:27px!important;height:27px!important}.control-nav-item.active{background:var(--brand-soft)!important;color:var(--brand-ink)!important}.control-nav-item.active::after{content:"";position:absolute;bottom:4px;left:35%;right:35%;height:2px;border-radius:3px;background:var(--brand)}.control-nav-short{display:none!important}.control-nav-full{display:block!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+#navhost .control-sidebar{position:absolute!important;inset-inline:auto!important;left:max(10px,calc((100% - 720px)/2))!important;right:max(10px,calc((100% - 720px)/2))!important;width:auto!important;transform:none!important;top:auto!important}
+.admin-dock{display:none!important}
+html.platform-studio .page{animation:none!important;transform:none!important}/* Per-salon brand authority. These late rules intentionally override the
+   legacy gold accents while preserving amber for semantic waiting states. */
+.platform-shell-card::before,.auth-box::before,.control-login::before,.reservation-hero::after,.control-hero::before{border-color:var(--brand-line)!important}
+.control-nav-item.active{background:var(--brand-soft)!important;color:var(--brand-ink)!important}
+html.admin-studio{--admin-gold:var(--brand)!important;--admin-gold-2:var(--brand-ink)!important;--admin-gold-soft:var(--brand-soft)!important}
+html.admin-studio .admin-shell .input:focus,html.admin-studio .admin-shell .select:focus,html.admin-studio .admin-shell .textarea:focus{border-color:var(--brand)!important;box-shadow:0 0 0 3px var(--brand-soft)!important}
+html.admin-studio .admin-shell .chip.active{background:var(--brand-soft)!important;border-color:var(--brand-line)!important;color:var(--brand-ink)!important}
+.appnav .navitem.active{background:var(--brand)!important;color:var(--on-brand)!important;font-weight:800!important}
+.appnav .navitem.active::after{background:currentColor!important;opacity:.72}
+.appnav .navitem:focus-visible{outline:2px solid var(--brand)!important;outline-offset:2px;background:var(--brand-soft)!important;color:var(--brand-ink)!important}
+.appnav .navitem:active{background:var(--brand)!important;color:var(--on-brand)!important;transform:scale(.97)!important}
+@media(hover:hover){.appnav .navitem:hover:not(.active){background:var(--brand-soft)!important;color:var(--brand-ink)!important}}/* Dialogs and overlay consistency ---------------------------------------- */
+.modal-bg{background:rgba(0,0,0,.74)!important;backdrop-filter:blur(10px)!important}.modal{background:var(--card)!important;color:var(--ink)!important;border:1px solid var(--line)!important;border-radius:15px!important;box-shadow:var(--shadow-pop)!important}.modal .mhead{background:var(--card)!important;border-color:var(--line)!important}.modal h2,.modal h3{color:var(--ink)!important}.photo-editor{background:var(--card)!important}.photo-editor canvas{background:var(--panel)!important}
+
+@media(max-width:760px){
+  .content{padding-inline:13px!important}.hwrap{padding-inline:13px!important}.header{height:68px!important}.page{padding-bottom:100px!important}
+  .navitem,.control-nav-item{flex-direction:column!important;gap:2px!important;min-height:58px!important}.nav-symbol,.control-nav-icon{height:26px!important}.navitem span:last-child,.control-nav-full{font-size:8px!important}
+  .studio-home-top.stage{padding-inline:15px!important}.studio-team-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}.studio-specialist-info{padding-inline:4px!important}.studio-book-link{font-size:9px!important}
+  .control,.control:has(.control-sidebar){padding:18px 13px 105px!important}.control-top{align-items:flex-start!important}.control-top .control-actions{width:100%!important}.control-hero{padding:24px 20px!important}.control-hero-mark{display:none!important}.control .control-stats{grid-template-columns:repeat(3,1fr)!important}.control-stats .stat{min-height:100px!important;padding:13px 10px!important}.control-stats .n{font-size:27px!important}.control-toolbar{padding:9px!important}.control-grid{grid-template-columns:1fr!important}.control-nav-full{display:none!important}.control-nav-short{display:block!important}}
+@media(max-width:390px){.appnav,.control-sidebar{width:calc(100% - 12px)!important;bottom:6px!important;padding:5px!important;border-radius:17px!important}.navitem,.control-nav-item{padding-inline:1px!important}.navitem span:last-child{font-size:7.7px!important}.studio-team-grid{grid-template-columns:1fr 1fr!important}.control-stats .l{font-size:9px!important}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.page,.modal,.card,.btn{animation:none!important;transition:none!important}}
+/* ── Customer surface, after the decorative layer was removed ─────────────
+   Everything below reads from the shared tokens, so each rule resolves in
+   light and dark without a second, theme-specific copy. ------------------ */
+
+/* Top of Home: who you are with, and the two things you can do from here.
+   `.stage > *` in styles.css stretches a stage child to the full content
+   column; the two items in this row size to their own content instead, or the
+   actions push past the edge and the page scrolls sideways. */
+.studio-home-top.stage{gap:12px}
+.studio-home-top.stage>*{width:auto;max-width:100%;margin-inline:0;padding-inline:0}
+.studio-identity>div{min-width:0;overflow:hidden}
+.studio-identity b,.studio-identity-sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.studio-identity-sub{display:block;font-size:11.5px;font-weight:600;color:var(--muted);line-height:1.6}
+.stage-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.stage-actions .iconbtn,.stage-actions .bell{width:42px;height:42px;border-radius:12px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);display:grid;place-items:center;position:relative}
+.stage-actions .iconbtn:active,.stage-actions .bell:active{transform:scale(.94)}
+.studio-home{padding-top:16px}
+
+/* Next appointment: date block, what and with whom, status — three columns
+   that have to stack their own lines. */
+.studio-appointment-main{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px;text-align:start}
+.studio-appointment-main small{font-size:11px;color:var(--muted);line-height:1.6}
+.studio-appointment-main b{font-size:14.5px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.studio-appointment-main>span{font-size:11.5px;color:var(--ink-2);line-height:1.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* One functional line under the section head, in place of a banner. */
+.studio-hint{margin:-10px 2px 0;font-size:12px;color:var(--muted);line-height:1.7}
+
+/* Tighter vertical rhythm now that nothing decorative separates the sections.
+   The column gap alone carries the spacing. */
+.studio-home .studio-appointment{margin-top:0}
+.studio-home .studio-section-head{margin:14px 0 0}
+.studio-home .studio-search{margin-bottom:0}
+.studio-home .studio-notice{padding:14px 0 0}
+
+/* Product tiles are buttons now, so the browser's own button styling has to
+   be neutralised for the card to keep its shape in both themes. */
+.prod{appearance:none;-webkit-appearance:none;text-align:start;font:inherit;width:100%;padding:0;cursor:pointer}
+.prod:active{transform:scale(.985)}
+
+/* A press has to read instantly, before any route work happens. */
+.navitem,.studio-specialist-link,.studio-appointment,.lrow,.btn{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.navitem:active .nav-symbol{transform:scale(.9)}
+.nav-symbol{transition:transform .12s ease}
+.studio-specialist-link:active,.studio-appointment:active{transform:scale(.99)}
+.platform-salon-card{transition:opacity .12s ease,transform .12s ease}
+.platform-salon-card:active{transform:scale(.99)}
+.platform-salon-card.is-opening{opacity:.6}
+
+@media(prefers-reduced-motion:reduce){
+  .navitem:active .nav-symbol,.studio-specialist-link:active,.studio-appointment:active,
+  .platform-salon-card:active,.prod:active{transform:none}
+}
+
+/* ── Booking details ──────────────────────────────────────────────────────
+   The hero was a dark gradient panel with white text baked in, so on the
+   light theme its status, intro and date all but disappeared. It reads from
+   the shared tokens now and the status colour comes from the same palette the
+   badges use, in both themes. */
+.reservation-hero{background:var(--card)!important;border:1px solid var(--line)!important;border-radius:16px!important;color:var(--ink)!important;box-shadow:none!important;padding:20px!important}
+.reservation-hero::after{display:none!important}
+.reservation-hero h2{color:var(--ink)!important;margin:8px 0 4px!important;font-size:clamp(20px,4vw,26px)!important}
+.reservation-hero p{color:var(--muted)!important}
+.reservation-status{border:1px solid transparent!important;background:var(--muted-bg)!important;color:var(--muted)!important;font-weight:750!important}
+.reservation-hero.status-pending .reservation-status{background:var(--warn-bg)!important;color:var(--warn)!important}
+.reservation-hero.status-confirmed .reservation-status{background:var(--info-bg)!important;color:var(--info)!important}
+.reservation-hero.status-completed .reservation-status{background:var(--ok-bg)!important;color:var(--ok)!important}
+.reservation-hero.status-cancelled .reservation-status,
+.reservation-hero.status-no_show .reservation-status{background:var(--danger-bg)!important;color:var(--danger)!important}
+.reservation-hero.status-pending,.reservation-hero.status-confirmed,
+.reservation-hero.status-completed,.reservation-hero.status-cancelled,
+.reservation-hero.status-no_show{background:var(--card)!important}
+.reservation-date-tile{border:1px solid var(--brand-line)!important;background:var(--brand-soft)!important;color:var(--brand-ink)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.reservation-date-tile small,.reservation-date-tile span{color:var(--brand-ink)!important}
+.reservation-date-tile strong{color:var(--brand-ink)!important}
+.reservation-code{border-top-color:var(--line)!important;color:var(--muted)!important}
+.reservation-code b{color:var(--ink)!important}
+
+/* ── Semantic action colours ──────────────────────────────────────────────
+   Confirming a booking is the one green action in the app. Cancelling stays
+   red, recording a no-show is a bordered warning rather than a second filled
+   colour, and everything else keeps the neutral treatment — so the hierarchy
+   inside an action row is readable at a glance instead of three loud fills.
+   Both fills are checked for text contrast in their own theme. */
+:root{
+  --confirm:#1b7a4b;            /* on ivory: 4.9:1 against white text */
+  --on-confirm:#ffffff;
+  --confirm-hover:#166540;
+  --confirm-soft:#e8f3ec;
+  --confirm-line:#bcdcc9;
+}
+[data-theme="dark"],html[data-theme="dark"] body{
+  --confirm:#2e9e64;            /* on charcoal: 5.7:1 against its dark label */
+  --on-confirm:#06170f;
+  --confirm-hover:#37b072;
+  --confirm-soft:#10281c;
+  --confirm-line:#255f42;
+}
+.btn.ok{
+  background:var(--confirm)!important;border-color:var(--confirm)!important;
+  color:var(--on-confirm)!important;font-weight:750!important;
+}
+.btn.ok:hover:not(:disabled){background:var(--confirm-hover)!important;border-color:var(--confirm-hover)!important;filter:none!important}
+.btn.ok:active:not(:disabled){transform:scale(.98)!important}
+.btn.warn{
+  background:transparent!important;border-color:var(--warn)!important;
+  color:var(--warn)!important;font-weight:700!important;
+}
+.btn.warn:hover:not(:disabled){background:var(--warn-bg)!important;filter:none!important}
+/* A disabled action has to read as unavailable, not as a different action. */
+.btn:disabled,.btn[aria-busy="true"]{opacity:.55;cursor:not-allowed;filter:none!important;transform:none!important}
+.btn.ok:disabled{background:var(--confirm)!important;border-color:var(--confirm)!important}
+
+/* The next-step actions sit in one row that wraps rather than a stack of
+   full-width buttons pushing the note off the screen. */
+.booking-actions,.reservation-action-grid{display:flex;flex-wrap:wrap;gap:8px}
+.booking-actions .btn,.reservation-action-grid .btn{flex:1 1 150px;min-width:0}
+
+/* ── Schedule surfaces ────────────────────────────────────────────────────
+   Unavailable time used to be one near-black block (#0d0d0c, hard-coded), so
+   in light mode the week was striped with black and a closed day looked the
+   same as a coffee break. Each state now has its own quiet surface, built
+   from the theme's own tokens, and carries a label where the meaning is not
+   obvious from position alone. None of them is darker than the page. */
+.cal-cell{position:relative}
+.cal-cell[data-state="open"]{background:transparent!important}
+/* Break: the salon is working, just not at this moment — a soft tinted band. */
+.cal-cell[data-state="break"]{background:var(--panel)!important}
+/* Outside the shift on a working day: quieter still, and striped so it reads
+   as "nothing scheduled here" rather than as a filled selection. */
+.cal-cell[data-state="shut"]{
+  background:var(--panel-2)!important;
+  background-image:repeating-linear-gradient(135deg,transparent 0 7px,color-mix(in srgb,var(--line-strong) 26%,transparent) 7px 8px)!important;
+}
+/* A closed day is the whole column, so it gets the flattest surface of all. */
+.cal-cell[data-state="closed"]{background:var(--panel-2)!important;opacity:.7}
+.cal-cell-label{
+  position:absolute;inset-inline-start:6px;top:4px;display:inline-flex;align-items:center;gap:4px;
+  font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.2px;pointer-events:none;
+}
+.cal-cell-label svg{width:13px;height:13px}
+.cal-hcell.closed{opacity:.75}
+.cal-hcell.closed small{color:var(--muted)}
+
+/* The legend explains the surfaces, so the schedule is not read by colour
+   alone. Each swatch is the real surface it stands for. */
+.cal-legend .lg-surface{display:inline-flex;align-items:center;gap:7px;color:var(--muted)}
+.cal-legend .lg-surface::before{
+  content:"";width:16px;height:16px;border-radius:5px;border:1px solid var(--line);flex:0 0 auto;
+}
+.cal-legend .lg-surface[data-state="open"]::before{background:var(--card)}
+.cal-legend .lg-surface[data-state="break"]::before{background:var(--panel)}
+.cal-legend .lg-surface[data-state="shut"]::before{
+  background:var(--panel-2);
+  background-image:repeating-linear-gradient(135deg,transparent 0 4px,color-mix(in srgb,var(--line-strong) 30%,transparent) 4px 5px);
+}
+.cal-legend .lg-surface[data-state="closed"]::before{background:var(--panel-2);opacity:.7}
+
+/* ── The salon logo ───────────────────────────────────────────────────────
+   Every logo in the app goes through one class. The box is fixed by whatever
+   container it sits in, the image is contained inside it, and it is centred —
+   so a wide wordmark is letterboxed instead of cropped, a tall one is not
+   stretched, and a transparent PNG shows the surface behind it rather than a
+   black rectangle. */
+.brand-logo{
+  object-fit:contain!important;object-position:center!important;
+  max-width:100%;max-height:100%;
+  background:transparent;
+  /* A logo arriving over a slow connection paints progressively; without this
+     the header jumps as it resolves. */
+  contain:paint;
+}
+/* The admin header, the customer header, the sign-in card and the splash each
+   declare their own box; the logo fills it without ever exceeding it. */
+.admin-brand .brand-logo{width:38px;height:38px}
+.studio-identity .brand-logo{width:48px;height:48px}
+.auth-brand .brand-logo{width:82px;height:82px}
+.splash .brand-logo{width:108px;height:108px}
+
+/* ── Daily schedule ───────────────────────────────────────────────────────
+   Three columns that always mean the same thing: when, who and what, and the
+   one action that is available next. Nothing is boxed twice, the separators
+   are hairlines rather than cards inside cards, and the only strong colour on
+   a row is the action the person is meant to press. */
+.sched-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}
+.sched-row{
+  display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:14px;
+  padding:14px 16px;border-top:1px solid var(--line-2);
+}
+.sched-list>*:first-child{border-top:0}
+
+/* The time rail is the thing the eye runs down, so it is the only place with
+   tabular figures and it never moves horizontally. */
+.sched-time{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.35}
+.sched-time b{font:700 17px/1.2 'Inter',sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}
+.sched-time small{font:600 12px/1.2 'Inter',sans-serif;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.sched-time span{font-size:10.5px;color:var(--muted);margin-top:3px;white-space:nowrap}
+
+/* Customer first, service second, everything else quieter. Long values are
+   clipped here rather than pushing the action column off the row. */
+.sched-main{min-width:0;display:flex;flex-direction:column;gap:3px}
+.sched-who{font-size:15px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sched-what{margin:0;font-size:12.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sched-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px}
+.sched-tag{
+  display:inline-flex;align-items:center;gap:5px;max-width:190px;
+  font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.sched-tag svg{flex:0 0 auto;opacity:.75}
+.sched-meta .badge{font-size:10px}
+
+.sched-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.sched-actions .btn{min-height:36px;padding-inline:12px;font-size:12px;white-space:nowrap}
+.sched-actions .iconbtn{width:36px;height:36px;border-radius:10px;flex:0 0 auto}
+
+/* A finished appointment is still readable, just no longer competing with the
+   ones that have not happened yet. */
+.sched-row[data-past="1"]:not([data-status="pending"]) .sched-time b,
+.sched-row[data-past="1"]:not([data-status="pending"]) .sched-who{color:var(--ink-2)}
+.sched-row[data-status="cancelled"] .sched-who,
+.sched-row[data-status="cancelled"] .sched-what{text-decoration:line-through;color:var(--muted)}
+/* A request still waiting on the salon is the one row that earns emphasis —
+   a quiet tint and an edge marker, not a filled block that shouts louder than
+   the action sitting on it. */
+.sched-row[data-status="pending"]{
+  background:color-mix(in srgb,var(--warn-bg) 55%,var(--card));
+  box-shadow:inset 3px 0 0 var(--warn);
+}
+html[dir="rtl"] .sched-row[data-status="pending"],
+[dir="rtl"] .sched-row[data-status="pending"]{box-shadow:inset -3px 0 0 var(--warn)}
+
+/* Free time and the current moment are separators, not cards — the same quiet
+   language the weekly grid uses for time nobody is booked into. */
+.sched-gap{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:7px 16px;border-top:1px solid var(--line-2);
+  background:var(--panel);color:var(--muted);font-size:11px;
+}
+.sched-gap span:first-child{font-variant-numeric:tabular-nums;opacity:.85}
+.sched-now{
+  display:flex;align-items:center;gap:10px;padding:6px 16px;border-top:1px solid var(--line-2);
+  background:var(--brand-soft);color:var(--brand-ink);font-size:11px;font-weight:750;
+}
+.sched-now::after{content:"";flex:1;height:2px;border-radius:2px;background:var(--brand);opacity:.55}
+
+/* The count that needs attention is the only stat that is allowed to shout. */
+.stat-attention{border-color:var(--warn)!important;background:var(--warn-bg)!important}
+.stat-attention .n{color:var(--warn)!important}
+
+@media(max-width:620px){
+  /* The rail keeps its own column and stays stacked — laying start and end
+     side by side made it wider than the column and the service name ran
+     underneath it. The duration is dropped instead, since the two times
+     already carry it. */
+  .sched-row{grid-template-columns:58px minmax(0,1fr);gap:10px;padding:12px 14px;row-gap:8px}
+  .sched-time span{display:none}
+  .sched-time b{font-size:16px}
+  .sched-actions{grid-column:1/-1;justify-content:flex-start;flex-wrap:wrap;gap:6px}
+  .sched-actions .btn{flex:0 1 auto;min-height:34px;font-size:11.5px}
+  .sched-tag{max-width:120px}
+  .sched-gap,.sched-now{padding-inline:14px}
+}

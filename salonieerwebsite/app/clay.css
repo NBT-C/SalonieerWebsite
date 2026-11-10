@@ -1,0 +1,241 @@
+/* =========================================================================
+   SALONIEER CLAY
+   Claymorphism: soft, puffy surfaces that look moulded rather than drawn.
+   Every raised element combines
+     • an outer drop shadow (it floats),
+     • a lighter outer edge on the lit side,
+     • an inner highlight on the lit side and an inner shade on the far side
+       (it is rounded, not flat),
+   with generous corners, no hairline borders, and controls that squash a
+   little when pressed. Inputs are the opposite: pressed INTO the surface.
+
+   This is the last stylesheet and everything sits under html.clay, so the
+   whole look switches off by removing that one class (index.html). Colours
+   still come from each salon's own brand (SalonTheme): the clay is tinted
+   with --brand, never a fixed hue. Light and dark both have a recipe.
+   ========================================================================= */
+
+/* ---- Tokens: dark clay (launcher, platform, dark mode) ------------------ */
+html.clay body{
+  --clay-r-xl:30px;--clay-r:24px;--clay-r-md:20px;--clay-r-sm:16px;--clay-r-xs:12px;
+  /* Near-black, but not black: clay needs a little light to show its shape. */
+  --bg:color-mix(in srgb,var(--brand) 3%,#08090b);
+  --card:color-mix(in srgb,var(--brand) 4%,#121417);
+  --panel:color-mix(in srgb,var(--brand) 3%,#0d0e11);
+  --panel-2:color-mix(in srgb,var(--brand) 6%,#1a1c20);
+  --field:color-mix(in srgb,var(--brand) 3%,#090a0c);
+  --line:rgb(255 255 255 / .06);--line-2:rgb(255 255 255 / .04);--line-strong:rgb(255 255 255 / .12);
+  --clay-drop:rgb(0 0 0 / .7);
+  --clay-edge:rgb(255 255 255 / .03);
+  --clay-shade:rgb(0 0 0 / .45);
+  --clay-light:rgb(255 255 255 / .08);
+  --clay-sink:rgb(0 0 0 / .65);
+  --clay-brand-glow:color-mix(in srgb,var(--brand) 45%,transparent);
+}
+/* ---- Tokens: light clay (an open salon in light mode) ------------------- */
+html.clay[data-theme="light"][data-experience="salon"]:not(.platform-studio) body,
+html.clay[data-theme="light"][data-experience="salon"]:not(.platform-studio){
+  --bg:color-mix(in srgb,var(--brand) 8%,#f1ece6);
+  --card:color-mix(in srgb,var(--brand) 2%,#fffdfb);
+  --panel:color-mix(in srgb,var(--brand) 7%,#ebe5de);
+  --panel-2:color-mix(in srgb,var(--brand) 10%,#e4ddd4);
+  --field:color-mix(in srgb,var(--brand) 6%,#ece6df);
+  --line:rgb(90 70 50 / .08);--line-2:rgb(90 70 50 / .05);--line-strong:rgb(90 70 50 / .16);
+  --clay-drop:color-mix(in srgb,var(--brand) 22%,rgb(96 76 58 / .30));
+  --clay-edge:rgb(255 255 255 / .9);
+  --clay-shade:rgb(96 76 58 / .10);
+  --clay-light:rgb(255 255 255 / .95);
+  --clay-sink:rgb(96 76 58 / .16);
+  --clay-brand-glow:color-mix(in srgb,var(--brand) 40%,transparent);
+}
+html.clay body{
+  /* The recipes. Light comes from the top-left in both directions. */
+  --clay:10px 14px 28px -6px var(--clay-drop),-6px -6px 16px -4px var(--clay-edge),
+         inset -5px -7px 12px var(--clay-shade),inset 5px 6px 12px var(--clay-light);
+  --clay-sm:6px 9px 18px -6px var(--clay-drop),-4px -4px 10px -4px var(--clay-edge),
+         inset -3px -5px 8px var(--clay-shade),inset 3px 4px 8px var(--clay-light);
+  --clay-pressed:inset 4px 6px 10px var(--clay-sink),inset -4px -4px 10px var(--clay-edge);
+  --clay-brand:0 12px 24px -8px var(--clay-brand-glow),inset -4px -6px 10px rgb(0 0 0 / .2),inset 4px 5px 10px rgb(255 255 255 / .32);
+  --shadow:var(--clay);--shadow-card:var(--clay-sm);--nav-shadow:var(--clay);
+}
+
+/* ---- Raised surfaces --------------------------------------------------- */
+html.clay :is(.card,.svc,.bcard,.prod,.booking-card,.ticket,.summary,.phead,.hero,.bprofile,.agenda-card,.cal-wrap,
+  .collapsible,.reservation-card,.reservation-customer,.studio-device-details,.studio-notice,.studio-appointment,
+  .studio-account,.studio-specialist,.stat,.analytics-card,.push-runtime-card,.platform-shell-card,.auth-box,
+  .control-login,.dstat,.tlev,.smart-suggest,.admin-overview-hero,.empty,.banner,.lrow,.window-day,.push-alert,.studio-notification){
+  background:var(--card)!important;border:0!important;border-radius:var(--clay-r)!important;box-shadow:var(--clay)!important;
+}
+html.clay :is(.lrow,.dstat,.tlev,.stat,.studio-specialist,.window-day,.push-alert){border-radius:var(--clay-r-md)!important;box-shadow:var(--clay-sm)!important}
+html.clay :is(.empty,.banner){background:var(--panel)!important;border:0!important}
+/* A list is a stack of separate clay rows, not one slab with hairlines. */
+html.clay .list{background:transparent!important;border:0!important;box-shadow:none!important;display:grid!important;gap:12px!important;overflow:visible!important}
+html.clay .list>.lrow{margin:0!important;border-bottom:0!important}
+/* Nested cards must not stack shadows inside shadows. */
+html.clay :is(.card,.agenda-card,.summary,.ticket,.reservation-card,.modal,.studio-notification) :is(.card,.summary,.ticket,.dstat,.studio-notification-details){
+  background:var(--panel)!important;box-shadow:var(--clay-pressed)!important;border-radius:var(--clay-r-sm)!important}
+/* The week grid is a clay slab; its cells stay flat so it stays readable. */
+html.clay .cal-wrap{overflow:auto}
+html.clay .cal-ev{border-radius:var(--clay-r-xs)!important;box-shadow:var(--clay-sm)!important;border-width:0 0 0 4px!important}
+html.clay .cal-full .cal-wrap.cal-full-wrap{box-shadow:none!important;border-radius:0!important}
+
+/* Avatars, logos, date blocks and icon bubbles are little clay pebbles. */
+html.clay :is(.studio-date,.studio-portrait,.pa-mini,.ec,.push-card-icon,.push-entry-icon,.smart-suggest-icon,.lrow .ic,.av-sm,.brand-logo,.studio-identity img,.platform-brand-mark){
+  border-radius:var(--clay-r-sm)!important;box-shadow:var(--clay-sm)!important;border:0!important}
+html.clay :is(.studio-date,.ec,.push-card-icon,.push-entry-icon,.smart-suggest-icon,.lrow .ic){background:var(--brand-soft)!important;color:var(--brand-ink)!important}
+
+/* ---- Page chrome -------------------------------------------------------- */
+html.clay :is(.header,.backbar,.studio-home-top.stage){border-bottom:0!important;background:var(--bg)!important}
+html.clay :is(.iconbtn,.bell,.hbtn,.pg-btn,.stepper-btn,.smart-pager-btn){
+  background:var(--card)!important;border:0!important;border-radius:var(--clay-r-sm)!important;box-shadow:var(--clay-sm)!important;color:var(--ink-2)!important;
+  transition:transform .14s cubic-bezier(.3,1.6,.5,1),box-shadow .14s ease!important}
+html.clay :is(.iconbtn,.bell,.hbtn,.pg-btn,.stepper-btn,.smart-pager-btn):active{transform:scale(.92)!important;box-shadow:var(--clay-pressed)!important}
+
+/* Bottom navigation: one floating clay pill; the active tab is a raised
+   brand-coloured pebble inside it. */
+html.clay .appnav{background:var(--card)!important;border:0!important;border-radius:var(--clay-r-xl)!important;box-shadow:var(--clay)!important;padding:8px!important}
+html.clay .appnav .navitem{border-radius:22px!important;transition:transform .16s cubic-bezier(.3,1.6,.5,1),background .2s ease!important}
+html.clay .appnav .navitem.active{background:var(--brand)!important;color:var(--on-brand)!important;box-shadow:var(--clay-brand)!important}
+html.clay .appnav .navitem.active::after{display:none!important}
+html.clay .appnav .navitem:active{transform:scale(.93)!important}
+html.clay .control-sidebar{background:var(--card)!important;border:0!important;border-radius:var(--clay-r-xl)!important;box-shadow:var(--clay)!important}
+html.clay .control-nav-item.active,html.clay .control-nav-item[aria-current="page"]{background:var(--brand)!important;color:var(--on-brand)!important;border-radius:20px!important;box-shadow:var(--clay-brand)!important}
+
+/* ---- Buttons ------------------------------------------------------------ */
+html.clay .btn{
+  border:0!important;border-radius:var(--clay-r-md)!important;min-height:50px;
+  background:var(--brand)!important;color:var(--on-brand)!important;box-shadow:var(--clay-brand)!important;
+  transition:transform .16s cubic-bezier(.3,1.6,.5,1),box-shadow .16s ease,filter .16s ease!important}
+html.clay .btn.sm{min-height:42px;border-radius:var(--clay-r-sm)!important}
+html.clay .btn:hover{filter:brightness(1.05)}
+html.clay .btn:active{transform:scale(.96) translateY(1px)!important;box-shadow:0 4px 10px -6px var(--clay-brand-glow),inset -2px -3px 6px rgb(0 0 0 / .22),inset 3px 4px 8px rgb(0 0 0 / .14)!important}
+html.clay :is(.btn.line,.btn.ghost){background:var(--card)!important;color:var(--ink)!important;box-shadow:var(--clay-sm)!important}
+html.clay :is(.btn.line,.btn.ghost):active{box-shadow:var(--clay-pressed)!important}
+html.clay .btn.danger{background:var(--danger)!important;color:#fff!important;box-shadow:0 12px 24px -8px color-mix(in srgb,var(--danger) 45%,transparent),inset -4px -6px 10px rgb(0 0 0 / .2),inset 4px 5px 10px rgb(255 255 255 / .3)!important}
+html.clay .btn:disabled,html.clay .btn[aria-disabled="true"]{filter:saturate(.4) opacity(.6);box-shadow:var(--clay-sm)!important;transform:none!important}
+
+/* ---- Inputs: pressed into the surface ---------------------------------- */
+html.clay :is(.input,.select,.textarea,.studio-search){
+  background:var(--field)!important;border:0!important;border-radius:var(--clay-r-sm)!important;box-shadow:var(--clay-pressed)!important;color:var(--ink)!important}
+html.clay .studio-search input{background:transparent!important;box-shadow:none!important}
+html.clay .studio-filter-row{display:flex!important;gap:10px!important}
+html.clay .studio-filter.icon-only{border-radius:50%!important}
+html.clay :is(.input,.select,.textarea):focus{box-shadow:var(--clay-pressed),0 0 0 3px color-mix(in srgb,var(--brand) 35%,transparent)!important;outline:0}
+
+/* ---- Toggle switch: a clay track with a puffy knob ---------------------- */
+html.clay .switch .track{background:var(--panel-2)!important;border:0!important;box-shadow:var(--clay-pressed)!important;border-radius:999px!important}
+html.clay .switch input:checked+.track{background:var(--brand)!important;box-shadow:inset 3px 4px 8px rgb(0 0 0 / .22),inset -2px -2px 6px rgb(255 255 255 / .25)!important}
+html.clay .switch .thumb{background:#fff!important;border-radius:50%!important;box-shadow:3px 5px 10px -3px rgb(0 0 0 / .35),inset -2px -3px 5px rgb(0 0 0 / .12),inset 2px 2px 5px rgb(255 255 255 / .9)!important}
+
+/* ---- Segmented controls, chips, tabs, day and time pickers -------------- */
+html.clay :is(.seg,.chips,.steps,.cal-legend){background:var(--panel)!important;border:0!important;border-radius:var(--clay-r-md)!important;box-shadow:var(--clay-pressed)!important;padding:6px!important}
+html.clay .seg button{border-radius:var(--clay-r-sm)!important;border:0!important}
+html.clay :is(.seg button.on,.seg button[aria-pressed="true"]){background:var(--card)!important;color:var(--brand-ink)!important;box-shadow:var(--clay-sm)!important}
+html.clay :is(.chip,.studio-filter,.admin-content .atab,.atab){border:0!important;border-radius:999px!important;background:var(--card)!important;box-shadow:var(--clay-sm)!important;color:var(--ink-2)!important}
+html.clay :is(.chip.active,.chip[aria-pressed="true"],.atab.active,.studio-filter.active,.studio-filter[aria-pressed="true"]){background:var(--brand)!important;color:var(--on-brand)!important;box-shadow:var(--clay-brand)!important}
+html.clay .admin-content .atabs{background:var(--panel)!important;border:0!important;border-radius:var(--clay-r-md)!important;box-shadow:var(--clay-pressed)!important}
+html.clay :is(.day,.slot,.svc-pick){border:0!important;border-radius:var(--clay-r-md)!important;background:var(--card)!important;box-shadow:var(--clay-sm)!important;
+  transition:transform .16s cubic-bezier(.3,1.6,.5,1),box-shadow .16s ease!important}
+html.clay :is(.day,.slot,.svc-pick,.chip,.atab):active{transform:scale(.95)!important}
+html.clay :is(.day.active,.day.selected,.slot.active,.slot.selected,.slot.on,.svc.selected,.svc.active,.svc-pick.active,.svc-pick.on){
+  background:var(--brand)!important;color:var(--on-brand)!important;box-shadow:var(--clay-brand)!important}
+/* Everything inside a selected clay item reads on the brand colour. */
+html.clay :is(.day.active,.day.selected,.slot.active,.slot.selected,.slot.on,.svc.selected,.svc.active,.svc-pick.active,.svc-pick.on,.appnav .navitem.active) :not(.pick,.pick *){color:inherit!important}
+/* The tick on a chosen service: a white pebble in the far corner, clear of
+   the service name. */
+html.clay .svc .pick{inset-inline-start:auto!important;inset-inline-end:12px!important;top:12px!important;width:24px!important;height:24px!important;
+  border-radius:50%!important;background:var(--on-brand)!important;color:var(--brand)!important;box-shadow:var(--clay-sm)!important}
+/* Horizontal strips scroll, so they would clip the shadows of what is in
+   them: give the clay room to breathe inside the scroller. */
+html.clay :is(.days,.svc-grid,.studio-filter-row,.admin-content .atabs){padding:8px 8px 16px!important;margin-inline:-8px!important;overflow-y:visible}
+html.clay .summary{background:transparent!important;box-shadow:none!important;gap:12px!important}
+html.clay .summary .box{background:var(--card)!important;border:0!important;border-radius:var(--clay-r-md)!important;box-shadow:var(--clay-sm)!important}
+html.clay :is(.next-slot,.guest-box){background:var(--card)!important;border:0!important;border-radius:var(--clay-r-md)!important;box-shadow:var(--clay-sm)!important}
+html.clay .next-slot .zap{background:var(--brand-soft)!important;color:var(--brand-ink)!important;border-radius:var(--clay-r-xs)!important;box-shadow:var(--clay-sm)!important}
+
+/* ---- Badges and small labels ------------------------------------------- */
+html.clay :is(.badge,.role-pill,.smart-chip,.push-pill,.studio-count){border:0!important;border-radius:999px!important;
+  box-shadow:inset -2px -2px 4px rgb(0 0 0 / .08),inset 2px 2px 4px rgb(255 255 255 / .35)!important}
+
+/* ---- Overlays ----------------------------------------------------------- */
+html.clay .modal{background:var(--card)!important;border:0!important;border-radius:var(--clay-r-xl)!important;box-shadow:var(--clay)!important}
+html.clay .toast{border-radius:999px!important;box-shadow:var(--clay)!important;border:0!important}
+html.clay .cal-full-bar,html.clay .cal-full-hint{border:0!important}
+html.clay .cal-zoom-fit{border:0!important;border-radius:var(--clay-r-xs)!important;box-shadow:var(--clay-sm)!important;background:var(--card)!important}
+html.clay .cal-zoom-fit.active{box-shadow:var(--clay-pressed)!important;background:var(--brand-soft)!important}
+html.clay .language-veil-card,html.clay .app-loader-card{border-radius:var(--clay-r-xl)!important;box-shadow:var(--clay)!important;border:0!important}
+
+/* ---- Admin studio: its own palette points at the clay one -------------- */
+html.clay.admin-studio body{
+  --admin-bg:var(--bg);--admin-card:var(--card);--admin-card-2:var(--panel);--admin-sunken:var(--field);--admin-raised:var(--card);
+  --admin-line:var(--line);--admin-line-soft:var(--line-2);--admin-chrome:var(--bg);--admin-dock:var(--card);
+}
+html.clay .admin-shell .card,html.clay .admin-shell :is(.chart-card,.cal-wrap,.agenda-card,.tlev,.lrow,.collapsible,.table-wrap,.u-tools){
+  background:var(--card)!important;border:0!important;border-radius:var(--clay-r)!important;box-shadow:var(--clay)!important}
+html.clay .admin-shell :is(.input,.select,.textarea),html.clay.admin-studio .modal :is(.input,.select,.textarea){
+  background:var(--field)!important;border:0!important;border-radius:var(--clay-r-sm)!important;box-shadow:var(--clay-pressed)!important}
+html.clay.admin-studio .modal .btn{background:var(--brand)!important;color:var(--on-brand)!important;box-shadow:var(--clay-brand)!important}
+html.clay.admin-studio .modal .btn.line{background:var(--card)!important;color:var(--ink)!important;box-shadow:var(--clay-sm)!important}
+
+/* ---- Launcher ----------------------------------------------------------- */
+/* The salon-code screen keeps its own gold identity but is moulded too. */
+html.clay .platform-gate{
+  --gate-bg:color-mix(in srgb,#d2aa1c 2%,#08090b);--gate-card:color-mix(in srgb,#d2aa1c 2%,#08090b);
+  --gate-panel:#121417;--gate-field:#090a0c;--gate-line:rgb(255 255 255 / .06);--gate-line-2:rgb(255 255 255 / .1);
+  --brand:#d2aa1c;--on-brand:#14120a;--clay-brand-glow:rgb(210 170 28 / .4);
+  /* Shadow recipes resolve where they are declared, so the gold glow has to
+     be re-declared here rather than inherited from the salon's brand. */
+  --clay-brand:0 12px 24px -8px var(--clay-brand-glow),inset -4px -6px 10px rgb(0 0 0 / .2),inset 4px 5px 10px rgb(255 255 255 / .32);
+}
+html.clay .platform-gate .platform-shell-card{background:transparent!important;border:0!important;box-shadow:none!important}
+html.clay .platform-gate .platform-actions{background:var(--gate-panel)!important;border:0!important;border-radius:var(--clay-r-xl)!important;box-shadow:var(--clay)!important}
+html.clay .platform-gate .platform-secondary{background:#1b1d21!important;color:var(--gate-ink)!important}
+html.clay .platform-gate .platform-or::before,html.clay .platform-gate .platform-or::after{opacity:.5}
+html.clay .platform-gate :is(input,.input,.select,select){background:var(--gate-field)!important;border:0!important;border-radius:var(--clay-r-sm)!important;box-shadow:var(--clay-pressed)!important}
+html.clay .platform-gate .language-choice select{box-shadow:var(--clay-sm)!important;background:var(--gate-panel)!important}
+html.clay :is(.platform-salon-card,.platform-picker-row){border:0!important;border-radius:var(--clay-r-md)!important;background:var(--gate-panel,var(--card))!important;box-shadow:var(--clay-sm)!important}
+html.clay :is(.platform-salon-avatar,.platform-salon-logo){border-radius:var(--clay-r-sm)!important;box-shadow:var(--clay-sm)!important}
+html.clay .platform-scan-frame{border-radius:var(--clay-r-xl)!important}
+html.clay .platform-shell-card::before,html.clay .auth-box::before,html.clay .control-login::before{display:none!important}
+html.clay .platform-primary{border:0!important;border-radius:var(--clay-r-md)!important;box-shadow:var(--clay-brand)!important}
+html.clay :is(.platform-secondary,.platform-link-btn){border:0!important;border-radius:var(--clay-r-md)!important;background:var(--card)!important;box-shadow:var(--clay-sm)!important}
+
+/* ---- Accessibility and performance ------------------------------------- */
+@media (prefers-reduced-motion: reduce){
+  html.clay :is(.btn,.iconbtn,.navitem,.chip,.day,.slot,.atab):active{transform:none!important}
+}
+/* Android WebViews repaint big blurred shadows slowly while scrolling: keep
+   the same moulded look with tighter, cheaper shadows there. */
+html.clay[data-native="android"] body{
+  --clay:6px 9px 16px -6px var(--clay-drop),inset -3px -5px 8px var(--clay-shade),inset 3px 4px 8px var(--clay-light);
+  --clay-sm:4px 6px 12px -6px var(--clay-drop),inset -2px -3px 6px var(--clay-shade),inset 2px 3px 6px var(--clay-light);
+}
+@media (forced-colors: active){
+  html.clay :is(.card,.btn,.lrow,.input,.select,.textarea,.modal){border:1px solid CanvasText!important}
+}
+@media print{
+  html.clay *{box-shadow:none!important}
+}
+/* Salon-opening loader: the opened salon's initial on its own brand colour. */
+html.clay .app-loader-mark .platform-salon-avatar{background:var(--brand)!important;color:var(--on-brand)!important;box-shadow:var(--clay-brand)!important}
+
+/* ---- Language picker: one calm clay pill everywhere --------------------
+   The launcher inherited its large type and Settings showed a bare system
+   box. Same size, weight and chevron on every screen, with the chevron on
+   the reading end of the pill in both directions. */
+html.clay .language-choice select,html.clay #salonieer-language{
+  -webkit-appearance:none!important;appearance:none!important;
+  font:inherit!important;font-size:14px!important;font-weight:650!important;line-height:1.2!important;letter-spacing:0!important;
+  min-height:42px!important;height:auto!important;min-width:136px!important;max-width:none!important;
+  padding-block:10px!important;padding-inline:18px 40px!important;
+  border:0!important;border-radius:999px!important;cursor:pointer;
+  background-color:var(--card)!important;color:var(--ink)!important;box-shadow:var(--clay-sm)!important;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8f98' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")!important;
+  background-repeat:no-repeat!important;background-size:12px 12px!important;background-position:right 16px center!important;
+  transition:transform .14s cubic-bezier(.3,1.6,.5,1),box-shadow .14s ease!important;
+}
+html.clay[dir="rtl"] .language-choice select,html.clay[dir="rtl"] #salonieer-language{background-position:left 16px center!important}
+html.clay .language-choice select:active,html.clay #salonieer-language:active{transform:scale(.96)!important;box-shadow:var(--clay-pressed)!important}
+html.clay .language-choice select:focus-visible,html.clay #salonieer-language:focus-visible{outline:0;box-shadow:var(--clay-sm),0 0 0 3px color-mix(in srgb,var(--brand) 40%,transparent)!important}
+html.clay .language-choice>span{font-size:14px;font-weight:650;color:var(--ink-2)}
+html.clay .platform-gate .language-choice select,html.clay .platform-gate #salonieer-language{background-color:#1b1d21!important;color:var(--gate-ink)!important}

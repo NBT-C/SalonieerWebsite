@@ -231,6 +231,22 @@ function metonPasswordApi(string $method, string $path, array|false $session): v
         }
         sendJson(200, ['ok'=>true]);
     }
+    // 2.48: step 1 of 2 — the code is checked (a wrong one counts as a try; the right one stays for step 2).
+    if ($method === 'POST' && $path === '/api/password/check') {
+        $d = body(); $email = strtolower(cleanText($d['email'] ?? null)); $code = preg_replace('/[^0-9]/', '', (string)($d['code'] ?? ''));
+        rateLimit('pw-check-ip', 40, 3600);
+        if (!validEmail($email)) fail(400, 'codeExpired', 'code');
+        if ($shared($email)) {
+            $r = idCall('website_account_reset_check', ['p_identifier'=>$email, 'p_dial'=>'', 'p_code'=>$code]);
+            if (($r['code'] ?? '') === 'wrong_code') fail(400, 'wrongCode', 'code');
+            if (isset($r['error'])) fail(400, 'codeExpired', 'code');
+            sendJson(200, ['ok'=>true]);
+        }
+        $row = one('SELECT * FROM password_codes WHERE email=?', [$email]);
+        if (!$row || (int)$row['expires_at'] < nowMs() || (int)$row['attempts'] >= 5) fail(400, 'codeExpired', 'code');
+        if (strlen($code) !== 6 || !password_verify($code, $row['code_hash'])) { runSql('UPDATE password_codes SET attempts=attempts+1 WHERE email=?', [$email]); fail(400, 'wrongCode', 'code'); }
+        sendJson(200, ['ok'=>true]);
+    }
     if ($method === 'POST' && $path === '/api/password/reset') {
         $d = body(); $email = strtolower(cleanText($d['email'] ?? null)); $code = preg_replace('/[^0-9]/', '', (string)($d['code'] ?? ''));
         rateLimit('pw-reset-ip', 30, 3600);

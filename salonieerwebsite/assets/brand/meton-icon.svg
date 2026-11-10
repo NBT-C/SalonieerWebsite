@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
-  <title id="title">METON app icon</title>
-  <path fill="#241D28" d="M0 0h512v512H0z"/>
-  <path fill="#FAF4EB" d="M112 347V163a11 11 0 0 1 11-11h33a15 15 0 0 1 11 5l89 93 89-93a15 15 0 0 1 11-5h33a11 11 0 0 1 11 11v126h-49v-66l-85 89a14 14 0 0 1-20 0l-85-89v124a9 9 0 0 1-9 9h-31a9 9 0 0 1-9-9Z"/>
-  <rect x="351" y="306" width="49" height="50" rx="8" fill="#FF7057"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 554 554" role="img" aria-label="METON"><rect width="554" height="554" rx="0" fill="#101425"/><g transform="translate(0 0) scale(1)"><path fill="#F1F3FF" d="M 91.5 164 C 91.5 146 105.2 132 122.5 132 H 155 C 165.5 132 175 136 183 144 L 279 252.5 L 379 143 C 387 135.5 395 131.5 405 131.5 H 438 C 453 131.5 465.5 143.5 465.5 159.5 V 318.5 C 465.5 326 460.5 331.5 453 331.5 H 401 C 394.5 331.5 391.5 328 391.5 321.5 V 237 L 300 338 C 293 345.5 287 348 279 348 C 271.5 348 265 345.5 258 338 L 166 239 V 405 C 166 419.5 154.5 431.5 140 431.5 H 118 C 103 431.5 91.5 419.5 91.5 404 Z"/><rect x="382.5" y="349" width="83" height="83" rx="21" fill="#9FAAFF"/></g></svg>

@@ -1,0 +1,19 @@
+# METON app in the browser (copied from Salonieer-KMP/web by tools/publish_web_app.mjs). Static files only.
+Options -Indexes
+DirectoryIndex index.html
+<IfModule mod_headers.c>
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "DENY"
+Header always set Referrer-Policy "same-origin"
+Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=(self)"
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://www.meton.work https://jauiffbyaibpdtuhgqei.supabase.cowss://jauiffbyaibpdtuhgqei.supabase.co; frame-src https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+<FilesMatch "\.(?:html|js|css|webmanifest)$">
+Header set Cache-Control "no-cache"
+</FilesMatch>
+</IfModule>
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteCond %{SERVER_PORT} =80
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</IfModule>

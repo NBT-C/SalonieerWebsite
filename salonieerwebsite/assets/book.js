@@ -606,6 +606,13 @@ const F = {
   send: { en: 'Send code', ar: 'إرسال الرمز', he: 'שליחת קוד' },
   sent: { en: 'If an account uses {email}, a code is on its way. Check your inbox and spam folder.', ar: 'إذا كان هناك حساب بالبريد {email} فالرمز في الطريق. تحقق من البريد الوارد ومجلد الرسائل غير المرغوب فيها.', he: 'אם קיים חשבון עם {email}, הקוד בדרך. בדקו את תיבת הדואר ואת תיקיית הספאם.' },
   code: { en: 'Code', ar: 'الرمز', he: 'קוד' },
+  step1: { en: 'Step 1 of 2 · Enter the code', ar: 'الخطوة 1 من 2 · أدخل الرمز', he: 'שלב 1 מתוך 2 · הזינו את הקוד' },
+  step2: { en: 'Step 2 of 2 · Choose a new password', ar: 'الخطوة 2 من 2 · اختر كلمة مرور جديدة', he: 'שלב 2 מתוך 2 · בחרו סיסמה חדשה' },
+  verify: { en: 'Check the code', ar: 'تحقق من الرمز', he: 'בדיקת הקוד' },
+  verified: { en: 'The code is right. Now choose your new password.', ar: 'الرمز صحيح. اختر الآن كلمة المرور الجديدة.', he: 'הקוד נכון. עכשיו בחרו סיסמה חדשה.' },
+  other: { en: 'Use another email or send a new code', ar: 'استخدم بريداً آخر أو أرسل رمزاً جديداً', he: 'מייל אחר או שליחת קוד חדש' },
+  pwHint: { en: 'Any letters, numbers or symbols — no special mix needed. A longer phrase is safer.', ar: 'أي حروف أو أرقام أو رموز، دون شروط خاصة. العبارة الأطول أكثر أماناً.', he: 'כל אותיות, מספרים או סימנים — בלי דרישות מיוחדות. ביטוי ארוך בטוח יותר.' },
+  e_codeSix: { en: 'Enter the 6 digits of the code.', ar: 'أدخل الأرقام الستة للرمز.', he: 'הזינו את 6 הספרות של הקוד.' },
   pw: { en: 'New password (at least 10 characters)', ar: 'كلمة المرور الجديدة (10 أحرف على الأقل)', he: 'סיסמה חדשה (לפחות 10 תווים)' },
   pw2: { en: 'Repeat the new password', ar: 'أعد كتابة كلمة المرور الجديدة', he: 'חזרו על הסיסמה החדשה' },
   save: { en: 'Save new password', ar: 'حفظ كلمة المرور الجديدة', he: 'שמירת הסיסמה החדשה' },
@@ -629,11 +636,23 @@ export function bindForgot(c) {
   function paint() {
     const err = s.err ? `<p class="book-error" role="alert">${c.esc(s.err)}</p>` : '';
     const body = s.step === 'email' ? `<form class="book-form" id="fg-email" novalidate><label class="book-field"><span>${FL(c, 'email')}</span><input name="email" type="email" autocomplete="email" dir="ltr" required value="${c.esc(s.email)}"></label>${err}<button class="btn primary" type="submit">${FL(c, 'send')}</button></form>`
-      : s.step === 'code' ? `<p class="book-muted">${FL(c, 'sent', { email: `<bdi dir="ltr">${c.esc(s.email)}</bdi>` })}</p><form class="book-form" id="fg-reset" novalidate><label class="book-field"><span>${FL(c, 'code')}</span><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required></label>
-          <label class="book-field"><span>${FL(c, 'pw')}</span><input name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required value="${c.esc(s.pw || '')}"></label>
+      // 2.48: two clear steps — 1) the code is checked; 2) only then the new password and its confirmation.
+      : s.step === 'code' ? `<p class="book-step">${FL(c, 'step1')}</p><p class="book-muted">${FL(c, 'sent', { email: `<bdi dir="ltr">${c.esc(s.email)}</bdi>` })}</p><form class="book-form" id="fg-code" novalidate><label class="book-field"><span>${FL(c, 'code')}</span><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" dir="ltr" required value="${c.esc(s.code || '')}"></label>${err}<button class="btn primary" type="submit">${FL(c, 'verify')}</button></form>
+          <button type="button" class="text-link" id="fg-other">${FL(c, 'other')}</button>`
+      : s.step === 'password' ? `<p class="book-step">${FL(c, 'step2')}</p><p class="book-muted">${FL(c, 'verified')}</p><form class="book-form" id="fg-reset" novalidate>
+          <input type="email" name="username" autocomplete="username" value="${c.esc(s.email)}" hidden>
+          <label class="book-field"><span>${FL(c, 'pw')}</span><input name="password" type="password" autocomplete="new-password" minlength="10" maxlength="128" required value="${c.esc(s.pw || '')}"><small>${FL(c, 'pwHint')}</small></label>
           <label class="book-field"><span>${FL(c, 'pw2')}</span><input name="passwordConfirm" type="password" autocomplete="new-password" maxlength="128" required value="${c.esc(s.pw2 || '')}"></label>${err}<button class="btn primary" type="submit">${FL(c, 'save')}</button></form>`
       : `<p>${FL(c, 'done')}</p><a class="btn primary" href="/login">${FL(c, 'login')}</a>`;
     root.innerHTML = `<div class="book"><header class="title-block"><h1>${FL(c, 'title')}</h1><p class="lead">${FL(c, 'lead')}</p></header><div class="book-card">${body}</div></div>`;
+    root.querySelector('#fg-other')?.addEventListener('click', () => { s.step = 'email'; s.code = ''; s.err = ''; paint(); });
+    root.querySelector('#fg-code')?.addEventListener('submit', async e => {
+      e.preventDefault(); s.code = e.target.elements.code.value.replace(/\D/g, '');
+      if (s.code.length !== 6) { s.err = FL(c, 'e_codeSix'); return paint(); }
+      try { await c.api('/api/password/check', { method: 'POST', body: JSON.stringify({ email: s.email, code: s.code }) }); s.err = ''; s.step = 'password'; }
+      catch (er) { s.err = errOf(er); if (er?.code === 'codeExpired') { s.step = 'email'; s.code = ''; } }
+      paint();
+    });
     root.querySelector('#fg-email')?.addEventListener('submit', async e => {
       e.preventDefault(); s.email = e.target.elements.email.value.trim();
       try { await c.api('/api/password/code', { method: 'POST', body: JSON.stringify({ email: s.email, lang: c.lang }) }); s.err = ''; s.step = 'code'; } catch (er) { s.err = errOf(er); }
@@ -641,8 +660,9 @@ export function bindForgot(c) {
     });
     root.querySelector('#fg-reset')?.addEventListener('submit', async e => {
       e.preventDefault(); const f = e.target.elements; s.pw = f.password.value; s.pw2 = f.passwordConfirm.value;
-      try { await c.api('/api/password/reset', { method: 'POST', body: JSON.stringify({ email: s.email, code: f.code.value, password: f.password.value, passwordConfirm: f.passwordConfirm.value }) }); s.err = ''; s.step = 'done'; }
-      catch (er) { s.err = errOf(er); if (er?.code === 'codeExpired') { s.step = 'email'; s.pw = s.pw2 = ''; } }
+      if (f.password.value !== f.passwordConfirm.value) { s.err = FL(c, 'e_passwordMismatch'); return paint(); }
+      try { await c.api('/api/password/reset', { method: 'POST', body: JSON.stringify({ email: s.email, code: s.code, password: f.password.value, passwordConfirm: f.passwordConfirm.value }) }); s.err = ''; s.step = 'done'; }
+      catch (er) { s.err = errOf(er); if (er?.code === 'codeExpired' || er?.code === 'wrongCode') { s.step = er.code === 'codeExpired' ? 'email' : 'code'; s.pw = s.pw2 = ''; } }
       paint();
     });
   }

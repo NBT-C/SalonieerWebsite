@@ -183,28 +183,32 @@ function locationName(user) {
   return [countryName(user.country), user.region ? t(user.region) : ''].filter(Boolean).join(' · ');
 }
 const langSelect = () => `<select id="language" class="language-select" aria-label="${t('language')}"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="ar" ${lang==='ar'?'selected':''}>العربية</option><option value="he" ${lang==='he'?'selected':''}>עברית</option></select>`;
+// Light / Dark / System (assets/theme-boot.js applies it before the first paint and keeps it in this browser).
+const appearanceSelect = (id = 'appearance') => { const p = window.metonAppearance?.get?.() || 'system';
+  return `<select id="${id}" class="language-select appearance-select" data-appearance aria-label="${t('appearance')}">${['system','light','dark'].map(v=>`<option value="${v}"${p===v?' selected':''}>${t('appearance_'+v)}</option>`).join('')}</select>`; };
 function header() {
-  const link = (path,key,cls='') => `<a href="${path}"${cls?` class="${cls}"`:''}${route===path?' aria-current="page"':''}>${t(key)}</a>`;
+  const link =(path,key,cls='') => `<a href="${path}"${cls?` class="${cls}"`:''}${route===path?' aria-current="page"':''}>${t(key)}</a>`;
   const item = (path,key) => `<li>${link(path,key)}</li>`;
   return `<a class="skip" href="#main">${t('skip')}</a><header class="topbar"><div class="nav">
-    <a href="/" class="brand" aria-label="METON"><img class="brand-logo brand-logo-light" src="/assets/brand/meton-wordmark-ink.svg" alt="METON" width="124" height="25"><img class="brand-logo brand-logo-dark" src="/assets/brand/meton-wordmark-cream.svg" alt="" width="124" height="25"></a>
+    <a href="/" class="brand" aria-label="METON"><img class="brand-logo brand-logo-light" src="/assets/brand/meton-wordmark-ink.svg" alt="METON" width="170" height="26"><img class="brand-logo brand-logo-dark" src="/assets/brand/meton-wordmark-cream.svg" alt="" width="170" height="26"></a>
     <nav class="bar-links" aria-label="${t('menu')}">${link('/#sectors','navSectors')}${link('/#features','navFeatures')}${link('/plans','plans')}${link('/support','support')}${state.user?link('/account','account'):link('/login','login')}</nav>
     <a class="btn primary small bar-try" href="/try">${t('tryFree')}</a>
     ${state.user?`<button class="btn small bar-logout" id="logout" type="button">${t('logout')}</button>`:''}
+    <span class="bar-appearance">${appearanceSelect()}</span>
     ${langSelect()}
     <button class="menu-toggle" id="menu-toggle" aria-controls="nav-panel" aria-expanded="false" data-open="${t('menu')}" data-close="${t('close')}"><span class="label-text">${t('menu')}</span><span class="bars" aria-hidden="true"></span></button>
     <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><ul class="menu-links">${item('/','home')}${item('/try','tryFree')}${item('/#sectors','navSectors')}${item('/plans','plans')}${item('/me','myBookings')}${state.user?item('/account','account'):''}${item('/support','support')}${state.user?.isAdmin?item('/admin','adminPanel'):''}${state.user?'':item('/login','login')+item('/register','register')}</ul>
-      <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/try">${t('tryFree')}</a>`}</div><a class="mail" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></nav>
+      <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a><button class="btn small menu-logout" id="logout-menu" type="button">${t('logout')}</button>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/try">${t('tryFree')}</a>`}</div><span class="menu-appearance">${appearanceSelect('appearance-menu')}</span><a class="mail" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></nav>
   </div></header>`;
 }
 // A business's own pages (its booking page, a booking's private link) and the customer demo of one: the business's
 // name and colours lead; METON stays in a small footer line (decision record: a private page for the business).
 const bizPageRoute = () => route === '/s' || route === '/m' || (route === '/try' && /^\/try\/customer\/?$/.test(location.pathname));
-const bizTop = () => `<a class="skip" href="#main">${t('skip')}</a><div class="biz-top">${langSelect()}</div>`;
+const bizTop = () => `<a class="skip" href="#main">${t('skip')}</a><div class="biz-top">${appearanceSelect()}${langSelect()}</div>`;
 const bizFoot = () => `<footer class="biz-foot"><a href="/" class="biz-foot-brand"><img src="/assets/brand/meton-wordmark-ink.svg" alt="" width="62" height="13" loading="lazy">${bookL({lang}, 'poweredBy')}</a><span><a href="/privacy">${t('privacyPolicy')}</a> · <a href="/terms">${t('termsTitle')}</a></span></footer>`;
 function footer() {
   return `<footer class="site-footer"><div class="wrap"><div class="footer-grid"><div><img class="footer-logo" src="/assets/brand/meton-wordmark-cream.svg" alt="METON" width="160" height="32" loading="lazy"><p>${t('footerTagline')}</p></div>
-    <nav aria-label="${t('footerProduct')}"><h3>${t('footerProduct')}</h3><div class="footer-links"><a href="/">${t('home')}</a><a href="/try">${t('tryFree')}</a><a href="/try/business">${t('hm2_cta_build_short')}</a><a href="/plans">${t('plans')}</a><a href="/me">${t('myBookings')}</a>${state.user?`<a href="/account">${t('account')}</a>`:''}</div></nav>
+    <nav aria-label="${t('footerProduct')}"><h3>${t('footerProduct')}</h3><div class="footer-links"><a href="/">${t('home')}</a><a href="/try">${t('tryFree')}</a><a href="/try/business">${t('hm2_cta_build_short')}</a><a href="/plans">${t('plans')}</a><a href="/me">${t('myBookings')}</a><a href="/app/">${t('webAppOpen')}</a>${state.user?`<a href="/account">${t('account')}</a>`:''}</div></nav>
     <nav aria-label="${t('legal')}"><h3>${t('legal')}</h3><div class="footer-links"><a href="/terms">${t('termsTitle')}</a><a href="/privacy">${t('privacyPolicy')}</a><a href="/refund">${t('refundTitle')}</a></div></nav>
     <div><h3>${t('footerContact')}</h3><div class="footer-links"><a href="/support">${t('support')}</a><a href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></div></div>
     <div class="footer-bottom"><span>© ${new Date().getFullYear()} METON. ${t('footerRights')}</span><span>${t('footerMade')}</span></div></div></footer>`;
@@ -221,7 +225,22 @@ function field(name,label,{type='text',hint='',required=true,autocomplete='',min
 }
 function formErrorBox() { return '<div id="form-error" class="notice" role="alert" tabindex="-1" hidden></div>'; }
 function authIntro(title,lead) {
-  return `<aside class="auth-art ink"><svg class="ribbon" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-60 260 C 120 120, 260 420, 420 300 S 640 140, 700 230 L 700 300 C 600 220, 520 420, 400 380 S 120 230, -60 340 Z" fill="#4286D7"/><path d="M-60 430 C 140 330, 300 560, 470 470 S 640 380, 700 420 L 700 470 C 620 430, 520 560, 440 530 S 150 410, -60 500 Z" fill="#88D6FD" opacity=".45"/><path d="M560 0 V800" stroke="#E8C588" stroke-width="2" stroke-dasharray="2 10"/></svg><h1>${t(title)}</h1><p>${t(lead)}</p></aside>`;
+  return `<aside class="auth-art ink"><div class="auth-clock"><p class="auth-clock-kicker" id="auth-clock-label">${t('cdKicker')}</p><p class="auth-clock-time" role="timer" aria-labelledby="auth-clock-label" data-auth-clock>${clockHtml()}</p><p class="auth-clock-quote">${t('cdQuote')}</p></div><div class="sr-only"><h1>${t(title)}</h1><p>${t(lead)}</p></div></aside>`;
+}
+// Time left today, to midnight in the visitor's own time zone. Worked out again from the clock on every tick, so
+// midnight, a changed device clock, a time-zone or daylight-saving change and a tab woken from sleep are always right.
+function secondsLeftToday(now = new Date()) { const end = new Date(now); end.setHours(24, 0, 0, 0); return Math.max(0, Math.floor((end - now) / 1000)); }
+function clockHtml() { const s = secondsLeftToday(); return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')).join('<i aria-hidden="true">:</i>'); }
+let authClockTimer = 0;
+function startAuthClock() {
+  clearTimeout(authClockTimer);
+  const tick = () => {
+    const el = document.querySelector('[data-auth-clock]');
+    if (!el) return;                                  // the page changed: stop
+    const html = clockHtml(); if (el.innerHTML !== html) el.innerHTML = html;
+    authClockTimer = setTimeout(tick, 1020 - (Date.now() % 1000));   // just after the next whole second
+  };
+  tick();
 }
 const checkSvg = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
 // ---- Home -------------------------------------------------------------------------------------------------------
@@ -337,7 +356,7 @@ function home() {
 // Nobody chooses "customer" or "business": what the account can open comes from its businesses and roles.
 function loginPhoneField() {
   const guess = dialCodeOf(dialGuess()) ? dialGuess() : '';
-  return `<div class="field full-span"><label for="phone">${t('phoneNumber')}</label><div class="phone-field">${countryPicker(pickerOptions({name:'phoneCountry',mode:'dial',value:guess,label:t('countryCode')}))}<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" required aria-describedby="phone-error" dir="ltr"></div><small id="phone-error" class="field-error" aria-live="polite"></small></div>`;
+  return `<div class="field full-span"><label for="phone">${t('phoneNumber')}</label><div class="phone-field">${countryPicker(pickerOptions({name:'phoneCountry',mode:'dial',value:guess,label:t('countryCode')}))}<input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="username" maxlength="24" required aria-describedby="phone-error" dir="ltr"></div><small id="phone-error" class="field-error" aria-live="polite"></small></div>`;
 }
 const signInWith = (by, attrs = '') => `<div class="segmented login-by" role="group" aria-label="${t('signInWith')}"${attrs}>${['email','phone'].map(k=>`<button type="button" data-by="${k}" aria-pressed="${by===k}">${t(k==='email'?'byEmail':'byPhone')}</button>`).join('')}</div>`;
 function login() {
@@ -345,7 +364,7 @@ function login() {
   const q = new URLSearchParams(location.search), by = state.loginBy === 'phone' ? 'phone' : 'email', g = q.get('google');
   const note = g === 'password' ? `<p class="notice info">${t('googleNeedsPassword')}</p>` : g === 'failed' ? `<p class="notice warning">${t('googleFailed')}</p>` : '';
   const prefill = by === 'email' && q.get('email') ? ` value="${esc(q.get('email'))}"` : '';
-  return `<div class="auth-split">${authIntro('welcome','loginLead')}<div class="auth-form"><section class="auth-card"><h2>${t('login')}</h2>${q.has('next')?`<p class="notice info">${t('loginRequired')}</p>`:''}${note}${signInWith(by, ' data-login-by')}<form id="login-form" novalidate data-by="${by}">${formErrorBox()}${by==='email'?field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com',extra:`spellcheck="false" autocapitalize="off"${prefill}`}):loginPhoneField()}${field('password','password',{type:'password',autocomplete:'current-password',maxlength:128})}<div class="login-help"><a class="text-link" href="/forgot">${t('forgot')}</a></div><button class="btn primary full" type="submit">${t('login')}</button>${state.google?`<a class="btn full google-btn" href="/auth/google">${t('withGoogle')}</a>`:''}</form><p class="small-note login-one">${t('loginOneAccount')}</p><p class="auth-footer">${t('noAccount')} <a href="/register" class="text-link">${t('register')}</a></p></section></div></div>`;
+  return `<div class="auth-split">${authIntro('welcome','loginLead')}<div class="auth-form"><section class="auth-card"><h2>${t('login')}</h2>${q.has('next')?`<p class="notice info">${t('loginRequired')}</p>`:''}${note}${signInWith(by, ' data-login-by')}<form id="login-form" novalidate data-by="${by}">${formErrorBox()}${by==='email'?field('email','email',{type:'email',autocomplete:'username',maxlength:254,placeholder:'you@example.com',extra:`spellcheck="false" autocapitalize="off"${prefill}`}):loginPhoneField()}${field('password','password',{type:'password',autocomplete:'current-password',maxlength:128})}<div class="login-help"><a class="text-link" href="/forgot">${t('forgot')}</a></div><button class="btn primary full" type="submit">${t('login')}</button>${state.google?`<a class="btn full google-btn" href="/auth/google">${t('withGoogle')}</a>`:''}</form><p class="small-note login-one">${t('loginOneAccount')}</p><p class="auth-footer">${t('noAccount')} <a href="/register" class="text-link">${t('register')}</a></p></section></div></div>`;
 }
 // One more step before the website opens: an account with a phone only adds an email (billing and the website's emails
 // need one); an email a website user from before has is confirmed by the account first. A 6-digit code by email.
@@ -353,7 +372,7 @@ function signinStepView(s) {
   const confirm = s.step === 'confirm', sent = confirm || s.sent;
   return `<div class="auth-split">${authIntro('welcome','loginLead')}<div class="auth-form"><section class="auth-card"><h2>${t(confirm?'confirmEmailTitle':'addEmailTitle')}</h2><p>${t(confirm?'confirmEmailLead':'addEmailLead')}</p>
     ${sent?`<p class="notice info">${t('codeSentTo')} <b dir="ltr">${esc(s.email)}</b></p>`:''}
-    <form id="signin-step-form" novalidate>${formErrorBox()}${sent?field('code','codeLabel',{maxlength:6,autocomplete:'one-time-code',extra:'inputmode="numeric" dir="ltr"'}):field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com',extra:'spellcheck="false" autocapitalize="off"'})}
+    <form id="signin-step-form" novalidate>${formErrorBox()}${sent?field('code','codeLabel',{maxlength:6,autocomplete:'one-time-code',extra:'inputmode="numeric" dir="ltr"'}):field('email','email',{type:'email',autocomplete:'username',maxlength:254,placeholder:'you@example.com',extra:'spellcheck="false" autocapitalize="off"'})}
     <button class="btn primary full" type="submit">${t(sent?'confirmAndSignIn':'sendCode')}</button>
     ${sent?`<div class="step-links"><button type="button" class="text-link" data-step-resend>${t('resendCode')}</button>${confirm?'':`<button type="button" class="text-link" data-step-change>${t('changeEmail')}</button>`}</div>`:''}</form>
     <p class="auth-footer"><button type="button" class="text-link" data-step-cancel>${t('backToSignIn')}</button></p></section></div></div>`;
@@ -378,7 +397,7 @@ function genderField(value='') {
   return `<fieldset class="field full-span gender-field"><legend>${t('gender')}</legend><div class="radio-options">${['male','female'].map(g=>`<label class="radio-option"><input type="radio" name="gender" value="${g}" required aria-describedby="gender-error"${value===g?' checked':''}><span>${t('gender_'+g)}</span></label>`).join('')}</div><small id="gender-error" class="field-error" aria-live="polite"></small></fieldset>`;
 }
 function accountFields(prefix='') {
-  return `${prefix}<div class="form-section"><h2>${t('accountDetails')}</h2><div class="form-grid">${field('fullName','fullName',{autocomplete:'name',maxlength:100,full:true,placeholder:t('fullName')})}${genderField()}${field('email','email',{type:'email',autocomplete:'email',maxlength:254,placeholder:'you@example.com',full:true,extra:'spellcheck="false" autocapitalize="off" inputmode="email"'})}
+  return `${prefix}<div class="form-section"><h2>${t('accountDetails')}</h2><div class="form-grid">${field('fullName','fullName',{autocomplete:'name',maxlength:100,full:true,placeholder:t('fullName')})}${genderField()}${field('email','email',{type:'email',autocomplete:'username',maxlength:254,placeholder:'you@example.com',full:true,extra:'spellcheck="false" autocapitalize="off" inputmode="email"'})}
   ${field('password','password',{type:'password',autocomplete:'new-password',maxlength:128,hint:'passwordHint'})}${field('passwordConfirm','passwordConfirm',{type:'password',autocomplete:'new-password',maxlength:128})}<div class="pw-meter full-span" id="pw-meter" data-score="0" aria-hidden="true"><i></i><i></i><i></i><i></i><span></span></div></div>
   <div class="field" style="margin-top:20px"><label for="country-btn">${t('country')}</label>${countryPicker(pickerOptions({name:'country',mode:'country',value:'',label:t('country'),describedBy:'country-hint country-error'}))}<small id="country-hint">${t('countryLockedHint')}</small><small id="country-error" class="field-error" aria-live="polite"></small></div></div>
   <div class="hp" aria-hidden="true"><label>Website <input name="website" tabindex="-1" autocomplete="off"></label></div>`;
@@ -767,7 +786,58 @@ function account() {
   // 2026-11-08: businesses still on their way to going live (payment, a check, a detail we need) are shown here; the
   // separate "applications" page is no longer in the menu.
   const progress = openSetups().length ? `<h2 class="section-label">${t('inProgress')}</h2><div class="application-list" data-paginate="in-progress">${openSetups().map(a=>applicationCard(a)).join('')}</div>` : '';
-  return `<div class="narrow">${titleBlock('account','accountTitle','accountLead')}<div class="application-list">${justPaid}${progress}${salons}${invoicesSection()}${card}${portal}${accountSettings()}</div></div>`;
+  // 2.48: the full METON app in the browser (/app/): appointments, calendar, customers, services, team, finances,
+  // checkout, reports and settings, with the same permissions and plan as on the phone.
+  const webApp = `<section class="webapp-card"><div><h2>${t('webAppTitle')}</h2><p>${t('webAppText')}</p></div><a class="btn primary" href="/app/" rel="noopener">${t('webAppOpen')}</a></section>`;
+  return `<div class="narrow"><div class="account-head">${titleBlock('account','accountTitle','accountLead')}${notifBell()}</div>${webApp}<div class="application-list">${justPaid}${progress}${salons}${invoicesSection()}${card}${portal}${accountSettings()}</div></div>`;
+}
+// 2.48: the bell — team invitations of this METON account (the same ones the app shows, read / unread kept for both).
+function notifBell() {
+  const n = state.notifs; if (!n) return '';
+  const unread = n.unread || 0, open = !!state.notifOpen;
+  const roleOf = i => i.role === 'other' && i.title ? esc(i.title) : t('role_' + (['manager','specialist','other'].includes(i.role) ? i.role : 'other'));
+  const item = i => `<li class="notif-item${i.read ? '' : ' is-unread'}" data-slug="${esc(i.slug)}" data-member="${esc(i.member)}">
+      <div class="notif-main">${i.logo ? `<img class="notif-logo" src="${esc(i.logo)}" alt="" loading="lazy">` : `<span class="notif-logo" aria-hidden="true">${esc((i.business || '?').trim().charAt(0))}</span>`}
+        <div><p class="notif-text">${i.read ? '' : `<span class="sr-only">${t('notifNew')} · </span>`}${t('inviteLine', {business: `<b><bdi>${esc(i.business)}</bdi></b>`, role: `<b>${roleOf(i)}</b>`})}</p>
+          <p class="notif-meta">${i.invitedBy ? `${t('invitedByLine', {name: `<bdi>${esc(i.invitedBy)}</bdi>`})} · ` : ''}${i.invitedAt ? `<time datetime="${esc(i.invitedAt)}">${date(i.invitedAt)}</time>` : ''}</p>
+          ${i.profile ? `<p class="notif-meta">${t('inviteProfile', {name: `<bdi>${esc(i.profile)}</bdi>`})}</p>` : ''}</div></div>
+      <div class="notif-actions"><button type="button" class="btn small primary" data-notif-accept>${t('inviteAccept')}</button><button type="button" class="btn small" data-notif-decline>${t('inviteDecline')}</button>
+        <button type="button" class="text-link notif-mark" data-notif-mark="${i.read ? 'unread' : 'read'}">${t(i.read ? 'markUnread' : 'markRead')}</button></div></li>`;
+  const body = !n.verified ? `<p class="notif-empty">${t('notifConfirmEmail')}</p>`
+    : n.items.length ? `<ul class="notif-list">${n.items.map(item).join('')}</ul><p class="small-note">${t('inviteNote')}</p>` : `<p class="notif-empty">${t('notifEmpty')}</p>`;
+  return `<div class="notif"><button type="button" class="notif-bell" id="notif-bell" aria-expanded="${open}" aria-controls="notif-panel" aria-label="${esc(t('notifTitle'))}${unread ? ` · ${esc(t('notifUnread', {n: unread}))}` : ''}">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a1.94 1.94 0 0 0 3.4 0"/></svg>
+      ${unread ? `<span class="notif-count" aria-hidden="true">${unread > 9 ? '9+' : unread}</span>` : ''}</button>
+    <section class="notif-panel" id="notif-panel" aria-labelledby="notif-title"${open ? '' : ' hidden'}><header class="notif-head"><h2 id="notif-title">${t('notifTitle')}</h2>
+      ${unread ? `<button type="button" class="text-link" data-notif-all>${t('markAllRead')}</button>` : ''}</header>${body}</section></div>`;
+}
+async function loadNotifs() { try { state.notifs = await api('/api/account/notifications'); } catch { state.notifs = state.notifs || null; } }
+function bindNotifs() {
+  const bell = document.getElementById('notif-bell'), panel = document.getElementById('notif-panel');
+  if (!bell || !panel) return;
+  const redraw = () => { const host = document.querySelector('.account-head .notif'); if (host) { host.outerHTML = notifBell(); bindNotifs(); } };
+  bell.addEventListener('click', () => { state.notifOpen = !state.notifOpen; panel.hidden = !state.notifOpen; bell.setAttribute('aria-expanded', String(state.notifOpen)); if (state.notifOpen) panel.querySelector('button')?.focus(); });
+  const close = () => { state.notifOpen = false; panel.hidden = true; bell.setAttribute('aria-expanded', 'false'); };
+  panel.addEventListener('keydown', e => { if (e.key === 'Escape') { close(); bell.focus(); } });
+  // A tap outside closes it (once per page: the handler checks the bell that is on the page now).
+  if (!bindNotifs.outside) { bindNotifs.outside = true; document.addEventListener('click', e => { const host = document.querySelector('.account-head .notif');
+    if (state.notifOpen && host && !host.contains(e.target) && !e.target.closest?.('dialog,.modal-root,.toast-host')) { state.notifOpen = false; const p = document.getElementById('notif-panel'), b = document.getElementById('notif-bell'); if (p) p.hidden = true; b?.setAttribute('aria-expanded', 'false'); } }); }
+  const ref = el => { const li = el.closest('.notif-item'); return {slug: li.dataset.slug, member: li.dataset.member}; };
+  const mark = async (data, button) => { try { setBusy(button, true); await post('/api/account/notifications/read', data, button); await loadNotifs(); redraw(); } catch (e) { setBusy(button, false); toast(t(e.code || 'serverError'), 'error'); } };
+  panel.querySelector('[data-notif-all]')?.addEventListener('click', e => mark({all: true}, e.currentTarget));
+  panel.querySelectorAll('[data-notif-mark]').forEach(b => b.addEventListener('click', e => mark({...ref(b), read: b.dataset.notifMark === 'read'}, e.currentTarget)));
+  const decide = async (b, accept) => {
+    const r0 = ref(b), name = state.notifs.items.find(i => i.slug === r0.slug && i.member === r0.member)?.business || '';
+    if (!accept && !(await confirmDialog({title: t('declineConfirm'), confirm: t('inviteDecline'), cancel: t('tm_cancel'), tone: 'danger'}))) return;
+    try {
+      setBusy(b, true, t('processing'));
+      const r = await post('/api/account/invites/decide', {...r0, accept}, b, t('processing'));
+      toast(!accept ? t('inviteDeclined') : r.memberStatus === 'active' ? t('inviteJoined', {business: r.business || name}) : t('inviteWaiting'), 'success', 6000);
+      await loadNotifs(); redraw();
+    } catch (e) { setBusy(b, false); toast(t(e.code || 'serverError'), 'error', 6000); }
+  };
+  panel.querySelectorAll('[data-notif-accept]').forEach(b => b.addEventListener('click', () => decide(b, true)));
+  panel.querySelectorAll('[data-notif-decline]').forEach(b => b.addEventListener('click', () => decide(b, false)));
 }
 // Name and password of the website account, and deleting it (not while a subscription is running).
 function accountSettings() {
@@ -1169,12 +1239,19 @@ async function logout(button) {
 }
 function bind() {
   document.getElementById('language')?.addEventListener('change',event=>{captureDraft();setLanguage(event.target.value);render({transition:true});});
+  document.querySelectorAll('[data-appearance]').forEach(s=>s.addEventListener('change',event=>{
+    window.metonAppearance?.set(event.target.value);
+    document.querySelectorAll('[data-appearance]').forEach(o=>{ if (o !== event.target) o.value = event.target.value; });
+  }));
+  startAuthClock();
+  bindNotifs();
   const menu = document.getElementById('menu-toggle'), nav = document.getElementById('nav-panel');
   menu?.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open));});
   nav?.addEventListener('keydown',event=>{if(event.key==='Escape'){nav.classList.remove('open');menu.setAttribute('aria-expanded','false');menu.focus();}});
   // A menu link to a section of the home page closes the menu.
   nav?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');menu?.setAttribute('aria-expanded','false');}));
   document.getElementById('logout')?.addEventListener('click',event=>logout(event.currentTarget));
+  document.getElementById('logout-menu')?.addEventListener('click',event=>logout(event.currentTarget));
   // "Download METON" on a computer: the store menu closes on a click elsewhere or Escape.
   document.querySelectorAll('details.app-get').forEach(d=>{
     const close=e=>{ if(d.open&&(e.type!=='keydown'||e.key==='Escape')&&!(e.type==='click'&&d.contains(e.target))){ d.open=false; if(e.type==='keydown') d.querySelector('summary')?.focus(); } };
@@ -1402,7 +1479,9 @@ function identitySection() {
   const by = e.by === 'phone' ? 'phone' : 'email';
   if (e.kind === 'link') editor = e.stage === 'review' ? linkReview(e) : `<form id="id-link-form" class="id-editor" data-by="${by}" novalidate>${formErrorBox()}<p class="small-note">${t('linkLead')}</p>${signInWith(by, ' data-link-by')}${by==='email'?field('email','email',{type:'email',autocomplete:'off',maxlength:254,placeholder:'you@example.com',extra:'spellcheck="false" autocapitalize="off"'}):loginPhoneField()}${field('linkPassword','linkPassword',{type:'password',autocomplete:'off',maxlength:128})}<div class="id-editor-actions"><button class="btn small primary" type="submit">${t('continue')}</button><button class="text-link" type="button" data-id-cancel>${t('tm_cancel')}</button></div></form>`;
   const emailRow = id.email ? `<b dir="ltr">${esc(id.email)}</b> ${badge(id.emailConfirmed, 'idConfirmed', 'idNotConfirmed')}` : `<span class="muted">${t('idNoEmail')}</span>`;
-  const phoneRow = id.phone ? `<b dir="ltr">${esc(id.phone)}</b> ${badge(id.phoneConfirmed || id.phoneLogin, id.phoneConfirmed ? 'idConfirmed' : 'idSignsIn', 'idNotConfirmed')}` : `<span class="muted">${t('idNoPhone')}</span>`;
+  const fmtPhone = v => { const ps = String(v || '').replace(/[^\d+]/g, '').match(/^\+970(5\d)(\d{3})(\d{4})$/);   // +970 59 XXX XXXX (owner's format)
+    if (ps) return `+970 ${ps[1]} ${ps[2]} ${ps[3]}`; try { return phoneLib.parsePhoneNumberWithError(v).formatInternational(); } catch { return v; } };
+  const phoneRow = id.phone ? `<b dir="ltr">${esc(fmtPhone(id.phone))}</b> ${badge(id.phoneConfirmed || id.phoneLogin, id.phoneConfirmed ? 'idConfirmed' : 'idSignsIn', 'idNotConfirmed')}` : `<span class="muted">${t('idNoPhone')}</span>`;
   return `<section class="settings-card id-card" aria-labelledby="id-title"><h3 id="id-title">${t('signInMethods')}</h3><p class="small-note">${t('signInMethodsLead')}</p>
     <div class="id-row"><div class="id-what"><span class="id-label">${t('email')}</span>${emailRow}</div><div class="id-actions">${id.email && !id.emailConfirmed ? `<button type="button" class="btn small" data-id-confirm-email>${t('confirmEmail')}</button>` : ''}<button type="button" class="btn small" data-id-edit="email">${t(id.email ? 'changeEmail' : 'addEmail')}</button></div></div>
     ${id.emailPending ? `<p class="small-note">${t('emailPendingNote', {email: id.emailPending})}</p>` : ''}
@@ -1735,6 +1814,7 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
       // 2.46: how the METON account signs in (null when the website signs in on its own). The user it reads is not
       // used when a change saved meanwhile (e.g. the profile) already replaced it: that answer is newer.
       state.identity = identity?.identity || null; if (identity?.user && state.user === userAt) state.user = identity.user;
+      if (state.identity) await loadNotifs(); else state.notifs = null;
     }
     // A card payment that may have just finished is confirmed before these pages show its status.
     if (['/applications','/account'].includes(next) && payingId()) { try { await checkPayment(payingId()); } catch {} }

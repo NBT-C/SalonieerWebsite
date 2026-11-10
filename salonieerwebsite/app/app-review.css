@@ -1,0 +1,15 @@
+/* Logical spacing and bounded controls for all supported writing directions. */
+.language-choice { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0; color:var(--text); font-size:14px; }
+.language-choice select { min-width:120px; max-width:60%; padding:9px 12px; border-radius:12px; border:1px solid var(--line, #bbb); background:var(--panel, #fff); color:inherit; font:inherit; }
+[lang="en"] body, [lang="en"] button, [lang="en"] input, [lang="en"] select, [lang="en"] textarea { font-family:Inter,system-ui,sans-serif; }
+[lang="he"] body, [lang="he"] button, [lang="he"] input, [lang="he"] select, [lang="he"] textarea { font-family:-apple-system,BlinkMacSystemFont,"Arial Hebrew",Arial,sans-serif; }
+[lang="he"] h1, [lang="he"] h2, [lang="he"] h3, [lang="he"] h4, [lang="en"] h1, [lang="en"] h2, [lang="en"] h3, [lang="en"] h4 { font-family:inherit; }
+[dir="ltr"] .auth input[type="tel"] { text-align:left !important; }
+[dir="ltr"] .platform-gate, [dir="ltr"] .platform-shell-card { direction:ltr; }
+.page, .content, .modal, .platform-shell-card { min-width:0; max-width:100%; overflow-wrap:break-word; }
+.view, #view { min-height:0; padding-bottom:env(safe-area-inset-bottom, 0px); }
+.modal-bg { padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px)); }
+.modal { max-height:calc(100dvh - 64px); overflow:auto; }
+@media (min-width:700px) { .platform-shell-card, .auth-box { max-width:min(100% - 32px, 600px); } }
+
+.review-demo-hint { margin:12px 0; text-align:center; line-height:1.5; }

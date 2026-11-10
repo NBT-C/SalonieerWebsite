@@ -1,0 +1,327 @@
+/* Salonieer 2.8 — final cross-platform layer loaded after every theme. */
+html,body{min-height:100%;max-width:100%;overflow-x:clip;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
+button,a,[role="button"],input,select,textarea{touch-action:manipulation}
+img,svg,video,canvas{max-width:100%}
+.view,.page,.content,.control,.admin-shell,.admin-content{min-width:0}
+.view{min-height:100vh;min-height:100dvh}
+.modal-bg{z-index:1300!important;padding-top:max(12px,env(safe-area-inset-top,0px))!important;padding-bottom:max(12px,env(safe-area-inset-bottom,0px))!important}
+.modal{max-height:calc(100vh - 24px)!important;max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overscroll-behavior:contain}
+body:has(#modal-root .modal-bg) #navhost{visibility:hidden!important}
+.btn,.iconbtn,.bell,.platform-primary,.platform-secondary,.platform-link{min-height:44px}/* ── Platform ("secret") dashboard dock ───────────────────────────────────
+   One authoritative definition, scoped to #navhost so it beats every earlier
+   layer instead of fighting it. The dock is a bottom-centred pill on every
+   screen size: it never overflows sideways, it sits *under* dialogs, and
+   every page that can show it reserves room so no control hides behind it. */
+#navhost{position:fixed!important;inset:0!important;z-index:45!important;pointer-events:none!important}
+#navhost:empty{display:none!important}
+#navhost .appnav,#navhost .control-sidebar{pointer-events:auto!important}
+
+#navhost .control-sidebar{
+  position:absolute!important;
+  top:auto!important;bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;
+  inset-inline:auto!important;
+  left:max(10px,calc((100% - 660px)/2))!important;
+  right:max(10px,calc((100% - 660px)/2))!important;
+  width:auto!important;min-width:0!important;max-width:none!important;height:auto!important;
+  transform:none!important;
+  display:flex!important;flex-direction:column!important;
+  padding:6px!important;
+  border:1px solid var(--line)!important;border-radius:20px!important;
+  background:color-mix(in srgb,var(--card) 92%,transparent)!important;
+  box-shadow:0 18px 48px rgba(0,0,0,.45)!important;
+  backdrop-filter:blur(18px) saturate(1.1);
+  overflow:hidden!important;
+}
+#navhost .control-wordmark,#navhost .control-sidebar-label,#navhost .control-sidebar-foot{display:none!important}
+#navhost .control-nav{
+  display:flex!important;flex-direction:row!important;align-items:stretch!important;
+  gap:3px!important;width:100%!important;min-width:0!important;overflow:visible!important;
+}
+#navhost .control-nav-item{
+  position:relative!important;
+  flex:1 1 0!important;min-width:0!important;max-width:none!important;
+  min-height:54px!important;padding:6px 3px!important;
+  display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;gap:3px!important;
+  border:0!important;border-radius:14px!important;background:transparent!important;
+  color:var(--ink-3,#999386)!important;
+  font-size:9.5px!important;font-weight:650!important;line-height:1.2!important;
+  overflow:hidden!important;transition:background .18s ease,color .18s ease;
+}
+#navhost .control-nav-item .control-nav-icon{
+  width:24px!important;height:24px!important;flex:0 0 auto!important;
+  background:none!important;border-radius:0!important;transform:none!important;
+}
+#navhost .control-nav-item .control-nav-icon svg{width:20px!important;height:20px!important}
+#navhost .control-nav-label{display:block!important;width:100%!important;min-width:0!important;text-align:center!important}
+#navhost .control-nav-full,#navhost .control-nav-short{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#navhost .control-nav-full{display:block!important}
+#navhost .control-nav-short{display:none!important}
+#navhost .control-nav-item.active{background:var(--brand-soft)!important;color:var(--brand-ink)!important}
+#navhost .control-nav-item.active::after{display:none!important}
+#navhost .control-nav-item:focus-visible{outline:2px solid var(--brand)!important;outline-offset:-2px}
+@media(hover:hover){#navhost .control-nav-item:hover:not(.active){background:var(--panel)!important;color:var(--ink)!important}}
+@media(max-width:760px){
+  #navhost .control-nav-full{display:none!important}
+  #navhost .control-nav-short{display:block!important}
+  #navhost .control-nav-item{font-size:9px!important;min-height:52px!important}}
+@media(max-width:390px){
+  #navhost .control-sidebar{left:6px!important;right:6px!important;padding:5px!important;border-radius:17px!important;bottom:calc(6px + env(safe-area-inset-bottom,0px))!important}
+  #navhost .control-nav{gap:2px!important}
+  #navhost .control-nav-item{font-size:8.5px!important;padding-inline:1px!important}
+  #navhost .control-nav-item .control-nav-icon{width:22px!important;height:22px!important}
+  #navhost .control-nav-item .control-nav-icon svg{width:19px!important;height:19px!important}}/* Nothing is left hiding behind the dock. The salon studio is excluded the
+   same way it hides the dock itself (html.admin-studio #navhost), so it never
+   gains dead space under its own content. */
+html:not(.admin-studio) body:has(#navhost .control-sidebar) .control,html:not(.admin-studio) body:has(#navhost .control-sidebar) .admin-shell,html:not(.admin-studio) body:has(#navhost .control-sidebar) .page{
+  padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))!important;
+}/* The iOS home-indicator inset sits below the floating navbar. Reserve the
+   complete dock height plus a comfortable touch/scroll gap so the last form
+   action (booking, password, save, etc.) can always scroll fully above it. */
+body:has(#navhost .appnav) .page{
+  padding-bottom:calc(148px + env(safe-area-inset-bottom,0px))!important;
+}
+body:has(#navhost .appnav) .content{
+  padding-bottom:24px!important;
+}/* Dialogs always sit above the dock, so their buttons are always reachable. */
+.modal-bg{z-index:1300!important}
+.lightbox{z-index:1310!important}
+.control-top{position:relative;z-index:2}
+.control-grid,.control-form,.control-table,.control-salon{min-width:0}/* Selected choices use an unmistakable filled state, not typography alone. */
+.svc.active,.svc.selected{background:var(--brand)!important;border-color:var(--brand)!important;color:var(--on-brand)!important;box-shadow:0 12px 30px color-mix(in srgb,var(--brand) 22%,transparent)!important;transform:translateY(-1px)}
+.svc.active .sn,.svc.active .sd,.svc.active .sp,.svc.selected .sn,.svc.selected .sd,.svc.selected .sp{color:var(--on-brand)!important}
+.svc.active .pick,.svc.selected .pick{display:grid!important;background:var(--on-brand)!important;color:var(--brand)!important}
+.slot.active,.slot.selected{background:var(--brand)!important;border-color:var(--brand)!important;color:var(--on-brand)!important;font-weight:800!important;box-shadow:0 9px 24px color-mix(in srgb,var(--brand) 22%,transparent)!important}
+.slot.active.suggested{outline:2px solid var(--on-brand)!important;outline-offset:-4px}/* ── Salon-code launcher (the QR / "add your salon" entry screen) ──────────
+   Redesigned to match the rest of Salonieer: near-black, one warm accent,
+   thin lines, real hierarchy. One slow scan sweep is the only motion —
+   no floating blobs, no shine sweep, no pulsing rings. */
+.platform-gate{
+  --gate-bg:#0a0a09;--gate-card:#111110;--gate-panel:#161512;--gate-field:#0c0c0b;
+  --gate-line:#272520;--gate-line-2:#38352c;
+  --gate-ink:#f4f0e7;--gate-ink-2:#c3bdb0;--gate-muted:#8b857a;
+  --gate-gold:#d2aa1c;--gate-gold-2:#f0d76a;--gate-gold-soft:#231e08;
+  position:relative;isolation:isolate;overflow:hidden;
+  min-height:100vh!important;min-height:100dvh!important;
+  display:grid!important;place-items:center!important;
+  padding:max(28px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) max(28px,env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))!important;
+  background:var(--gate-bg)!important;color:var(--gate-ink)!important;
+}
+.platform-gate::before{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(115% 70% at 50% -12%,rgba(210,170,28,.10),transparent 62%);
+}
+.platform-gate .platform-ambient{display:none!important}/* The launcher is never themed by a salon, so it re-points the shared tokens at
+   its own palette. Anything generic that lands inside it — a heading, a <b>, a
+   card, a button — is then dark by construction instead of inheriting whatever
+   light preset the document happens to be carrying. */
+.platform-gate{
+  --bg:var(--gate-bg);--card:var(--gate-card);--panel:var(--gate-panel);--panel-2:var(--gate-panel);--field:var(--gate-field);
+  --ink:var(--gate-ink);--ink-2:var(--gate-ink-2);--ink-3:var(--gate-muted);--muted:var(--gate-muted);
+  --line:var(--gate-line);--line-2:var(--gate-line);--line-strong:var(--gate-line-2);
+  --black:var(--gate-bg);--black-2:var(--gate-card);--muted-bg:var(--gate-panel);
+  color-scheme:dark;
+}
+.platform-gate h1,.platform-gate h2,.platform-gate h3,.platform-gate h4,.platform-gate b,.platform-gate strong{color:var(--gate-ink)}
+.platform-gate p,.platform-gate li{color:var(--gate-ink-2)}
+.platform-gate small,.platform-gate .tiny,.platform-gate .muted{color:var(--gate-muted)}
+.platform-gate .platform-or b{color:var(--gate-muted)}
+
+.platform-gate .platform-shell-card{
+  position:relative!important;width:min(100%,880px)!important;min-height:0!important;
+  padding:clamp(26px,4vw,44px)!important;
+  border:1px solid var(--gate-line)!important;border-radius:22px!important;
+  background:var(--gate-card)!important;color:var(--gate-ink)!important;
+  box-shadow:0 30px 80px rgba(0,0,0,.5)!important;
+  backdrop-filter:none!important;overflow:visible!important;
+  animation:platform-rise .5s cubic-bezier(.22,.8,.26,1) both;
+}
+.platform-gate .platform-shell-card::before,.platform-gate .platform-shell-card::after{content:none!important;display:none!important}
+
+.platform-gate .platform-brand{position:relative;z-index:1;display:flex!important;align-items:center;justify-content:space-between!important;gap:14px;margin-bottom:26px!important}
+.platform-gate .platform-brand-name{display:grid;color:var(--gate-ink)!important;font:700 21px/1 Inter,system-ui,sans-serif!important;letter-spacing:-.3px}
+.platform-gate .platform-brand-name small{margin-top:7px;color:var(--gate-muted)!important;font-size:8px;font-weight:600;letter-spacing:3px}
+.platform-gate .platform-brand .brand-lockup{width:44px;height:44px;padding:5px;border:1px solid var(--gate-line);border-radius:13px;background:var(--gate-panel)}
+.platform-gate .platform-brand .brand-lockup img{width:100%;height:100%;object-fit:contain;border-radius:9px}
+.platform-gate .platform-copy{position:relative;z-index:1;max-width:620px;margin-top:16px}
+.platform-gate .platform-copy h1{margin:0 0 10px!important;color:var(--gate-ink)!important;font-size:clamp(28px,4.2vw,40px)!important;line-height:1.28!important;letter-spacing:-.8px}
+.platform-gate .platform-copy p{margin:0 0 26px!important;color:var(--gate-ink-2)!important;font-size:14px!important;line-height:1.9!important}
+
+.platform-gate .platform-entry-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(250px,.95fr);gap:18px;align-items:stretch}
+.platform-gate .platform-actions{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;gap:12px!important;padding:24px!important;border:1px solid var(--gate-line);border-radius:18px;background:var(--gate-panel)}
+.platform-gate .platform-primary,.platform-gate .platform-secondary{min-height:54px!important;border-radius:13px!important;font-size:14px!important;font-weight:700!important;transition:filter .18s ease,transform .12s ease}
+.platform-gate .platform-primary{display:inline-flex;align-items:center;justify-content:center;gap:9px;background:var(--gate-gold)!important;color:#0b0a05!important;border:0!important;box-shadow:none!important}
+.platform-gate .platform-primary svg{margin:0!important;vertical-align:middle}
+.platform-gate .platform-secondary{background:transparent!important;color:var(--gate-ink)!important;border:1px solid var(--gate-line-2)!important}
+.platform-gate .platform-primary:hover,.platform-gate .platform-secondary:hover{filter:brightness(1.07)}
+.platform-gate .platform-primary:active,.platform-gate .platform-secondary:active{transform:scale(.99)}
+.platform-gate .platform-link{width:100%;min-height:44px;text-align:center;color:var(--gate-muted)!important}
+.platform-gate .platform-link:hover{color:var(--gate-ink-2)!important}
+.platform-gate .platform-field span{color:var(--gate-muted)!important;font-size:11px!important}
+.platform-gate .platform-field input{height:54px!important;border:1px solid var(--gate-line-2)!important;border-radius:13px!important;background:var(--gate-field)!important;color:var(--gate-ink)!important;font-size:16px!important;letter-spacing:1.4px;box-shadow:none!important}
+.platform-gate .platform-field input::placeholder{color:#5e5a51!important}
+.platform-gate .platform-field input:focus{border-color:var(--gate-gold)!important;box-shadow:0 0 0 3px var(--gate-gold-soft)!important}
+.platform-gate .platform-or{color:var(--gate-muted)!important;font-size:11px}
+.platform-gate .platform-or span{background:var(--gate-line)!important}
+
+.platform-gate .platform-signature{position:relative;z-index:1;margin-top:26px;color:#5d584e!important;font:600 8px/1 Inter,system-ui,sans-serif;letter-spacing:2.6px;text-align:center}
+.platform-gate .platform-error{color:#ff8f86!important;font-size:12px}
+.platform-gate .platform-alert{position:relative;z-index:1;border:1px solid #4a3f12!important;border-radius:12px!important;background:var(--gate-gold-soft)!important;color:#e8cf86!important}
+.platform-gate .platform-salon-list,.platform-gate .platform-manage-list{position:relative;z-index:1}
+.platform-gate .platform-shell-card>.platform-primary,.platform-gate .platform-shell-card>.platform-secondary{width:100%}
+.platform-gate .platform-salon-card{border:1px solid var(--gate-line)!important;border-radius:14px!important;background:var(--gate-panel)!important;color:var(--gate-ink)!important;transition:border-color .18s ease,background .18s ease}
+.platform-gate .platform-salon-card:hover{border-color:var(--gate-line-2)!important;background:#1b1a16!important}
+.platform-gate .platform-salon-card small{color:var(--gate-muted)!important}
+.platform-gate .platform-salon-card strong{color:var(--gate-gold-2)!important}
+.platform-gate .platform-salon-logo,.platform-gate .platform-salon-avatar{border:1px solid var(--gate-line)!important;background:var(--gate-field)!important}
+.platform-gate .platform-salon-avatar{color:var(--gate-ink-2)!important}
+
+.platform-gate .platform-scanner-wrap{width:100%;max-width:420px;margin-inline:auto;margin-block:14px 16px!important;align-self:center;border:1px solid var(--gate-line)!important;border-radius:18px!important}
+.platform-gate .platform-scan-frame i{border-color:#fff!important}
+.platform-gate .platform-scan-frame::after{height:1px!important;border-radius:2px;background:var(--gate-gold-2)!important;box-shadow:0 0 14px rgba(240,215,106,.45)!important;animation:platform-scan 3.8s ease-in-out infinite}
+
+.push-entry-prompt{text-align:center;display:grid;gap:15px;justify-items:center;padding:8px 2px}.push-entry-icon{width:64px;height:64px;display:grid;place-items:center;border-radius:20px;background:var(--brand-soft);color:var(--brand-ink);border:1px solid var(--brand-line)}.push-entry-prompt h2{margin:0}.push-entry-prompt p{margin:0;color:var(--muted);line-height:1.9;font-size:12px}.push-entry-prompt .btn-row{width:100%;margin-top:4px}.push-entry-prompt .btn{flex:1}
+
+@keyframes platform-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes platform-scan{0%,100%{top:12%}50%{top:86%}}
+
+@media(max-width:760px){
+  input,select,textarea{font-size:16px!important}
+  .platform-gate{place-items:start center!important;padding:0!important;overflow-y:auto!important}
+  .platform-gate .platform-shell-card{display:flex;flex-direction:column;width:100%!important;min-height:100vh!important;min-height:100dvh!important;border:0!important;border-radius:0!important;box-shadow:none!important;padding:calc(24px + env(safe-area-inset-top,0px)) 18px calc(26px + env(safe-area-inset-bottom,0px))!important}
+  .platform-gate .platform-brand{margin-bottom:22px!important}
+  .platform-gate .platform-copy h1{font-size:30px!important}
+  .platform-gate .platform-copy p{margin-bottom:18px!important;font-size:13.5px!important}
+  .platform-gate .platform-entry-grid{grid-template-columns:1fr;gap:14px}
+  .platform-gate .platform-actions{padding:18px!important}
+  .platform-gate .platform-signature{margin-top:22px}
+  .control-top .control-actions .btn{min-width:0!important}}
+@media(max-height:560px) and (orientation:landscape){
+  .platform-gate .platform-shell-card{min-height:100dvh!important}
+  .platform-gate .platform-entry-grid{grid-template-columns:1fr 1fr}
+  .platform-gate .platform-copy h1{font-size:26px!important}
+  .platform-gate .platform-copy p{margin-bottom:14px!important}
+  .platform-gate .platform-signature{margin-top:14px}
+  .appnav{bottom:calc(5px + env(safe-area-inset-bottom,0px))!important}}
+@media(prefers-reduced-motion:reduce){
+  .platform-gate .platform-shell-card{animation:none!important}}/* ── Light mode ───────────────────────────────────────────────────────────
+   unified-studio.css redefines the entire palette on `body` with no light
+   counterpart, so `data-theme="light"` only ever reached <html> and every
+   surface below it stayed dark. This is the missing half of that palette.
+   It applies only once a salon is open (data-experience="salon"). Everything
+   before that — the salon-code launcher, the QR scanner, the salon picker —
+   and the platform dashboard and salon studio are always dark, so the light
+   preset those screens carry by default can no longer leak into them. */
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio),html[data-theme="light"][data-experience="salon"]:not(.platform-studio) body{
+  --bg:#faf8f3;--card:#ffffff;--panel:#f3f0e8;--panel-2:#eae6db;--field:#ffffff;
+  --ink:#1a1915;--ink-2:#45423a;--ink-3:#5f5a4f;--muted:#6b6659;
+  --line:#e5e1d5;--line-2:#f0ece2;--line-strong:#c6c0ae;
+  --black:#1a1915;--black-2:#2a2822;
+  --ok:#1f7a4d;--ok-bg:#e7f3ea;--warn:#8a5f10;--warn-bg:#fbf0d8;
+  --danger:#b23b32;--danger-bg:#fbe9e6;--info:#2c5f96;--info-bg:#e7eff8;--muted-bg:#f0ece2;
+  --studio-forest:#1a1915;--studio-lime:var(--brand);--studio-cream:#faf8f3;--studio-peach:#a8763f;
+  --shadow:0 16px 44px rgba(26,25,21,.10);
+  --nav-shadow:0 10px 30px rgba(26,25,21,.12);
+  --shadow-card:0 1px 2px rgba(26,25,21,.05),0 12px 30px -20px rgba(26,25,21,.22);
+  --shadow-pop:0 30px 80px rgba(26,25,21,.20);
+}
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio){background:var(--surface-chrome,#faf8f3);color-scheme:light}/* The document element is painted for overscroll, the iPhone status-bar and
+   home-indicator strips, and the scrollbar gutter. --surface-chrome is the
+   page background SalonTheme resolved for the theme that is actually active,
+   so those edges can never read as a separate band in either mode. */
+html:not([data-experience="salon"]),html[data-theme="dark"],html.platform-studio,html.admin-studio:not([data-theme="light"]){background:var(--surface-chrome,#090908);color-scheme:dark}
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio) body{
+  background:var(--bg)!important;color:var(--ink)!important;color-scheme:light;
+}/* The few places unified-studio.css hard-codes a dark value instead of a token. */
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio) .appnav{
+  background:var(--card)!important;
+  box-shadow:var(--nav-shadow)!important;
+}
+/* A sticky header has to be opaque: a translucent one showed the list
+   scrolling through it, and blending it every frame costs paint time. */
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio) .header{background:var(--bg)!important}
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio) .navitem:not(.active){color:var(--ink-3)!important}
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio) .input::placeholder,html[data-theme="light"][data-experience="salon"]:not(.platform-studio) .textarea::placeholder{color:#9b968a!important}
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio) .sk{background:linear-gradient(90deg,#efece4,#f9f7f2,#efece4)!important}
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio) .badge.muted{color:var(--muted)!important}/* On a light danger fill the near-black label of the dark theme is unreadable. */
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio) .btn.danger{color:#fff!important}
+html[data-theme="light"][data-experience="salon"]:not(.platform-studio) .modal-bg{background:rgba(26,25,21,.42)!important}/* ── Platform: features + salon access panel ──────────────────────────────
+   The salon card carries four equal actions, and the access modal keeps its
+   two jobs — what the salon may use, and who may administer it — apart. */
+.control-salon-bottom{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 12px;align-items:stretch}
+.control-salon-bottom .btn{display:block!important;min-height:40px;line-height:40px;padding-inline:8px!important;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.access-section{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-bottom:14px}
+.access-section+.access-section{margin-top:0}
+.access-section h3{margin:0 0 4px;font-size:15px}
+.access-section>.tiny{margin:0 0 12px;color:var(--muted);line-height:1.8}
+.access-section .notification-toggle{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;gap:16px!important;margin:0!important;padding:13px 0!important}
+.access-section .notification-toggle span{flex:1 1 auto;min-width:0;font-size:13px}
+.access-section .notification-toggle:last-of-type{border-bottom:0}
+.access-section .control-form{margin-bottom:12px}
+.access-section>.btn{width:100%}
+.access-list-title{margin:18px 0 8px;font-size:12px;font-weight:700;color:var(--muted)}
+.access-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--card);margin-bottom:8px}
+.access-row b{display:block;font-size:13px}
+.access-row small{display:block;margin-top:2px;color:var(--muted);font-size:11px}
+.access-row-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.access-row-actions .btn{min-height:36px;padding-inline:10px;font-size:11px}
+.access-credential{display:grid;gap:9px;padding:14px;margin:12px 0;border:1px solid var(--brand-line);border-radius:13px;background:var(--brand-soft)}
+.access-credential b{font-size:12px;color:var(--brand-ink)}
+.access-credential .control-password{margin:0;font-size:17px;word-break:break-all}
+.access-credential .tiny{color:var(--muted);line-height:1.8}
+.access-credential .btn{justify-self:start}
+@media(max-width:600px){
+  .control-salon-bottom{grid-template-columns:1fr}
+  .access-row{align-items:flex-start;flex-direction:column}
+  .access-row-actions{width:100%}
+  .access-row-actions .btn{flex:1 1 auto;white-space:nowrap}}/* ── Destructive settings ─────────────────────────────────────────────────
+   Set apart from the form above it so deleting a salon can never be mistaken
+   for saving one. */
+.danger-zone{margin-top:20px;padding:18px;border:1px solid var(--danger);border-radius:14px;background:color-mix(in srgb,var(--danger) 8%,transparent)}
+.danger-zone h3{margin:0 0 6px;font-size:15px;color:var(--danger)}
+.danger-zone>.tiny{margin:0 0 14px;color:var(--muted);line-height:1.85}
+.danger-zone>.btn{width:100%}
+.danger-zone label{display:grid;gap:8px;margin:14px 0;font-size:12px;color:var(--muted)}
+.danger-zone label span{line-height:1.9}
+.danger-zone label b{color:var(--ink);letter-spacing:1px}
+.danger-zone .btn-row{display:flex;gap:8px}
+.danger-zone .btn-row .btn{flex:1}
+.danger-zone .control-error{margin-top:10px}/* Salonieer logo is a transparent mark on both light and dark surfaces. */
+.platform-gate .platform-brand .brand-lockup,.brand-lockup,.control-hero-mark .brand-lockup{background:transparent!important;border-color:transparent!important;box-shadow:none!important}
+.brand-lockup img,.auth-brand img,.splash img{border-radius:0!important;object-fit:contain!important}/* Bordered Salonieer artwork keeps the fill inside its rounded copper edge. */
+img.salonieer-logo-dark{display:none!important}
+img.salonieer-logo-light{display:block!important}
+html[data-theme="dark"] img.salonieer-logo-light,html:not([data-experience="salon"]) img.salonieer-logo-light{display:none!important}
+html[data-theme="dark"] img.salonieer-logo-dark,html:not([data-experience="salon"]) img.salonieer-logo-dark{display:block!important}/* ── Native iOS performance -------------------------------------------------
+   WKWebView pays a much higher compositing cost than Android WebView for large
+   fixed translucent layers and live backdrop blur. Keep the same layout and
+   visual hierarchy, but render those surfaces as opaque cards on iOS. */
+:root[data-native="ios"] body{overflow-y:auto!important}
+:root[data-native="ios"] .view{
+  height:auto!important;min-height:100vh!important;min-height:100dvh!important;
+  overflow-y:visible!important;-webkit-overflow-scrolling:auto!important;
+}
+:root[data-native="ios"] #navhost{
+  position:static!important;inset:auto!important;width:0!important;height:0!important;
+  min-width:0!important;min-height:0!important;overflow:visible!important;
+}
+:root[data-native="ios"] #navhost .appnav,:root[data-native="ios"] #navhost .control-sidebar{position:fixed!important}
+:root[data-native="ios"] .appnav,:root[data-native="ios"] .control-sidebar,:root[data-native="ios"] #navhost .appnav,:root[data-native="ios"] #navhost .control-sidebar,:root[data-native="ios"] .header,:root[data-native="ios"] .modal-bg,:root[data-native="ios"] .reservation-date-tile{
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+}
+:root[data-native="ios"] .appnav,:root[data-native="ios"] #navhost .appnav,:root[data-native="ios"] .control-sidebar,:root[data-native="ios"] #navhost .control-sidebar{
+  background:var(--card)!important;box-shadow:0 8px 24px rgba(0,0,0,.24)!important;
+}
+:root[data-native="ios"] .header{background:var(--bg)!important}
+:root[data-native="ios"] .modal-bg{background:rgba(0,0,0,.78)!important}
+:root[data-native="ios"] .page,:root[data-native="ios"] .modal,:root[data-native="ios"] .platform-shell-card,:root[data-native="ios"] .platform-scan-frame::after,:root[data-native="ios"] .sk::after{animation:none!important}
+:root[data-native="ios"] .navitem,:root[data-native="ios"] .control-nav-item,:root[data-native="ios"] .card,:root[data-native="ios"] .svc,:root[data-native="ios"] .bcard,:root[data-native="ios"] .prod{transition-property:background-color,border-color,color,opacity!important;transition-duration:.12s!important}
+/* ── Fixed chrome stays cheap to paint ────────────────────────────────────
+   A backdrop-filter on an element that sits above a scrolling list forces the
+   compositor to re-blur the page on every frame — the single most expensive
+   effect in this app on iOS. Both surfaces are opaque now, so the blur only
+   cost frames without changing what anyone sees. */
+.appnav,.header,.control-sidebar,#navhost .appnav,#navhost .control-sidebar{
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}

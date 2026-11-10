@@ -1,0 +1,111 @@
+/* =========================================================================
+   METON — Cobalt Pulse (owner, 2026-11-10) — identity layer, the last stylesheet.
+   One palette for every METON screen, in both modes (theme.js sets the accent):
+     Light  background #F5F7FE · surface #FFFFFF · text #1D2641 · primary #3D50D9
+     Dark   background #101425 · surface #202840 · text #F1F3FF · primary #9FAAFF
+   Complementary tokens (secondary text, borders, states, feedback) are derived
+   here and nowhere else. Contrast (checked, WCAG): body text ≥ 13:1 in both
+   modes; secondary text ≥ 7:1 light / ≥ 9:1 dark; muted ≥ 5:1 light / ≥ 6:1
+   dark; white on #3D50D9 ≈ 6:1; #101425 on #9FAAFF ≈ 8.6:1.
+   ========================================================================= */
+:root{
+  --cp-primary:#3d50d9;--cp-primary-hover:#3142c2;--cp-primary-press:#2a39a8;--cp-primary-text:#2f3fbf;--cp-on-primary:#ffffff;
+  --cp-primary-soft:#e8ebfc;--cp-primary-line:#b9c1f3;--cp-focus:#3d50d9;
+  --cp-ok:#1a7f52;--cp-ok-bg:#e3f5ec;--cp-warn:#9a5d0c;--cp-warn-bg:#fdf1dc;--cp-danger:#c22d3d;--cp-danger-bg:#fde8ea;--cp-info:#2f3fbf;--cp-info-bg:#e8ebfc;
+}
+html[data-theme="dark"]{
+  --cp-primary:#9faaff;--cp-primary-hover:#b4bdff;--cp-primary-press:#8994f2;--cp-primary-text:#b8c0ff;--cp-on-primary:#101425;
+  --cp-primary-soft:#232c55;--cp-primary-line:#4a56a0;--cp-focus:#b4bdff;
+  --cp-ok:#5ad39b;--cp-ok-bg:#14352a;--cp-warn:#f2c46d;--cp-warn-bg:#3a2e14;--cp-danger:#ff8e98;--cp-danger-bg:#3d1c24;--cp-info:#b8c0ff;--cp-info-bg:#232c55;
+}
+
+/* ---- Light ----------------------------------------------------------------- */
+html:not(#cobalt)[data-theme="light"],html:not(#cobalt)[data-theme="light"] body{
+  --bg:#f5f7fe;--card:#ffffff;--panel:#eef1fc;--panel-2:#e5e9fa;--field:#ffffff;
+  --line:#dde2f3;--line-2:#eaedf8;--line-strong:#c3cae5;
+  --ink:#1d2641;--ink-2:#3b4566;--ink-3:#566186;--muted:#566186;
+  --star:#3d50d9;
+  --ok:var(--cp-ok);--ok-bg:var(--cp-ok-bg);--warn:var(--cp-warn);--warn-bg:var(--cp-warn-bg);
+  --danger:var(--cp-danger);--danger-bg:var(--cp-danger-bg);--info:var(--cp-info);--info-bg:var(--cp-info-bg);
+}
+html:not(#cobalt).clay[data-theme="light"] body{
+  --clay:0 0 0 1px var(--line),0 1px 2px rgb(29 38 65 / .05),0 12px 28px -20px rgb(29 38 65 / .28);
+  --clay-sm:0 0 0 1px var(--line),0 1px 2px rgb(29 38 65 / .05);
+}
+
+/* ---- Dark ------------------------------------------------------------------ */
+html:not(#cobalt)[data-theme="dark"],html:not(#cobalt)[data-theme="dark"] body{
+  --bg:#101425;--card:#202840;--panel:#1a2136;--panel-2:#262f4c;--field:#161c30;
+  --line:rgb(241 243 255 / .10);--line-2:rgb(241 243 255 / .06);--line-strong:rgb(241 243 255 / .18);
+  --ink:#f1f3ff;--ink-2:#c9cfea;--ink-3:#9aa3c7;--muted:#9aa3c7;
+  --star:#9faaff;
+  --ok:var(--cp-ok);--ok-bg:var(--cp-ok-bg);--warn:var(--cp-warn);--warn-bg:var(--cp-warn-bg);
+  --danger:var(--cp-danger);--danger-bg:var(--cp-danger-bg);--info:var(--cp-info);--info-bg:var(--cp-info-bg);
+}
+html:not(#cobalt).clay[data-theme="dark"] body{
+  --clay:0 0 0 1px var(--line),0 1px 2px rgb(0 0 0 / .25),0 14px 30px -22px rgb(0 0 0 / .6);
+  --clay-sm:0 0 0 1px var(--line),0 1px 2px rgb(0 0 0 / .2);
+}
+html[data-theme="light"]{--star:#3d50d9}
+html[data-theme="dark"]{--star:#9faaff}
+html:not(#cobalt)[data-theme="light"],html:not(#cobalt)[data-theme="light"] body{background:#f5f7fe}
+html:not(#cobalt)[data-theme="dark"],html:not(#cobalt)[data-theme="dark"] body{background:#101425}
+
+/* ---- Business studio (admin) uses the same palette ------------------------- */
+html.admin-studio[data-theme="light"]{--admin-bg:#f5f7fe!important;--admin-card:#ffffff!important;--admin-ink:#1d2641!important;--admin-line:#dde2f3!important}
+html.admin-studio[data-theme="dark"],html.admin-studio:not([data-theme="light"]){--admin-bg:#101425!important;--admin-card:#202840!important;--admin-ink:#f1f3ff!important;--admin-line:rgb(241 243 255 / .10)!important}
+
+/* ---- Focus: always visible, never colour-only ------------------------------ */
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--cp-focus)!important;outline-offset:2px!important}
+.input:focus,.select:focus,textarea:focus{border-color:var(--cp-primary)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--cp-primary) 24%,transparent)!important}
+::placeholder{color:var(--ink-3);opacity:.85}
+
+/* ---- Buttons ---------------------------------------------------------------- */
+.btn:not(.line):not(.ghost):not(.danger):not(.accent){background:var(--cp-primary);color:var(--cp-on-primary);border-color:var(--cp-primary)}
+.btn:not(.line):not(.ghost):not(.danger):not(.accent):hover{background:var(--cp-primary-hover)}
+.btn:not(.line):not(.ghost):not(.danger):not(.accent):active{background:var(--cp-primary-press)}
+.btn.line{border-color:var(--line-strong);color:var(--ink)}
+.btn.line:hover{border-color:var(--cp-primary);color:var(--cp-primary-text)}
+.btn[disabled],.btn:disabled{opacity:.55}
+
+/* ---- Platform screens (welcome, sign in, My businesses) follow the mode --- */
+.platform-gate,html.clay .platform-gate{
+  --gate-bg:#101425;--gate-card:#202840;--gate-panel:#1a2136;--gate-field:#161c30;
+  --gate-line:rgb(241 243 255 / .10);--gate-line-2:rgb(241 243 255 / .2);
+  --gate-ink:#f1f3ff;--gate-ink-2:#c9cfea;--gate-muted:#9aa3c7;
+  --gate-gold:#9faaff;--gate-gold-2:#c3caff;--gate-gold-soft:rgb(159 170 255 / .16);
+  --brand:#9faaff;--brand-ink:#c3caff;--brand-soft:rgb(159 170 255 / .16);--brand-line:rgb(159 170 255 / .45);--on-brand:#101425;
+  --star:#9faaff;--clay-brand-glow:rgb(159 170 255 / .3);
+}
+/* The sign-in / My businesses screens are the METON brand screen: Cobalt dark in both modes (the earlier layers paint
+   them as a dark space before a business opens). Light / Dark / System applies to every screen inside the app. */
+.platform-gate::before{background:radial-gradient(120% 62% at 50% -14%,color-mix(in srgb,var(--brand) 14%,transparent),transparent 62%)!important}
+.platform-gate .platform-primary{background:var(--brand)!important;color:var(--on-brand)!important}
+.platform-gate .platform-primary:hover{filter:brightness(1.06)}
+.platform-gate .platform-primary:focus-visible,.platform-gate .platform-secondary:focus-visible{outline:2px solid var(--brand-ink)}
+.platform-gate .acc-form .input:focus,.platform-gate .acc-cc:focus-visible,.platform-gate :is(input,select):focus{border-color:var(--brand)!important}
+.platform-gate .acc-switch .platform-link{color:var(--brand-ink)!important}
+.platform-gate .acc-join:hover,.platform-gate .acc-join:focus-visible{border-color:var(--brand)!important}
+.platform-gate .seg button.on svg{color:var(--brand-ink)}
+
+/* ---- Dashboard figures: Cobalt icon tiles (older layers tinted them gold) ---- */
+html:not(#cobalt) .admin-kpi .admin-kpi-head i{background:var(--cp-primary-soft)!important;color:var(--cp-primary-text)!important;border-color:transparent!important}
+html:not(#cobalt) .admin-kpi{border-top-color:var(--cp-primary)!important}
+
+/* ---- Step labels (two-step password reset) and small helpers --------------- */
+.acc-step,.book-step{font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--brand-ink,var(--cp-primary-text));margin:0 0 6px}
+
+/* ---- Customer home: one rhythm for every section (title + count, hint, then cards) ---- */
+html:not(#cobalt) .home-v2 :is(.home-services,.home-team){margin-top:28px}
+html:not(#cobalt) .home-v2 .studio-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 6px}
+html:not(#cobalt) .home-v2 .studio-section-head h2{font-size:20px!important;line-height:1.3;margin:0;letter-spacing:-.01em}
+html:not(#cobalt) .home-v2 .studio-count{flex:none;min-width:28px;height:28px;padding:0 9px!important;display:inline-grid;place-items:center;
+  font-size:13px;font-weight:700;line-height:1;background:var(--cp-primary-soft)!important;color:var(--cp-primary-text)!important;border:0!important}
+html:not(#cobalt) .home-v2 .studio-hint{margin:0 2px 14px!important;font-size:13px;line-height:1.55;color:var(--ink-3)}
+html:not(#cobalt) .home-v2 #home-service-list{display:flex;flex-direction:column;gap:10px}
+html:not(#cobalt) .home-v2 .studio-search{margin:0 0 14px}
+html:not(#cobalt) .home-v2 .studio-team-grid{gap:12px}
+html:not(#cobalt) .home-v2 .home-tiles{gap:12px}
+html:not(#cobalt) .home-v2 .badge{line-height:1.2}
+/* the bottom bar never hides the last card */
+html:not(#cobalt) .home-v2{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}

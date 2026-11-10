@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- Replaced at runtime with the page's own resolved background, so the
+       iPhone status bar and home-indicator strips match the active theme. -->
+  <meta name="theme-color" content="#f5f7fe" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#101425" media="(prefers-color-scheme: dark)" />
+  <meta name="description" content="METON — book appointments with the businesses you use, in one place." />
+  <title>METON</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icons/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="METON" />
+
+  <!-- Local, licensed variable fonts: work offline in both native apps.
+       The two subsets every screen actually needs start downloading with the
+       stylesheets instead of after them. -->
+  <link rel="preload" as="font" type="font/woff2" href="fonts/noto-sans-arabic-arabic-wght-normal.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="fonts/inter-latin-wght-normal.woff2" crossorigin />
+  <link rel="stylesheet" href="fonts/inter.css" />
+  <link rel="stylesheet" href="fonts/noto-sans-arabic.css" />
+
+  <!-- restore theme before first paint (no flash of the wrong mode) -->
+  <script>document.documentElement.classList.add("clay");try{var p=localStorage.getItem("meton:appearance")||"system",r=document.documentElement,
+    dark=p==="dark"||(p==="system"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches);
+    r.setAttribute("data-theme",dark?"dark":"light");
+    r.style.setProperty("--surface-chrome",dark?"#101425":"#f5f7fe");}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css?v=14" />
+  <link rel="stylesheet" href="platform.css?v=4" />
+  <link rel="stylesheet" href="luxury.css?v=3" />
+  <link rel="stylesheet" href="control.css?v=5" />
+  <link rel="stylesheet" href="refinement.css?v=6" />
+  <link rel="stylesheet" href="notifications.css?v=232" />
+  <link rel="stylesheet" href="studio.css?v=232" />
+  <link rel="stylesheet" href="elevate.css?v=2" />
+  <link rel="stylesheet" href="premium.css?v=4" />
+  <link rel="stylesheet" href="admin-studio.css?v=3" />
+  <link rel="stylesheet" href="unified-studio.css?v=4" />
+  <link rel="stylesheet" href="mobile-compat.css?v=35" />
+  <link rel="stylesheet" href="subscriptions.css?v=4" />
+  <link rel="stylesheet" href="business.css?v=20261010-228" />
+  <link rel="stylesheet" href="app-review.css?v=3" />
+  <link rel="stylesheet" href="polish.css?v=20261003-226" />
+  <!-- Claymorphism: the final visual layer. Remove the "clay" class below to switch it off. -->
+  <link rel="stylesheet" href="clay.css?v=3" />
+  <link rel="stylesheet" href="rework.css?v=20261008-tap" />
+<link rel="stylesheet" href="accounts.css?v=20261108-identity" />
+  <!-- 2.31: the official Salonieer identity (default theme) and shared component fixes. Last on purpose. -->
+  <link rel="stylesheet" href="brand.css?v=20261017-231" />
+  <!-- 2.32: the new schedule, and the rebalanced palette and dark mode (the very last layer). -->
+  <link rel="stylesheet" href="schedule.css?v=20261019-233" />
+  <link rel="stylesheet" href="palette.css?v=20261019-233" />
+  <link rel="stylesheet" href="members.css?v=20261024-240" />
+<link rel="stylesheet" href="ops.css?v=20261024-241" />
+  <!-- METON identity (2026-11-06): the owner's palette. Last on purpose. -->
+  <link rel="stylesheet" href="meton.css?v=20261110-cobalt" />
+</head>
+<body>
+  <div id="shell" class="shell">
+    <!-- navigation: sidebar on desktop, bottom bar on phones -->
+    <div id="navhost"></div>
+    <main id="view" class="view"><!-- pages render here --></main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="modal-root"></div>
+
+  <script defer src="lang-catalog.js?v=20261110-cobalt"></script>
+  <script defer src="lang.js?v=20261106-meton"></script>
+  <script defer src="money.js?v=20261101-243"></script>
+  <script defer src="theme.js?v=20261110-cobalt"></script>
+  <script defer src="native.js?v=20261106-meton"></script>
+  <script defer src="transport.js?v=20261019-233"></script>
+
+  <script defer src="supabase.js?v=20261020-234"></script>
+  <script defer src="platform.js?v=20261108-identity"></script>
+  <script defer src="smart.js?v=20261106-meton"></script>
+  <script defer src="pwa.js?v=20261106-meton"></script>
+  <script defer src="photos.js?v=20261020-234"></script>
+  <script defer src="staff.js?v=20261012-230"></script>
+  <script defer src="bookings.js?v=20261008-227"></script>
+  <script defer src="schedule.js?v=20261106-meton"></script>
+  <script defer src="plans.js?v=20261106-meton"></script>
+  <script defer src="members.js?v=20261110-contact"></script>
+  <script defer src="auth.js?v=20261110-cobalt"></script>
+<script defer src="vendor/libphonenumber-min.js?v=1.11.12"></script>
+<script defer src="vendor/phone-examples.js?v=1.11.12"></script>
+<script defer src="account.js?v=20261110-cobalt"></script>
+  <script defer src="settings.js?v=20261110-cobalt"></script>
+  <script defer src="booking.js?v=20261108-identity"></script>
+  <script defer src="business.js?v=20261110-cobalt"></script>
+  <script defer src="workforce.js?v=20261106-meton"></script>
+  <script defer src="admin.js?v=20261106-meton"></script>
+  <script defer src="schedule-editor.js?v=20260930"></script>
+  <script defer src="barber.js?v=20261106-meton"></script>
+  <script defer src="qr.js"></script>
+  <script defer src="control.js?v=20261106-meton"></script>
+  <script defer src="motion.js"></script>
+  <script defer src="shortcuts.js"></script>
+  <script defer src="notifications.js?v=20261106-meton"></script>
+  <script defer src="loyalty.js?v=20261106-meton"></script>
+  <script defer src="reservation.js?v=20261106-meton"></script>
+  <script defer src="report.js?v=20261106-meton"></script>
+  <script defer src="rework.js?v=20261106-meton"></script>
+  <script defer src="app.js?v=20261106-meton"></script>
+</body>
+</html>

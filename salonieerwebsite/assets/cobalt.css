@@ -1,0 +1,236 @@
+/* =================================================================================================================
+   METON — Cobalt Pulse (owner, 2026-11-10). The LAST stylesheet: it re-points the tokens of app.css + site.css.
+     Light  background #F5F7FE · surface #FFFFFF · text #1D2641 · primary #3D50D9 (pulse accent #9FAAFF)
+     Dark   background #101425 · surface #202840 · text #F1F3FF · primary #9FAAFF
+   html[data-theme] comes from assets/theme-boot.js (Light / Dark / System, kept in this browser).
+   How the older layers read the tokens:
+     --night  = the ink: body text, and the fill of "inverted" chips and dark islands (.ink sections, footer, menu)
+     --talc / --paper = page background / cards
+     --coral, --barbicide, --peroxide, --gold = the bright accent used as a FILL next to --night, or on dark islands
+     --coral-text / --coral-deep = the accent as TEXT / BORDER on the page
+   In dark mode the ink becomes light and the page dark; dark islands keep the light-mode island tokens.
+   Contrast (WCAG): text ≥ 12:1 both modes; secondary ≥ 7:1; muted ≥ 4.8:1; white on #3D50D9 6.2:1;
+   #101425 on #9FAAFF 8.6:1; #1D2641 on #9FAAFF 7.3:1; #F1F3FF on #3D50D9 5.6:1.
+   ================================================================================================================= */
+:root{
+  --cp-primary:#3D50D9;--cp-primary-hover:#3142C2;--cp-primary-text:#2F3FBF;--cp-on-primary:#fff;--cp-pulse:#9FAAFF;
+  --cp-soft:#E8EBFC;--cp-focus:#3D50D9;
+  --night:#1D2641;--night-2:#26305A;--night-3:#323D6B;--chrome:#C9CFEA;--steel:#566186;
+  --talc:#F5F7FE;--talc-2:#E8ECFA;--paper:#FFFFFF;
+  --peroxide:#9FAAFF;--barbicide:#9FAAFF;--barbicide-deep:#3D50D9;
+  --coral:#9FAAFF;--coral-deep:#3D50D9;--coral-text:#2F3FBF;--gold:#9FAAFF;--gold-deep:#2F3FBF;
+  --blood:#C22D3D;--mint:#1A7F52;
+  --color-primary:#1D2641;--color-secondary:#3B4566;--color-accent:#3D50D9;--color-accent-hover:#3142C2;--color-accent-text:#2F3FBF;
+  --color-accent-soft:rgba(61,80,217,.10);--color-on-accent:#fff;
+  --color-background:#F5F7FE;--color-surface:#FFFFFF;--color-surface-secondary:#E8ECFA;--color-surface-sunken:#EEF1FC;
+  --color-text-primary:#1D2641;--color-text-secondary:#3B4566;--color-text-muted:#566186;
+  --color-border:rgba(29,38,65,.12);--color-border-strong:rgba(29,38,65,.28);
+  --color-success:#1A7F52;--color-success-text:#16704A;--color-warning:#9A5D0C;--color-warning-text:#8A520A;
+  --color-error:#C22D3D;--color-error-text:#B02636;--color-info:#2F3FBF;--color-info-text:#2F3FBF;
+  --color-overlay:rgba(16,20,37,.6);--color-footer-bg:#101425;--color-footer-text:#F1F3FF;--color-footer-muted:#9AA3C7;--color-footer-accent:#9FAAFF;
+  --button-primary-bg:#3D50D9;--button-primary-text:#fff;--button-primary-hover:#3142C2;--button-secondary-bg:transparent;--button-secondary-text:#1D2641;
+  --input-bg:#FFFFFF;--input-focus:#3D50D9;--nav-active:#3D50D9;--badge-bg:#E8EBFC;--badge-text:#2F3FBF;--icon-accent:#3D50D9;
+  --shade:#101425;--ring:0 0 0 3px rgba(61,80,217,.32);
+  --elev-2:0 30px 60px -40px rgba(16,20,37,.32);--elev-3:0 40px 90px -40px rgba(16,20,37,.5);
+  color-scheme:light;
+}
+/* Dark islands in light mode (sign-in panel, menu, dark sections). */
+.ink{--color-surface-sunken:#161C33;--color-text-secondary:#C9CFEA;--color-text-muted:#A3ABCF;
+  --color-border:rgba(241,243,255,.14);--color-border-strong:rgba(241,243,255,.3);
+  --button-primary-bg:#9FAAFF;--button-primary-text:#101425;--button-primary-hover:#B4BDFF;--input-focus:#9FAAFF;
+  --color-accent-text:#B8C0FF;--badge-text:#B8C0FF;--cp-focus:#B4BDFF}
+
+/* ---- Dark ------------------------------------------------------------------------------------------------------- */
+html[data-theme=dark]{
+  --cp-primary:#9FAAFF;--cp-primary-hover:#B4BDFF;--cp-primary-text:#B8C0FF;--cp-on-primary:#101425;--cp-pulse:#9FAAFF;
+  --cp-soft:#232C55;--cp-focus:#B4BDFF;
+  --night:#F1F3FF;--night-2:#E2E6FA;--night-3:#C9CFEA;--chrome:#C9CFEA;--steel:#9AA3C7;
+  --talc:#101425;--talc-2:#1A2136;--paper:#202840;
+  --peroxide:#3D50D9;--barbicide:#3D50D9;--barbicide-deep:#9FAAFF;
+  --coral:#3D50D9;--coral-deep:#9FAAFF;--coral-text:#B8C0FF;--gold:#3D50D9;--gold-deep:#B8C0FF;
+  --blood:#FF8E98;--mint:#5AD39B;
+  --color-primary:#F1F3FF;--color-secondary:#C9CFEA;--color-accent:#9FAAFF;--color-accent-hover:#B4BDFF;--color-accent-text:#B8C0FF;
+  --color-accent-soft:rgba(159,170,255,.14);--color-on-accent:#101425;
+  --color-background:#101425;--color-surface:#202840;--color-surface-secondary:#1A2136;--color-surface-sunken:#161C30;
+  --color-text-primary:#F1F3FF;--color-text-secondary:#C9CFEA;--color-text-muted:#9AA3C7;
+  --color-border:rgba(241,243,255,.12);--color-border-strong:rgba(241,243,255,.26);
+  --color-success:#5AD39B;--color-success-text:#5AD39B;--color-warning:#F2C46D;--color-warning-text:#F2C46D;
+  --color-error:#FF8E98;--color-error-text:#FF8E98;--color-info:#B8C0FF;--color-info-text:#B8C0FF;
+  --color-overlay:rgba(5,7,15,.7);--color-footer-bg:#0B0E1C;
+  --button-primary-bg:#9FAAFF;--button-primary-text:#101425;--button-primary-hover:#B4BDFF;--button-secondary-text:#F1F3FF;
+  --input-bg:#161C30;--input-focus:#9FAAFF;--nav-active:#9FAAFF;--badge-bg:#232C55;--badge-text:#B8C0FF;--icon-accent:#9FAAFF;
+  --shade:#05070F;--ring:0 0 0 3px rgba(159,170,255,.4);
+  --elev-2:0 30px 60px -40px rgba(0,0,0,.7);--elev-3:0 40px 90px -40px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+html[data-theme=dark] body{background:#101425;color:#F1F3FF}
+/* Dark islands keep the island tokens (they were written for light ink on a dark fill). */
+html[data-theme=dark] :is(.ink,.site-footer,.nav-panel){
+  --night:#1A2136;--night-2:#232C48;--night-3:#2E3858;--talc:#F1F3FF;--talc-2:#E2E6FA;--paper:#2A3352;
+  --coral:#9FAAFF;--coral-deep:#B4BDFF;--coral-text:#B8C0FF;--gold:#9FAAFF;--gold-deep:#B8C0FF;--peroxide:#9FAAFF;--barbicide:#9FAAFF;
+  --color-background:#1A2136;--color-surface:#232C48;--color-surface-secondary:#2E3858;--color-surface-sunken:#141A2E;
+  --color-text-primary:#F1F3FF;--color-text-secondary:#C9CFEA;--color-text-muted:#A3ABCF;
+  --button-primary-bg:#9FAAFF;--button-primary-text:#101425;--button-secondary-text:#F1F3FF;--input-bg:#141A2E}
+html[data-theme=dark] .ink{background:#1A2136}
+html[data-theme=dark] .site-footer{background:#0B0E1C;color:#C9CFEA}
+html[data-theme=dark] .site-footer a{color:#F1F3FF}
+html[data-theme=dark] .nav-panel{background:#0B0E1C}
+html[data-theme=dark] body.on-ink .topbar.is-solid{background:color-mix(in srgb,#1A2136 90%,transparent)}
+/* Hover fills and inverted chips: light text on the deep cobalt. */
+@media (hover:hover) and (pointer:fine){
+  html[data-theme=dark] .btn:hover{color:#F1F3FF}
+  html[data-theme=dark] .btn.primary:hover{color:#F1F3FF}
+  html[data-theme=dark] .ink .btn.primary:hover,html[data-theme=dark] .ink .btn:hover{color:#101425}
+}
+html[data-theme=dark] .btn.primary:before{background:#3D50D9}
+html[data-theme=dark] .ink .btn.primary:before{background:#C3CAFF}
+/* Former white cards and fields. */
+html[data-theme=dark] :is(.language-select option,.book-option,.book-day,.book-time,.book-field input,.book-field textarea,.book-field select,.book-link-box,.me-row,
+  .book-done-card,.wiz-cat,.wiz-svc,.wiz-svc input,.wiz-svc select,.wiz-person,.wiz-person input,.wiz-opt,.wiz-day span,.db-stat,.db-today,.db-arrow,.db-when,.db-chip,.db-appt,
+  .db-empty,.db-wcol,.db-sheet .book-day,.book-demo-otp-code output,.wiz-type span,.wiz-seg,.wiz-cat-picked){background:var(--paper);color:var(--color-text-primary)}
+html[data-theme=dark] :is(.book-field input,.book-field textarea,.book-field select,.wiz-svc input,.wiz-svc select,.wiz-person input){background:#161C30}
+html[data-theme=dark] .book-demo-otp{background:color-mix(in srgb,#9FAAFF 10%,#202840);border-color:rgba(159,170,255,.5)}
+html[data-theme=dark] .db-tag.is-test{background:#232C55;color:#B8C0FF}
+html[data-theme=dark] :is(.demo-exit,.pv-note svg,.pf-kicker,.jr-steps li.is-current i,.trial-badge,.cmp-more summary){color:#B8C0FF;border-color:currentColor}
+html[data-theme=dark] .hm-hero{background:radial-gradient(90% 70% at 85% 10%,rgba(159,170,255,.12),transparent 60%),#101425}
+html[data-theme=dark] .invite-card{border-color:var(--color-border);box-shadow:none}
+html[data-theme=dark] .pf-why{color:#C9CFEA}
+/* Images that need a light ground stay light (QR codes, screenshots). */
+html[data-theme=dark] :is(.salon-qr,.salon-link-page .salon-link-qr svg){background:#fff;color:#101425}
+html[data-theme=dark] .hm2-try-shot{border-color:#2E3858}
+
+/* Dark-filled cards of the light design stay dark islands. */
+html[data-theme=dark] :is(.hm2-try-card,.support-contact,.pf-verdict,.toast){
+  --night:#1A2136;--talc:#F1F3FF;--coral:#9FAAFF;--coral-text:#B8C0FF;--gold:#9FAAFF;
+  background:#232C48;color:#F1F3FF;border:1px solid rgba(241,243,255,.1)}
+/* Small "selected" chips that were ink with white text: cobalt in dark mode. */
+html[data-theme=dark] :is(.sc-tab[aria-selected=true],.sc-feat-tag.is-pro,.step.active span,.radio-option:has(input:checked),.legal-tabs a[aria-current=page]){
+  background:#9FAAFF;border-color:#9FAAFF;color:#101425}
+html[data-theme=dark] .store-badge{background:#0B0E1C;color:#F1F3FF;border-color:rgba(241,243,255,.28)}
+.store-badge small{color:#C9CFEA}
+
+/* ---- Both modes ------------------------------------------------------------------------------------------------ */
+/* Plans: a calmer price list (the rows were poster-sized). */
+.plan-rows .menu-row{padding-block:clamp(18px,2.6vh,28px)}
+.plans-page .menu-row h3{font-size:clamp(1.6rem,1.1rem + 1.6vw,2.5rem);font-stretch:105%;line-height:1.05}
+.plans-page .menu-row .price{font-size:clamp(1.4rem,1.05rem + 1.1vw,2.1rem);font-stretch:100%}
+.plans-page .menu-row .price:not(:has(bdi)){font-family:var(--font-body);font-size:clamp(1.05rem,.95rem + .4vw,1.3rem);font-weight:700;white-space:normal;text-align:end}
+@media (hover:hover) and (pointer:fine){.plans-page .menu-row:hover h3{font-stretch:105%}}
+.plans-page .page-heading h1,.plans-page h1{font-size:clamp(2.2rem,1.3rem + 3vw,3.8rem)}
+.sc-kicker{color:var(--coral-text)!important}
+.sc-kicker:before{background:var(--cp-primary)}
+.hm-hero{background:radial-gradient(90% 70% at 85% 10%,rgba(61,80,217,.10),transparent 60%),var(--talc)}
+.hm-plan .tag,.cmp-card .tag,.pf-card .tag,.book-demo-badge,.book-demo-tag,.db-count,.db-tag.is-mine{background:var(--coral);color:var(--night)}
+.bar-links a:after,.menu-links a:after{background:var(--cp-pulse)}
+.menu-links a[aria-current=page]{color:var(--cp-pulse)}
+@media (hover:hover) and (pointer:fine){.menu-links a:hover{color:var(--cp-pulse)}}
+.btn.primary:before{background:var(--cp-primary-hover)}
+@media (hover:hover) and (pointer:fine){.btn.primary:hover{color:var(--cp-on-primary)}}
+.ink .btn.primary:before{background:#C3CAFF}
+@media (hover:hover) and (pointer:fine){.ink .btn.primary:hover{color:#101425;border-color:#C3CAFF}}
+.plans-page .menu-row .price,.pf-card .trial-badge{color:var(--coral-text)}
+::selection{background:var(--cp-primary);color:var(--cp-on-primary)}
+/* Focus: always visible, the same ring everywhere. */
+:focus-visible{outline:2px solid var(--cp-focus)!important;outline-offset:3px}
+.btn:focus-visible{outline-offset:2px}
+.field input:focus,.field select:focus,.field textarea:focus,.cpick-btn:focus-visible,.cpick.is-open .cpick-btn{box-shadow:0 0 0 3px color-mix(in srgb,var(--cp-primary) 22%,transparent);border-color:var(--cp-primary)}
+/* Readable fields in both modes. */
+.field input,.field select,.field textarea,.cpick-btn,.cpick-search{color:var(--color-text-primary);background-color:var(--input-bg)}
+.field input::placeholder,.field textarea::placeholder{color:var(--color-text-muted);opacity:1}
+.field small,.field-hint{color:var(--color-text-secondary)}
+.field-error{color:var(--color-error-text)}
+.cpick-pop{background:var(--color-surface);color:var(--color-text-primary);border-color:var(--color-border-strong)}
+
+/* ---- Logo: the lockup (mark + wordmark), the right colour for each ground --------------------------------------- */
+.brand .brand-logo{height:26px}
+@media (max-width:480px){.brand .brand-logo{height:22px}}
+html[data-theme=dark] .brand .brand-logo-light{display:none}
+html[data-theme=dark] .brand .brand-logo-dark{display:block}
+.footer-logo{width:180px}
+html[data-theme=dark] .initial-loader img{content:url(/assets/brand/meton-wordmark-cream.svg)}
+html[data-theme=dark] .biz-foot-brand img{content:url(/assets/brand/meton-wordmark-cream.svg)}
+
+/* ---- Appearance switch (header + business pages) --------------------------------------------------------------- */
+.appearance-select{max-width:112px}
+.bar-appearance{display:flex}
+/* Phones: "Log out" lives in the menu (in Arabic and Hebrew it did not fit the bar). */
+.bar-logout{white-space:nowrap}
+.menu-logout{color:#F1F3FF;border-color:rgba(241,243,255,.5)}
+@media (min-width:561px){.menu-logout{display:none}}
+@media (max-width:560px){.bar-logout{display:none}}
+@media (max-width:720px){.bar-appearance{display:none}}
+.menu-appearance .language-select{color:#F1F3FF;border-color:rgba(241,243,255,.5)}
+.menu-appearance .language-select option{color:#1D2641;background:#fff}
+.biz-top{display:flex;gap:8px;justify-content:flex-end}
+
+/* ---- My Account: the bell ------------------------------------------------------------------------------------- */
+.account-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.account-head .page-heading{flex:1;min-width:0}
+.notif{position:relative;flex:none;margin-top:6px}
+.notif-bell{position:relative;display:grid;place-items:center;width:48px;height:48px;border-radius:14px;border:1.5px solid var(--color-border-strong);
+  background:var(--color-surface);color:var(--color-text-primary);cursor:pointer;transition:border-color .15s,background .15s}
+.notif-bell:hover{border-color:var(--cp-primary)}
+.notif-bell[aria-expanded=true]{border-color:var(--cp-primary);background:var(--cp-soft)}
+.notif-count{position:absolute;top:-6px;inset-inline-end:-6px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;display:grid;place-items:center;
+  background:var(--cp-primary);color:var(--cp-on-primary);font:700 .74rem/1 Hanken,"Segoe UI",system-ui,sans-serif;box-shadow:0 0 0 2px var(--talc)}
+.notif-panel{position:absolute;top:calc(100% + 10px);inset-inline-end:0;z-index:30;width:min(420px,calc(100vw - 32px));max-height:min(70vh,560px);overflow:auto;
+  background:var(--color-surface);color:var(--color-text-primary);border:1px solid var(--color-border-strong);border-radius:18px;padding:16px;
+  box-shadow:0 30px 60px -30px rgba(16,20,37,.45)}
+.notif-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.notif-head h2{font-family:var(--font-body);font-size:1.05rem;font-weight:700;margin:0;letter-spacing:0}
+.notif-head .text-link,.notif-mark{background:none;border:0;padding:4px 0;font:inherit;font-size:.85rem;font-weight:600;color:var(--coral-text);cursor:pointer}
+.notif-list{list-style:none;margin:0 0 10px;padding:0;display:grid;gap:10px}
+.notif-item{display:grid;gap:12px;padding:14px;border-radius:14px;border:1px solid var(--color-border);background:var(--color-surface)}
+.notif-item.is-unread{border-color:var(--cp-primary-line,var(--color-border-strong));background:color-mix(in srgb,var(--cp-primary) 6%,var(--color-surface));
+  box-shadow:inset 3px 0 0 var(--cp-primary)}
+[dir=rtl] .notif-item.is-unread{box-shadow:inset -3px 0 0 var(--cp-primary)}
+.notif-main{display:flex;gap:12px;align-items:flex-start}
+.notif-logo{flex:none;width:40px;height:40px;border-radius:12px;object-fit:cover;display:grid;place-items:center;background:var(--cp-soft);color:var(--coral-text);font-weight:700}
+.notif-text{margin:0;line-height:1.45}
+.notif-meta{margin:4px 0 0;font-size:.85rem;color:var(--color-text-secondary)}
+.notif-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.notif-actions .notif-mark{margin-inline-start:auto}
+.notif-empty{margin:4px 0;color:var(--color-text-secondary);line-height:1.5}
+
+.webapp-card{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:0 0 28px;padding:clamp(18px,3vw,26px);
+  border-radius:20px;background:var(--color-surface);border:1px solid var(--color-border);box-shadow:inset 4px 0 0 var(--cp-primary)}
+[dir=rtl] .webapp-card{box-shadow:inset -4px 0 0 var(--cp-primary)}
+.webapp-card h2{font-family:var(--font-body);font-size:1.2rem;font-weight:700;margin:0 0 6px;letter-spacing:0}
+.webapp-card p{margin:0;color:var(--color-text-secondary);max-width:60ch}
+
+/* ---- Sign-in / sign-up: time left today -------------------------------------------------------------------------- */
+.auth-art{justify-content:center;background:#1A2136}
+/* The bar sits on one ground over both halves, so every link stays readable. */
+body[data-scene=is-auth] .topbar{background:color-mix(in srgb,var(--talc) 94%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--color-text-primary)}
+@media (min-width:901px){body[data-scene=is-auth] .topbar:not(.is-solid) .brand{color:inherit}}
+html:not([data-theme=dark]) body[data-scene=is-auth] .topbar .brand-logo-light{display:block}
+html:not([data-theme=dark]) body[data-scene=is-auth] .topbar .brand-logo-dark{display:none}
+body.menu-open[data-scene=is-auth] .topbar{background:transparent;color:#F1F3FF}
+html body.menu-open .topbar .brand-logo-light{display:none}
+html body.menu-open .topbar .brand-logo-dark{display:block}
+.auth-art:before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(70% 55% at 85% 0%,rgba(159,170,255,.16),transparent 70%),radial-gradient(60% 50% at 0% 100%,rgba(61,80,217,.22),transparent 70%)}
+.auth-art h1{font-size:clamp(2.2rem,1rem + 3vw,4.2rem)}
+.auth-clock{position:relative;z-index:2;display:grid;gap:14px;margin:0;max-width:30rem}
+.auth-clock-kicker{margin:0;font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#B8C0FF}
+:lang(ar) .auth-clock-kicker,:lang(he) .auth-clock-kicker{letter-spacing:.02em;font-size:.95rem}
+.auth-art .auth-clock-time{margin:0;direction:ltr;unicode-bidi:isolate;display:flex;align-items:baseline;gap:.18em;justify-content:flex-start;
+  font-family:Hanken,"Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";font-weight:300;
+  font-size:clamp(3rem,1.6rem + 4.6vw,6.4rem);line-height:1;letter-spacing:-.02em;color:#F1F3FF}
+[dir=rtl] .auth-art .auth-clock-time{justify-content:flex-end}
+.auth-art .auth-clock-time i{font-style:normal;color:#9FAAFF;opacity:.75;font-weight:300}
+.auth-art .auth-clock-quote{margin:0;max-width:32ch;color:#C9CFEA;font-size:var(--fs-lead);line-height:1.55}
+.auth-art .auth-clock-quote:before{content:"";display:block;width:36px;height:2px;margin-bottom:16px;background:#9FAAFF;border-radius:2px}
+.auth-art .auth-clock-kicker{margin:0;font-size:.78rem;max-width:none}
+:lang(ar) .auth-art .auth-clock-kicker,:lang(he) .auth-art .auth-clock-kicker{font-size:.95rem}
+.auth-form{background:var(--talc)}
+.auth-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:20px;padding:clamp(22px,4vw,40px);box-shadow:0 30px 60px -44px rgba(16,20,37,.35)}
+.auth-card h2{font-size:clamp(1.8rem,1.2rem + 1.6vw,2.6rem)}
+@media (max-width:900px){
+  .auth-art{padding:calc(var(--nav-h) + 20px) var(--gutter) 24px;gap:18px}
+  .auth-clock{gap:8px}
+  .auth-art .auth-clock-time{font-size:clamp(2.2rem,10vw,3.2rem)}
+  .auth-art .auth-clock-quote{font-size:.95rem}
+  .auth-art .auth-clock-quote:before{margin-bottom:10px}
+  .auth-card{border-radius:16px}
+}

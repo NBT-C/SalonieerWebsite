@@ -29,7 +29,10 @@ function idFail(array $r, ?string $field = null): never {
         'no_code'=>[400,'codeExpired'], 'invalid_password'=>[400,'invalidPassword'], 'bad_password'=>[400,'wrongPassword'], 'same_password'=>[400,'samePassword'],
         'no_phone_codes'=>[409,'noPhoneCodes'], 'same_account'=>[400,'sameAccount'], 'link_expired'=>[400,'linkExpired'], 'link_blocked'=>[409,'linkBlocked'],
         'only_login'=>[409,'onlyLogin'], 'website_account'=>[409,'websiteEmailNeeded'], 'invalid_name'=>[400,'invalidFullName'],
-        'link_disabled'=>[409,'linkDisabled']];
+        'link_disabled'=>[409,'linkDisabled'], 'invite_invalid'=>[409,'inviteInvalid'], 'invite_used'=>[409,'inviteInvalid'], 'invite_expired'=>[409,'inviteInvalid'],
+        'invite_cancelled'=>[409,'inviteInvalid'], 'already_member'=>[409,'inviteInvalid'],'verify_email'=>[409,'confirmEmailFirst'],
+        'phone_required'=>[409,'invitePhoneRequired'], 'disabled'=>[409,'inviteDisabled'], 'unavailable'=>[409,'inviteUnavailable'],
+        'conflict'=>[409,'inviteUnavailable'], 'session_expired'=>[409,'accountNotMoved']];
     [$status, $code] = $map[$r['code'] ?? ''] ?? [503, 'serviceUnavailable'];
     if ($code === 'serviceUnavailable') error_log('METON identity: unexpected answer '.substr(json_encode($r), 0, 300));
     if ($status === 429) header('Retry-After: '.(int)($r['retry_in'] ?? 900));
@@ -277,6 +280,17 @@ function identityApi(string $method, string $path, array|false $user): never {
         $user = idSync(one('SELECT * FROM users WHERE id=?', [$user['id']]), $acc);
         sendJson(200, ['identity'=>identityView($acc), 'user'=>userDTO($user)]);
     }
+    // 2.48: the bell in My Account — the account's open team invitations (the same as in the app), read / unread,
+    // Accept / Decline (below).
+    if ($method === 'GET' && $path === '/api/account/notifications') {
+        $r = idCall('website_account_invites', ['p_account'=>identityAccountOf($user)['id']]);
+        if (isset($r['error'])) idFail($r);
+        $items = array_map(fn($i) => ['slug'=>(string)$i['slug'], 'member'=>(string)$i['member_id'], 'business'=>(string)($i['salon_name'] ?? ''),
+            'logo'=>preg_match('~^https://~', (string)($i['logo_url'] ?? '')) ? $i['logo_url'] : null, 'role'=>(string)($i['role'] ?? ''),
+            'title'=>(string)($i['title'] ?? ''), 'invitedBy'=>(string)($i['invited_by'] ?? ''), 'invitedAt'=>$i['invited_at'] ?? null,
+            'expiresAt'=>$i['expires_at'] ?? null, 'profile'=>!empty($i['link']) ? (string)($i['profile'] ?? '') : '', 'read'=>!empty($i['read'])], $r['invites'] ?? []);
+        sendJson(200, ['verified'=>(bool)($r['verified'] ?? false), 'unread'=>(int)($r['unread'] ?? 0), 'items'=>$items]);
+    }
     $acc = identityAccountOf($user); $d = body(); $lang = siteLang($d['lang'] ?? null);
     $done = function (array $r) use ($user, $acc): never {
         $fresh = isset($r['account']['id']) ? $r['account'] : idCall('website_account_get', ['p_account'=>$acc['id']]);
@@ -315,6 +329,27 @@ function identityApi(string $method, string $path, array|false $user): never {
             'p_password'=>(string)($d['password'] ?? ''), 'p_dial'=>preg_replace('/\D/', '', (string)($d['dial'] ?? ''))]);
         if (isset($r['error'])) idFail($r, 'identifier');
         sendJson(200, ['ticket'=>$r['ticket'], 'other'=>$r['other'] ?? null, 'blockers'=>$r['blockers'] ?? []]);
+    }
+    $inviteRef = fn() => [preg_match('/^[a-z][a-z0-9_]{1,31}$/D', (string)($d['slug'] ?? '')) ? $d['slug'] : fail(400, 'invalidRequest'),
+        preg_match('/^[0-9a-f-]{36}$/D', (string)($d['member'] ?? '')) ? $d['member'] : fail(400, 'invalidRequest')];
+    if ($method === 'POST' && $path === '/api/account/notifications/read') {
+        rateLimit('account-notif', 120, 3600, $uid);
+        [$slug, $member] = !empty($d['all']) ? [null, null] : $inviteRef();
+        idCall('website_account_invites_mark', ['p_account'=>$acc['id'], 'p_slug'=>$slug, 'p_member'=>$member, 'p_read'=>($d['read'] ?? true) !== false]);
+        sendJson(200, ['ok'=>true]);
+    }
+    if ($method === 'POST' && $path === '/api/account/invites/decide') {
+        rateLimit('account-invite', 30, 3600, $uid);
+        [$slug, $member] = $inviteRef();
+        $r = idCall('website_account_invite_decide', ['p_account'=>$acc['id'], 'p_slug'=>$slug, 'p_member'=>$member, 'p_accept'=>($d['accept'] ?? false) === true]);
+        if (isset($r['error'])) {
+            if (in_array($r['code'] ?? '', ['is_member','already_linked','linked','owner_account','is_owner','self','not_found','invite_open'], true)) fail(409, 'inviteInvalid');
+            if (!in_array($r['code'] ?? '', ['invite_invalid','invite_used','invite_expired','invite_cancelled','already_member','verify_email','phone_required','disabled','unavailable','conflict','session_expired'], true)) {
+                error_log('METON invite decide: '.substr(json_encode($r), 0, 300)); fail(409, 'inviteUnavailable');
+            }
+            idFail($r);
+        }
+        sendJson(200, ['status'=>(string)($r['status'] ?? ''), 'memberStatus'=>(string)($r['member_status'] ?? ''), 'business'=>(string)($r['salon']['name'] ?? '')]);
     }
     if ($method === 'POST' && $path === '/api/account/link/finish') {
         rateLimit('account-link', 10, 3600, $uid);

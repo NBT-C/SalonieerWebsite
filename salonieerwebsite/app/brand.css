@@ -1,0 +1,224 @@
+/* =========================================================================
+   SALONIEER 2.31 — BRAND LAYER (the last stylesheet)
+   The official Salonieer identity: deep navy, white, cool blue and a
+   restrained champagne gold, sampled from the approved logo
+   (Salonieer_color_palette.json in the brand package).
+
+   • The platform screens (welcome, sign in, My Salons, Discover) and every
+     salon that never chose its own colours use the Salonieer palette
+     (html[data-palette="salonieer"], set by theme.js).
+   • A salon with its own colours keeps them and the surfaces it had: only
+     shared shapes, shadows and component fixes below apply to it.
+   • Calm surfaces: a hairline outline and one soft shadow instead of the
+     moulded clay recipe; smaller corner radii.
+   ========================================================================= */
+:root{
+  --sal-navy:#061939;--sal-navy-deep:#020f26;--sal-white:#f9fafe;--sal-paper:#ffffff;
+  --sal-cool:#e8f1fa;--sal-pale:#eef3fa;--sal-slate:#637086;
+  --sal-blue:#4286d7;--sal-blue-deep:#3576ca;--sal-blue-light:#88d6fd;
+  --sal-gold:#e8c588;--sal-gold-deep:#9c7849;
+}
+
+/* ---- Salonieer palette: surfaces and text -------------------------------- */
+/* Dark (dark mode, and the platform screens which are always navy). */
+html.clay[data-palette="salonieer"] body,html[data-palette="salonieer"][data-theme="dark"] body{
+  --bg:#020f26;--card:#071c3f;--panel:#0a2147;--panel-2:#0f2a55;--field:#04163a;
+  --line:rgb(232 241 250 / .09);--line-2:rgb(232 241 250 / .05);--line-strong:rgb(232 241 250 / .18);
+  --ink:#f9fafe;--ink-2:#c9d4e4;--ink-3:#97a5bb;--muted:#97a5bb;
+  --star:#e8c588;
+  --clay-brand-glow:rgb(66 134 215 / .35);
+}
+/* Light (an open salon in light mode). */
+html.clay[data-palette="salonieer"][data-theme="light"][data-experience="salon"]:not(.platform-studio) body,
+html.clay[data-palette="salonieer"][data-theme="light"][data-experience="salon"]:not(.platform-studio){
+  --bg:#f4f7fb;--card:#ffffff;--panel:#eef3fa;--panel-2:#e8f1fa;--field:#f7f9fc;
+  --line:#dde5ef;--line-2:#e9eef5;--line-strong:#c4d0e0;
+  --ink:#061939;--ink-2:#2b3b58;--ink-3:#637086;--muted:#637086;
+  --star:#9c7849;
+  --clay-brand-glow:rgb(53 118 202 / .28);
+}
+html[data-theme="light"]{--star:#9c7849}
+html[data-theme="dark"]{--star:#e8c588}
+
+/* ---- Shapes and shadows (every salon) ------------------------------------ */
+html.clay body{
+  --clay-r-xl:22px;--clay-r:18px;--clay-r-md:14px;--clay-r-sm:12px;--clay-r-xs:10px;
+  --clay:0 0 0 1px var(--line),0 1px 2px rgb(0 0 0 / .16),0 12px 28px -18px rgb(0 0 0 / .6);
+  --clay-sm:0 0 0 1px var(--line),0 1px 2px rgb(0 0 0 / .14);
+  --clay-pressed:inset 0 0 0 1px var(--line-strong);
+  --clay-brand:0 1px 2px rgb(0 0 0 / .2),0 8px 18px -12px var(--clay-brand-glow);
+}
+html.clay[data-theme="light"] body{
+  --clay:0 0 0 1px var(--line),0 1px 2px rgb(6 25 57 / .05),0 12px 26px -20px rgb(6 25 57 / .3);
+  --clay-sm:0 0 0 1px var(--line),0 1px 2px rgb(6 25 57 / .05);
+  --clay-pressed:inset 0 0 0 1px var(--line-strong);
+  --clay-brand:0 1px 2px rgb(6 25 57 / .12),0 8px 18px -14px var(--clay-brand-glow);
+}
+
+/* ---- The Salonieer logo: navy artwork on light surfaces, white on dark ---- */
+html[data-theme="light"]:not(#x) img.salonieer-logo-light{display:block!important}
+html[data-theme="light"]:not(#x) img.salonieer-logo-dark{display:none!important}
+html[data-theme="dark"]:not(#x) img.salonieer-logo-light{display:none!important}
+html[data-theme="dark"]:not(#x) img.salonieer-logo-dark{display:block!important}
+html:not(#x) .platform-gate img.salonieer-logo-light{display:none!important}
+html:not(#x) .platform-gate img.salonieer-logo-dark{display:block!important}
+html.clay img.brand-logo.salonieer-symbol,img.brand-logo.salonieer-symbol,.studio-identity img.salonieer-symbol{
+  background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;border-radius:0!important;object-fit:contain!important}
+.platform-gate .platform-brand{margin-bottom:18px!important}
+.platform-brand-logo{display:block;line-height:0}
+.platform-brand-logo img.platform-logo{width:184px;max-width:58vw;height:auto;margin-inline-start:-14px}
+
+/* ---- Platform screens: navy, blue actions, gold only as an accent ---------- */
+.platform-gate,html.clay .platform-gate{
+  --gate-bg:#020f26;--gate-card:#061939;--gate-panel:#0a2147;--gate-field:#04163a;
+  --gate-line:rgb(232 241 250 / .10);--gate-line-2:rgb(232 241 250 / .2);
+  --gate-ink:#f9fafe;--gate-ink-2:#c9d4e4;--gate-muted:#97a5bb;
+  --gate-gold:#3576ca;--gate-gold-2:#88d6fd;--gate-gold-soft:rgb(66 134 215 / .16);
+  --brand:#3576ca;--brand-ink:#88d6fd;--brand-soft:rgb(66 134 215 / .16);--brand-line:rgb(66 134 215 / .45);--on-brand:#ffffff;
+  --star:#e8c588;
+  --clay-brand-glow:rgb(66 134 215 / .35);
+  --clay-brand:0 1px 2px rgb(0 0 0 / .25),0 10px 22px -12px var(--clay-brand-glow);
+}
+.platform-gate::before{background:radial-gradient(120% 62% at 50% -14%,rgb(66 134 215 / .2),transparent 62%)!important}
+.platform-gate .platform-primary{background:var(--sal-blue-deep)!important;color:#fff!important}
+.platform-gate .platform-primary:focus-visible,.platform-gate .platform-secondary:focus-visible{outline:2px solid var(--sal-blue-light);outline-offset:2px}
+html.clay .platform-gate .platform-secondary,.platform-gate .platform-secondary{background:var(--gate-panel)!important;color:var(--gate-ink)!important;box-shadow:inset 0 0 0 1px var(--gate-line-2)!important}
+html.clay .platform-gate .platform-actions{background:var(--gate-card)!important;box-shadow:0 0 0 1px var(--gate-line)!important}
+.platform-gate .acc-form .input,.platform-gate .acc-cc,html.clay .platform-gate :is(input,.input,.select,select){
+  background:var(--gate-field)!important;color:var(--gate-ink)!important;border:1px solid var(--gate-line-2)!important;box-shadow:none!important}
+html.clay .platform-gate .language-choice select,html.clay .platform-gate #salonieer-language{background-color:var(--gate-panel)!important;color:var(--gate-ink)!important;box-shadow:inset 0 0 0 1px var(--gate-line-2)!important}
+/* The search field is the outlined box; its input inside stays flat. */
+html.clay .platform-gate .studio-search :is(input,.input),.platform-gate .studio-search input{background:transparent!important;border:0!important;box-shadow:none!important}
+.platform-gate .acc-form .input:focus,.platform-gate .acc-cc:focus-visible,.platform-gate :is(input,select):focus{border-color:var(--sal-blue)!important;outline:none}
+.platform-gate .acc-form label,.platform-gate .acc-switch,.platform-gate .terms-note,.platform-gate .acc-form .input-icon .ic{color:var(--gate-ink-2)!important}
+.platform-gate .acc-switch .platform-link{color:var(--sal-blue-light)!important}
+.platform-gate .acc-join{border:1px dashed var(--gate-line-2)!important;color:var(--gate-ink-2)!important;border-radius:14px}
+.platform-gate .acc-join:hover,.platform-gate .acc-join:focus-visible{border-color:var(--sal-blue)!important;color:var(--gate-ink)!important}
+html.clay :is(.platform-salon-card,.platform-picker-row){background:var(--gate-panel,var(--card))!important;box-shadow:0 0 0 1px var(--line)!important}
+.platform-gate .seg{background:var(--gate-field)!important;box-shadow:inset 0 0 0 1px var(--gate-line)!important}
+.platform-gate .seg button.on{background:var(--gate-panel)!important;color:var(--gate-ink)!important;box-shadow:0 0 0 1px var(--gate-line-2)!important}
+.platform-gate .seg button.on svg{color:var(--sal-blue-light)}
+
+/* ---- Switches: one rule in every language ---------------------------------
+   On = knob at the end of the line of text (right in English, left in Arabic
+   and Hebrew — how iOS and Android mirror their switches) and the track
+   filled with the brand colour; off = knob at the start, neutral track. */
+.switch .thumb{inset-inline-end:auto!important;inset-inline-start:3px!important;transition:inset-inline-start .18s ease,background .18s ease}
+.switch input:checked+.track+.thumb{inset-inline-start:21px!important;inset-inline-end:auto!important}
+html.clay .switch .track,.switch .track{background:color-mix(in srgb,var(--ink) 20%,transparent)!important;box-shadow:none!important}
+html.clay .switch input:checked+.track,.switch input:checked+.track{background:var(--brand)!important;box-shadow:none!important}
+.switch input:focus-visible+.track{outline:2px solid var(--brand);outline-offset:2px}
+.switch input:disabled+.track{opacity:.45}
+.notification-toggle input{background:color-mix(in srgb,var(--ink) 20%,transparent)!important;border-color:transparent!important}
+.notification-toggle input:checked{background:var(--brand)!important}
+.notification-toggle input::after{background:#fff!important}
+
+/* ---- Dialogs: contained, no sideways drift, actions always reachable ------- */
+html:has(#modal-root .modal-bg),html:has(#modal-root .modal-bg) body{overflow:hidden!important;overscroll-behavior:none}
+#modal-root .modal-bg{overscroll-behavior:contain}
+#modal-root .modal{overflow-x:hidden!important;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-width:min(560px,100%)}
+#modal-root .modal :is(input,select,textarea,.input,.select,.textarea){max-width:100%;min-width:0;box-sizing:border-box}
+#modal-root .modal :is(input[type="date"],input[type="time"]){width:100%;min-height:48px;display:block;-webkit-appearance:none;appearance:none;text-align:start}
+#modal-root .modal:has(.modal-actions){padding-bottom:0!important}
+.modal-actions{position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;margin-top:4px;
+  padding:14px 0 calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(to bottom,transparent,var(--card) 16px)}
+.modal-actions .btn{min-height:50px;margin:0}
+
+/* ---- Smart Checkout: payment method cards --------------------------------- */
+.pay-methods{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,124px),1fr));gap:8px}
+.pay-method{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:0;min-height:84px;padding:12px 8px;
+  border:1.5px solid var(--line-strong);border-radius:14px;background:var(--panel);color:var(--ink);font:inherit;font-size:13.5px;font-weight:650;
+  line-height:1.3;text-align:center;cursor:pointer;white-space:normal;word-break:normal;overflow-wrap:normal;hyphens:none;transition:border-color .15s,background .15s}
+.pay-method-name{display:block;max-width:100%}
+.pay-method-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--card);color:var(--brand-ink);flex:none}
+.pay-method.active{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
+.pay-method.active .pay-method-icon{background:var(--brand);color:var(--on-brand)}
+.pay-method:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.pay-method.off{background:transparent;color:var(--muted);border-style:dashed;cursor:not-allowed}
+.pay-method.off .pay-method-icon{background:var(--panel);color:var(--muted)}
+.pay-method-note{font-size:11px;font-weight:600;line-height:1.3;color:var(--muted)}
+.biz-pay.pay-line{display:flex!important;flex-direction:column;align-items:stretch;gap:12px;padding:12px;margin-bottom:10px;border:1px solid var(--line);border-radius:16px;background:var(--card)}
+.pay-line-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end}
+.pay-line-row:has(.pay-ref){grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) auto}
+.pay-amount,.pay-ref{display:flex!important;flex-direction:column;gap:6px;min-width:0;font-size:12px;font-weight:650;color:var(--ink-2)}
+.pay-line-row .iconbtn{width:46px;height:46px}
+@media(max-width:440px){
+  .pay-line-row:has(.pay-ref){grid-template-columns:minmax(0,1fr) auto}
+  .pay-ref{grid-column:1/-1;grid-row:2}
+}
+
+/* ---- Add attendance -------------------------------------------------------- */
+.att-form{gap:16px!important}
+.att-who{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:var(--panel)}
+.att-who>div{display:grid;gap:2px;min-width:0}
+.att-avatar{width:42px;height:42px;flex:none;border-radius:12px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand-ink);font-weight:800;font-size:17px}
+.att-who b{font-size:15px;color:var(--ink)} .att-who small{font-size:12px;color:var(--muted)}
+.att-intro{margin:0;font-size:13px;line-height:1.75;color:var(--ink-2)}
+.att-form .field{display:flex;flex-direction:column;gap:6px;min-width:0;margin:0}
+.att-form .field>label{font-size:13.5px!important;font-weight:750;color:var(--ink)!important}
+.field-hint{display:block;margin-top:-2px;font-size:12px;line-height:1.55;color:var(--muted)}
+.att-times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.att-suffix{display:flex;align-items:center;gap:10px}
+.att-suffix .input{max-width:150px}
+.att-suffix span{font-size:13px;color:var(--ink-2)}
+.att-summary{display:grid;gap:6px;padding:12px 14px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}
+.att-sum-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--ink-2)}
+.att-sum-row b{color:var(--ink);font-variant-numeric:tabular-nums}
+.att-sum-row.strong{padding-top:8px;border-top:1px solid var(--line);font-size:15px;font-weight:800;color:var(--ink)}
+.att-sum-note,.att-sum-muted{margin:0;font-size:12px;line-height:1.6;color:var(--muted)}
+.att-reasons{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.att-reasons .chip{min-height:34px;font-size:12px}
+.att-form .form-error:empty{display:none}
+@media(max-width:340px){.att-times{grid-template-columns:1fr}}
+
+/* ---- Booking unavailable (online booking off) ----------------------------- */
+.booking-off{grid-column:1/-1;display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:16px;border:1px solid var(--brand-line);background:var(--brand-soft);color:var(--ink)}
+.booking-off>svg{flex:none;margin-top:2px;color:var(--brand-ink)}
+.booking-off b{display:block;margin-bottom:4px;font-size:15px;color:var(--ink)}
+.booking-off p{margin:0 0 12px;font-size:13px;line-height:1.7;color:var(--ink-2)}
+.booking-off.compact p{margin:0}
+
+/* ---- Discover salons ------------------------------------------------------ */
+.disc{display:flex!important;flex-direction:column;gap:14px}
+.gate-tabs{margin:2px 0 18px!important}
+.disc-search input{min-height:52px}
+.disc-filters{border-radius:14px!important}
+.disc-count{margin:2px 2px -4px!important;font-size:12px;font-weight:650;color:var(--muted)!important}
+.disc-list{gap:12px!important}
+.disc-card{gap:14px!important;padding:16px!important;border-radius:18px!important;align-items:flex-start;background:var(--card)!important;box-shadow:0 0 0 1px var(--line)!important;border:0!important}
+.disc-card:hover,.disc-card:focus-visible{box-shadow:0 0 0 1px var(--brand-line)!important}
+.disc-card>svg:last-child{align-self:center;color:var(--muted);flex:none}
+.disc-logo{width:56px!important;height:56px!important;flex:none;border-radius:14px!important}
+.disc-main{display:flex!important;flex-direction:column;gap:7px;min-width:0;flex:1}
+.disc-main>b{font-size:16px;line-height:1.35;color:var(--ink)}
+.disc-main>small{font-size:12.5px;color:var(--muted)!important}
+.disc-about{font-size:13px!important;line-height:1.6;color:var(--ink-2)!important}
+.disc-rating{display:inline-flex!important;align-items:center;gap:5px;align-self:flex-start;padding:5px 10px 5px 8px;border-radius:999px;
+  background:color-mix(in srgb,var(--star) 18%,transparent)!important;color:var(--ink)!important;font-size:13.5px;line-height:1;border:0!important}
+.disc-rating b{font-weight:800;font-variant-numeric:tabular-nums;color:inherit!important}
+.disc-star{width:16px;height:16px;flex:none;fill:var(--star)}
+.disc-tags{display:flex;flex-wrap:wrap;gap:6px}
+.disc-svc,.disc-more{background:var(--panel)!important;color:var(--ink-2)!important;border:0!important}
+.disc-closed.info{display:inline-flex;align-items:center;gap:6px;color:var(--brand-ink)!important;background:var(--brand-soft)!important;border-radius:10px;padding:6px 10px;font-size:12.5px;font-weight:650}
+
+/* ---- Customer home in a salon --------------------------------------------- */
+.studio-home.home-v2{display:flex;flex-direction:column;gap:16px!important}
+.studio-home.home-v2>:empty{display:none!important}
+.home-greet{display:flex;flex-direction:column;gap:4px;margin:2px 2px 0}
+.home-greet .smart-greeting{margin:0!important;font-size:clamp(24px,6.8vw,32px)!important;line-height:1.25!important;font-weight:750!important;letter-spacing:-.4px;color:var(--ink)!important}
+.home-greet-sub{margin:0;font-size:14.5px;line-height:1.6;color:var(--muted)}
+.home-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
+.home-tiles>*{margin:0!important;height:100%}
+.home-v2 #home-appointment>*,.home-v2 #home-suggest>*,.home-v2 #home-rating>*{margin:0!important}
+.home-team{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.home-team .studio-section-head{margin:0!important}
+.home-team .studio-hint{margin:-6px 2px 0!important}
+.home-team .studio-search{margin:0!important}
+.home-v2 .home-more{margin-top:4px}
+.studio-home-top.salon-hero{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px;width:100%!important;align-self:stretch;box-sizing:border-box}
+.salon-hero .studio-identity{flex:1 1 auto;justify-content:flex-start;min-width:0;text-align:start}
+.salon-hero .studio-identity b{font-size:17px!important}
+.salon-status{display:inline-flex!important;align-items:center;gap:6px}
+.salon-status i{width:7px;height:7px;flex:none;border-radius:50%;background:var(--muted)}
+.salon-status.on i{background:#2fb47c}
+.salon-status.off i{background:var(--danger,#d9534f)}
