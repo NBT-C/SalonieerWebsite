@@ -331,7 +331,7 @@ function home() {
       <p class="sc-kicker">${t('hm2_kicker')}</p>
       <h1 id="hm-title">${t('hm2_title')}</h1><p class="sc-lead">${t('hm2_lead')}</p>
       <div class="hero-actions">${build}${book}<a class="text-link" href="${c ? '#prices' : '/plans'}">${t('hm2_cta_plans')}</a></div>
-      <div class="hm-app"><span class="hm-app-ico" aria-hidden="true">${ico(ICONS.phone, 20)}</span><div class="hm-app-copy"><b>${t('app_hero_title')}</b><span>${t('app_hero_text')}</span></div>${appGet()}</div>
+
       <ul class="hm-points">${['hm2_point1','hm_point1'].map(k=>`<li><span class="ck">${checkSvg}</span>${t(k)}</li>`).join('')}</ul></div>
     <figure class="sc-hero-visual sc-reveal" data-r="hero-visual">
       <div class="sc-stage">${framed('tablet-schedule', t('sc_ipad_alt'), { tablet: true, priority: 'high', sizes: '(max-width: 900px) 84vw, 640px' })}${framed('book', t('sc_alt_book'), { priority: 'high', sizes: '(max-width: 900px) 25vw, 180px' })}</div>

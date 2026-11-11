@@ -601,7 +601,7 @@
   function whoCard() {
     const acc = window.Account?.account?.();
     // 2.46: an account may sign in with an email only; the name opens how it signs in (email, phone, linked accounts).
-    if (acc) return `<div class="acc-who"><span class="pa-mini">${esc((acc.name || "؟").trim().charAt(0))}</span><button type="button" class="acc-who-open" id="acc-who-open" aria-label="${esc(Lang.t("حساب METON"))}"><b data-i18n-skip>${esc(acc.name)}</b><small dir="ltr" data-i18n-skip>${esc(acc.phone || acc.email || "")}</small></button><button type="button" class="btn line sm" id="acc-who-logout">${esc(Lang.t("تسجيل الخروج"))}</button></div>`;
+    if (acc) return `<div class="acc-who"><span class="pa-mini">${esc((acc.name || "؟").trim().charAt(0))}</span><button type="button" class="acc-who-open" id="acc-who-open" aria-label="${esc(Lang.t("حساب METON"))}"><b data-i18n-skip>${esc(acc.name)}</b><small dir="ltr" data-i18n-skip>${esc(acc.phone && window.Account?.fmtPhone ? Account.fmtPhone(acc.phone) : (acc.phone || acc.email || ""))}</small></button><button type="button" class="btn line sm" id="acc-who-logout">${esc(Lang.t("تسجيل الخروج"))}</button></div>`;
     if (window.Account?.isGuest()) return `<div class="acc-who guest"><span><b>${esc(Lang.t("أنت تتصفح كضيف"))}</b><small>${esc(Lang.t("سجّل الدخول لتأكيد الحجوزات ومتابعة مواعيدك."))}</small></span><button type="button" class="btn sm" id="acc-who-login">${esc(Lang.t("تسجيل الدخول"))}</button></div>`;
     return "";
   }

@@ -1,5 +1,5 @@
 const entries = {
-account: ['Account','الحساب','חשבון'], accountTitle: ['Your account','حسابك','החשבון שלך'], accountLead: ['Your subscription and billing. Payment methods, invoices and cancellation are managed securely by Paddle, our payment provider.','اشتراكك والفوترة. تتم إدارة وسائل الدفع والفواتير والإلغاء بأمان عبر Paddle، مزوّد الدفع لدينا.','המנוי והחיובים שלך. אמצעי תשלום, חשבוניות וביטול מנוהלים באופן מאובטח על ידי Paddle, ספק התשלומים שלנו.'],
+account: ['Account','الحساب','חשבון'], accountTitle: ['Your account','حسابك','החשבון שלך'], accountLead: ['Your businesses, plan, invoices and settings. Payments are handled securely by Paddle.','أعمالك وباقتك وفواتيرك وإعداداتك. تتم المدفوعات بأمان عبر Paddle.','העסקים, המסלול, החשבוניות וההגדרות שלכם. התשלומים מתבצעים באופן מאובטח דרך Paddle.'],
 subscription: ['Subscription','الاشتراك','מנוי'], paidAccess: ['Access','الوصول','גישה'], accessActive: ['Active','مفعّل','פעילה'], accessInactive: ['Inactive','غير مفعّل','לא פעילה'],
 sub_active: ['Active','نشط','פעיל'], sub_trialing: ['Trial','فترة تجريبية','תקופת ניסיון'], sub_past_due: ['Payment overdue','دفعة متأخرة','תשלום באיחור'], sub_paused: ['Paused','متوقف مؤقتاً','מושהה'], sub_canceled: ['Canceled','ملغى','בוטל'], sub_inactive: ['Inactive','غير نشط','לא פעיל'],
 billingPeriod: ['Billing','الفوترة','חיוב'], annual: ['Annual','سنوي','שנתי'], every: ['Every','كل','כל'], interval_day: ['days','أيام','ימים'], interval_week: ['weeks','أسابيع','שבועות'], interval_month: ['months','أشهر','חודשים'], interval_year: ['years','سنوات','שנים'],
@@ -565,8 +565,8 @@ hm_ready_text: ["Create your account, choose a plan, and we’ll set up your bus
 // ---- Home 2026-11-07: every appointment-based business, the sectors, the five benefits, the two free demos ----
 navSectors: ["Sectors", "المجالات", "תחומים"], navFeatures: ["Features", "المزايا", "יכולות"],
 hm2_kicker: ["Online booking and scheduling for appointment-based businesses", "الحجز والجدولة عبر الإنترنت لكل عمل يعتمد على المواعيد", "הזמנת תורים וניהול יומן לכל עסק שעובד עם תורים"],
-hm2_title: ["Your booking page, schedule and customers in one simple app", "صفحة الحجز والجدول والعملاء في تطبيق واحد بسيط", "דף ההזמנות, היומן והלקוחות באפליקציה אחת פשוטה"],
-hm2_lead: ["Customers book online in under a minute, without an app or an account. You confirm requests, plan the day and manage your team in the METON app on your phone, tablet or computer.", "يحجز عملاؤك عبر الإنترنت في أقل من دقيقة، دون تطبيق أو حساب. وأنت تؤكد الطلبات وتنظّم يومك وتدير فريقك من تطبيق METON على هاتفك أو جهازك اللوحي أو حاسوبك.", "הלקוחות קובעים תור אונליין בפחות מדקה, בלי אפליקציה ובלי חשבון. אתם מאשרים בקשות, מתכננים את היום ומנהלים את הצוות באפליקציית METON בטלפון, בטאבלט או במחשב."],
+hm2_title: ['Appointments, made simple.','مواعيدك، ببساطة.','התורים שלכם, בפשטות.'],
+hm2_lead: ['Customers book in under a minute, with no app or account. You manage requests, your day and your team from your phone or computer.','يحجز عملاؤك في أقل من دقيقة، دون تطبيق أو حساب. وتدير الطلبات ويومك وفريقك من هاتفك أو حاسوبك.','הלקוחות קובעים תור בפחות מדקה, בלי אפליקציה ובלי חשבון. אתם מנהלים בקשות, את היום ואת הצוות מהטלפון או מהמחשב.'],
 hm2_cta_build: ["Build your business page — free", "أنشئ صفحة عملك مجاناً", "בנו את דף העסק בחינם"],
 hm2_cta_build_short: ["Build your business page", "أنشئ صفحة عملك", "בנו את דף העסק"],
 hm2_cta_book: ["Try booking as a customer", "جرّب الحجز كزبون", "נסו להזמין כלקוח"],

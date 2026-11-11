@@ -55,6 +55,13 @@ html:not(#cobalt)[data-theme="dark"],html:not(#cobalt)[data-theme="dark"] body{b
 html.admin-studio[data-theme="light"]{--admin-bg:#f5f7fe!important;--admin-card:#ffffff!important;--admin-ink:#1d2641!important;--admin-line:#dde2f3!important}
 html.admin-studio[data-theme="dark"],html.admin-studio:not([data-theme="light"]){--admin-bg:#101425!important;--admin-card:#202840!important;--admin-ink:#f1f3ff!important;--admin-line:rgb(241 243 255 / .10)!important}
 
+/* 2026-11-11 review: the studio's accent was still gold; Cobalt in both modes */
+html.admin-studio:not(#cobalt){--admin-gold:var(--cp-primary-text)!important;--admin-gold-fill:var(--cp-primary-soft)!important;
+  --admin-gold-soft:var(--cp-primary-soft)!important;--admin-gold-line:var(--cp-primary-line)!important}
+/* The page column starts at the top next to the side menu (it was centred against it) */
+html:not(#cobalt) .admin-frame{align-items:start}
+html:not(#cobalt) .admin-frame>.admin-content{align-self:start}
+
 /* ---- Focus: always visible, never colour-only ------------------------------ */
 :where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:2px solid var(--cp-focus)!important;outline-offset:2px!important}
 .input:focus,.select:focus,textarea:focus{border-color:var(--cp-primary)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--cp-primary) 24%,transparent)!important}
@@ -86,6 +93,21 @@ html:not(#cobalt)[data-theme="light"] .platform-gate,html:not(#cobalt).clay[data
   --brand:#3d50d9;--brand-ink:#2f3fbf;--brand-soft:rgb(61 80 217 / .10);--brand-line:rgb(61 80 217 / .4);--on-brand:#ffffff;
   --star:#3d50d9;--clay-brand-glow:rgb(61 80 217 / .25);
   background:var(--gate-bg)!important;color:var(--gate-ink)}
+/* 2026-11-11 review: elements of these screens that older layers painted for a dark background */
+html:not(#cobalt)[data-theme="light"] .platform-gate .acc-who{background:#ffffff;border:1px solid var(--line);box-shadow:0 1px 2px rgb(29 38 65 / .05),0 12px 28px -22px rgb(29 38 65 / .3)}
+html:not(#cobalt)[data-theme="light"] .platform-gate .acc-who b{color:#1d2641}
+html:not(#cobalt)[data-theme="light"] .platform-gate .acc-who small{color:#566186}
+html:not(#cobalt)[data-theme="light"] .platform-gate .acc-who .pa-mini,html:not(#cobalt)[data-theme="light"] .pa-mini{background:#e8ebfc!important;color:#2f3fbf!important;border-color:transparent!important}
+html:not(#cobalt)[data-theme="light"] .platform-gate .platform-picker-remove{background:#fdecee;border-color:#f3c4ca;color:#b02636}
+html:not(#cobalt)[data-theme="light"] .platform-gate .platform-picker-remove:hover{background:#fbdde1}
+html:not(#cobalt)[data-theme="dark"] .platform-gate .acc-who{background:#202840;border:1px solid rgb(241 243 255 / .10)}
+html:not(#cobalt)[data-theme="dark"] .platform-gate .acc-who .pa-mini,html:not(#cobalt)[data-theme="dark"] .pa-mini{background:#232c55!important;color:#b8c0ff!important;border-color:transparent!important}
+html:not(#cobalt)[data-theme="dark"] .platform-gate .platform-picker-remove{background:#3d1c24;border-color:#5a2a35;color:#ff8e98}
+/* The logo lines up with the content (the old artwork had built-in padding) */
+.platform-brand-logo img.platform-logo{margin-inline-start:0!important;width:168px}
+/* Selected segments and chips: Cobalt, the same as every other selected control */
+html:not(#cobalt) :is(.seg button.on,.seg button[aria-pressed="true"],.sch-person.on,.atab.active){background:var(--cp-primary)!important;color:var(--cp-on-primary)!important;border-color:var(--cp-primary)!important}
+html:not(#cobalt) :is(.seg button.on,.sch-person.on,.atab.active) svg{color:currentColor!important}
 /* …with the ink logo (older layers always showed the white one on these screens) */
 html:not(#cobalt):not(#x)[data-theme="light"] img.salonieer-logo-light{display:block!important}
 html:not(#cobalt):not(#x)[data-theme="light"] img.salonieer-logo-dark{display:none!important}

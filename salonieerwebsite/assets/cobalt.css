@@ -270,7 +270,7 @@ html[data-theme=dark] .auth-art{--cd-bg:linear-gradient(165deg,#1A2136 0%,#141A2
 .hm2-hero .hero-actions{margin-top:26px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px}
 .hm2-hero .hm-app{margin-top:22px}
 .hm2-hero .sc-kicker{font-size:.9rem}
-.sc-hero-grid{grid-template-columns:minmax(0,5.2fr) minmax(0,6.8fr)}
+@media (min-width:901px){.sc-hero-grid{grid-template-columns:minmax(0,5.2fr) minmax(0,6.8fr)}}
 @media (max-width:900px){.hm2-hero h1,.sc-hero.hm2-hero h1{max-width:none}}
 /* Light: soft cobalt light in the hero, cards that lift off the page, gently tinted alternate sections */
 html:not([data-theme=dark]) .hm2-hero{background:radial-gradient(48% 55% at 88% 18%,rgba(61,80,217,.11),transparent 70%),radial-gradient(40% 45% at 4% 0%,rgba(159,170,255,.20),transparent 70%),linear-gradient(180deg,#F5F7FE 0%,#EEF1FC 100%)}
@@ -280,3 +280,68 @@ html:not([data-theme=dark]) .hm2-sector{transition:transform .2s var(--ease-out)
 @media (hover:hover) and (pointer:fine){html:not([data-theme=dark]) .hm2-sector:hover{transform:translateY(-2px);border-color:var(--cp-primary-line,#B9C1F3);box-shadow:0 1px 2px rgba(29,38,65,.05),0 22px 40px -24px rgba(61,80,217,.38)}}
 html:not([data-theme=dark]) .hm-tint{background:linear-gradient(180deg,#EEF1FC,#F5F7FE)}
 html:not([data-theme=dark]) .hm2-sector-ico,html:not([data-theme=dark]) .hm-app-ico{background:#E8EBFC;color:#3D50D9}
+
+/* ---- 2026-11-11 review: one card language + a phone layout that is designed, not squeezed ---------------------- */
+.hm-steps li{border-radius:20px;border-color:var(--color-border)}
+.hm-num{width:40px;height:40px;border-radius:12px;background:var(--cp-soft)!important;color:var(--cp-primary-text)!important;box-shadow:none!important;font-size:1.05rem}
+html:not([data-theme=dark]) .hm-steps li{box-shadow:0 1px 2px rgba(29,38,65,.05),0 14px 32px -22px rgba(29,38,65,.28)}
+.hm-points li{font-weight:600;font-size:.98rem}
+@media (max-width:640px){
+  .hm-section{padding:44px 0}
+  .sc-hero.hm2-hero{padding:calc(var(--nav-h) + 18px) 0 36px}
+  .hm2-hero .sc-kicker{font-size:.8rem;margin-bottom:8px}
+  .hm2-hero .sc-kicker:before{display:none}
+  .hm2-hero h1,.sc-hero.hm2-hero h1{font-size:clamp(2rem,9vw,2.4rem)}
+  :lang(ar) .hm2-hero h1,:lang(ar) .sc-hero.hm2-hero h1{font-size:clamp(1.8rem,8vw,2.2rem)}
+  .hm2-hero .sc-lead{font-size:1rem;line-height:1.6}
+  .hm2-hero .hero-actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:20px}
+  .hm2-hero .hero-actions .btn{width:100%;justify-content:center;min-height:50px}
+  .hm2-hero .hero-actions .text-link{justify-self:center;padding:8px 12px}
+  .hm2-hero .hm-app{margin-top:18px}
+  .hm2-hero .hm-points{margin-top:14px}
+  .hm-points li{font-size:.92rem}
+  .sc-hero-visual{margin-top:8px}
+  .hm-head h2,.sc-home h2{font-size:clamp(1.5rem,6.6vw,1.8rem);line-height:1.2}
+  .hm-head p,.sc-home .hm-head p{font-size:.96rem;line-height:1.6}
+  /* sectors: compact rows (icon · name · examples) instead of seven tall cards */
+  .hm2-sector-grid{gap:10px}
+  .hm2-sector{grid-template-columns:44px minmax(0,1fr);column-gap:14px;row-gap:2px;align-items:start;padding:14px 16px;border-radius:16px}
+  .hm2-sector>*:not(.hm2-sector-ico){grid-column:2}
+  .hm2-sector-ico{grid-row:1/span 3;width:44px;height:44px;margin:0;border-radius:12px}
+  .hm2-sector b{font-size:1rem;margin:2px 0 0}
+  .hm2-sector small{font-size:.86rem;line-height:1.45;margin:0}
+  .hm2-sector-go{font-size:.86rem;margin-top:4px}
+  /* steps and the website / app columns: less padding, smaller text */
+  .hm-steps{gap:12px}
+  .hm-steps li{padding:18px}
+  .hm-steps li p{font-size:.94rem;line-height:1.55}
+  .hm-num{width:34px;height:34px;margin-bottom:10px;font-size:.95rem}
+  .hm-app-cols>*{padding:18px!important}
+  .hm-app-cols li{font-size:.94rem;line-height:1.5}
+  .hm2-try-card{padding:16px;gap:14px;border-radius:20px}
+  /* footer links: real touch targets */
+  .site-footer .footer-links a{display:inline-flex;align-items:center;min-height:36px}
+  .site-footer{padding-top:40px}
+}
+
+/* Account: the bell sits on the title's line; page titles do not start half a screen down on phones */
+.account-head .notif{margin-top:64px}
+.currency-option.active{background:var(--cp-primary)!important;color:var(--cp-on-primary)!important;border-color:var(--cp-primary)!important}
+@media (max-width:640px){
+  main.is-paper > .wrap:first-child,main.is-paper > .narrow:first-child,main.is-paper > div:first-child{padding-top:calc(var(--nav-h) + 20px);padding-bottom:56px}
+  .page-heading{padding-block:8px 20px}
+  .page-heading h1{font-size:clamp(1.9rem,8vw,2.4rem)}
+  .page-heading p{font-size:1rem;margin-top:10px}
+  .account-head .notif{margin-top:6px}
+  .notif-bell{width:44px;height:44px}
+  .webapp-card{padding:18px;gap:14px}
+  .webapp-card .btn{width:100%;justify-content:center}
+  .biz-top .language-select{min-height:36px;padding:4px 26px 4px 10px;font-size:.8rem}
+  [dir=rtl] .biz-top .language-select{padding:4px 10px 4px 26px}
+}
+@media (min-width:901px){.hm2-hero h1,.sc-hero.hm2-hero h1{font-size:clamp(2.6rem,1.4rem + 2.6vw,3.8rem)}:lang(ar) .hm2-hero h1,:lang(ar) .sc-hero.hm2-hero h1{font-size:clamp(2.3rem,1.3rem + 2.2vw,3.3rem)}}
+html[data-theme=dark] .hm2-hero,html[data-theme=dark] [dir=rtl] .sc-hero,[dir=rtl] html[data-theme=dark] .sc-hero{background:radial-gradient(50% 50% at 85% 15%,rgba(159,170,255,.10),transparent 70%),#101425}
+html[dir=rtl][data-theme=dark] .sc-hero{background:radial-gradient(50% 50% at 15% 15%,rgba(159,170,255,.10),transparent 70%),#101425}
+html[dir=rtl]:not([data-theme=dark]) .sc-hero{background:radial-gradient(48% 55% at 12% 18%,rgba(61,80,217,.11),transparent 70%),radial-gradient(40% 45% at 96% 0%,rgba(159,170,255,.20),transparent 70%),linear-gradient(180deg,#F5F7FE 0%,#EEF1FC 100%)}
+.biz-top .language-select{width:auto;max-width:132px}
+html[data-theme=dark] :is(.hm2-sector-ico,.hm-app-ico){background:#232C55!important;color:#B8C0FF!important}
