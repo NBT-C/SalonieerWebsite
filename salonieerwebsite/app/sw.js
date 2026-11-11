@@ -6,7 +6,7 @@
 //   • Supabase / any non-GET → network only (live data stays live)
 // Bump VERSION on every deploy so installed apps pick up new files.
 
-const VERSION = "salonieer-v2.48.0-cobalt";
+const VERSION = "salonieer-v2.48.1-light";
 
 // What the first screen cannot render without. Everything else is cached the
 // first time it is actually requested, so installing the app no longer

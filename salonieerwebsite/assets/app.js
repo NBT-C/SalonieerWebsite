@@ -182,23 +182,24 @@ function countryName(code) {
 function locationName(user) {
   return [countryName(user.country), user.region ? t(user.region) : ''].filter(Boolean).join(' · ');
 }
-const langSelect = () => `<select id="language" class="language-select" aria-label="${t('language')}"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="ar" ${lang==='ar'?'selected':''}>العربية</option><option value="he" ${lang==='he'?'selected':''}>עברית</option></select>`;
+const langSelect = (id = 'language') => `<select id="${id}" class="language-select" data-language aria-label="${t('language')}"><option value="en" ${lang==='en'?'selected':''}>EN</option><option value="ar" ${lang==='ar'?'selected':''}>العربية</option><option value="he" ${lang==='he'?'selected':''}>עברית</option></select>`;
 // Light / Dark / System (assets/theme-boot.js applies it before the first paint and keeps it in this browser).
-const appearanceSelect = (id = 'appearance') => { const p = window.metonAppearance?.get?.() || 'system';
-  return `<select id="${id}" class="language-select appearance-select" data-appearance aria-label="${t('appearance')}">${['system','light','dark'].map(v=>`<option value="${v}"${p===v?' selected':''}>${t('appearance_'+v)}</option>`).join('')}</select>`; };
+// Light is the default (owner, 2026-11-11); System follows the device only when chosen.
+const appearanceSelect = (id = 'appearance') => { const p = window.metonAppearance?.get?.() || 'light';
+  return `<select id="${id}" class="language-select appearance-select" data-appearance aria-label="${t('appearance')}">${['light','dark','system'].map(v=>`<option value="${v}"${p===v?' selected':''}>${t('appearance_'+v)}</option>`).join('')}</select>`; };
+// The two preferences, labelled (in the menu on phones).
+const prefField = (label, control) => `<label class="pref-field"><span>${label}</span>${control}</label>`;
 function header() {
   const link =(path,key,cls='') => `<a href="${path}"${cls?` class="${cls}"`:''}${route===path?' aria-current="page"':''}>${t(key)}</a>`;
   const item = (path,key) => `<li>${link(path,key)}</li>`;
   return `<a class="skip" href="#main">${t('skip')}</a><header class="topbar"><div class="nav">
     <a href="/" class="brand" aria-label="METON"><img class="brand-logo brand-logo-light" src="/assets/brand/meton-wordmark-ink.svg" alt="METON" width="170" height="26"><img class="brand-logo brand-logo-dark" src="/assets/brand/meton-wordmark-cream.svg" alt="" width="170" height="26"></a>
-    <nav class="bar-links" aria-label="${t('menu')}">${link('/#sectors','navSectors')}${link('/#features','navFeatures')}${link('/plans','plans')}${link('/support','support')}${state.user?link('/account','account'):link('/login','login')}</nav>
-    <a class="btn primary small bar-try" href="/try">${t('tryFree')}</a>
-    ${state.user?`<button class="btn small bar-logout" id="logout" type="button">${t('logout')}</button>`:''}
-    <span class="bar-appearance">${appearanceSelect()}</span>
-    ${langSelect()}
+    <nav class="bar-links" aria-label="${t('menu')}">${link('/#features','navFeatures')}${link('/plans','plans')}${link('/support','support')}${state.user?link('/account','account'):link('/login','login')}</nav>
+    ${state.user?'':`<a class="btn primary small bar-try" href="/try">${t('tryFree')}</a>`}
+    <span class="bar-prefs">${appearanceSelect()}${langSelect()}</span>
     <button class="menu-toggle" id="menu-toggle" aria-controls="nav-panel" aria-expanded="false" data-open="${t('menu')}" data-close="${t('close')}"><span class="label-text">${t('menu')}</span><span class="bars" aria-hidden="true"></span></button>
     <nav id="nav-panel" class="nav-panel" aria-label="${t('menu')}"><ul class="menu-links">${item('/','home')}${item('/try','tryFree')}${item('/#sectors','navSectors')}${item('/plans','plans')}${item('/me','myBookings')}${state.user?item('/account','account'):''}${item('/support','support')}${state.user?.isAdmin?item('/admin','adminPanel'):''}${state.user?'':item('/login','login')+item('/register','register')}</ul>
-      <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a><button class="btn small menu-logout" id="logout-menu" type="button">${t('logout')}</button>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/try">${t('tryFree')}</a>`}</div><span class="menu-appearance">${appearanceSelect('appearance-menu')}</span><a class="mail" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></nav>
+      <div class="menu-foot"><div class="nav-actions">${state.user?`<a class="btn small" href="/account">${t('account')}</a><button class="btn small menu-logout" id="logout-menu" type="button">${t('logout')}</button>`:`<a class="btn small" href="/login">${t('login')}</a><a class="btn primary small" href="/try">${t('tryFree')}</a>`}</div><div class="menu-prefs">${prefField(t('appearance'), appearanceSelect('appearance-menu'))}${prefField(t('language'), langSelect('language-menu'))}</div><a class="mail" href="mailto:support@meton.work" dir="ltr">support@meton.work</a></div></nav>
   </div></header>`;
 }
 // A business's own pages (its booking page, a booking's private link) and the customer demo of one: the business's
@@ -225,19 +226,24 @@ function field(name,label,{type='text',hint='',required=true,autocomplete='',min
 }
 function formErrorBox() { return '<div id="form-error" class="notice" role="alert" tabindex="-1" hidden></div>'; }
 function authIntro(title,lead) {
-  return `<aside class="auth-art ink"><div class="auth-clock"><p class="auth-clock-kicker" id="auth-clock-label">${t('cdKicker')}</p><p class="auth-clock-time" role="timer" aria-labelledby="auth-clock-label" data-auth-clock>${clockHtml()}</p><p class="auth-clock-quote">${t('cdQuote')}</p></div><div class="sr-only"><h1>${t(title)}</h1><p>${t(lead)}</p></div></aside>`;
+  return `<aside class="auth-art"><div class="auth-clock"><p class="auth-clock-kicker" id="auth-clock-label">${t('cdKicker')}</p><div class="auth-clock-time" role="timer" aria-labelledby="auth-clock-label" dir="ltr" data-auth-clock>${clockHtml()}</div><blockquote class="auth-clock-quote"><p>${t('cdQuote')}</p></blockquote></div><div class="sr-only"><h1>${t(title)}</h1><p>${t(lead)}</p></div></aside>`;
 }
 // Time left today, to midnight in the visitor's own time zone. Worked out again from the clock on every tick, so
 // midnight, a changed device clock, a time-zone or daylight-saving change and a tab woken from sleep are always right.
 function secondsLeftToday(now = new Date()) { const end = new Date(now); end.setHours(24, 0, 0, 0); return Math.max(0, Math.floor((end - now) / 1000)); }
-function clockHtml() { const s = secondsLeftToday(); return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')).join('<i aria-hidden="true">:</i>'); }
+const clockParts = () => { const s = secondsLeftToday(); return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map(n => String(n).padStart(2, '0')); };
+// Hours, minutes and seconds as three units, each with its label; the time always reads left to right.
+function clockHtml() {
+  return clockParts().map((v, i) => `<span class="cd-unit"><b>${v}</b><small>${t(['cdHours','cdMinutes','cdSeconds'][i])}</small></span>`).join('<span class="cd-sep" aria-hidden="true">:</span>');
+}
 let authClockTimer = 0;
 function startAuthClock() {
   clearTimeout(authClockTimer);
   const tick = () => {
     const el = document.querySelector('[data-auth-clock]');
     if (!el) return;                                  // the page changed: stop
-    const html = clockHtml(); if (el.innerHTML !== html) el.innerHTML = html;
+    const parts = clockParts();
+    el.querySelectorAll('.cd-unit b').forEach((b, i) => { if (b.textContent !== parts[i]) b.textContent = parts[i]; });
     authClockTimer = setTimeout(tick, 1020 - (Date.now() % 1000));   // just after the next whole second
   };
   tick();
@@ -1112,7 +1118,7 @@ async function submitForm(event, path) {
   const busyLabel = t({'/api/applications':'submitting','/api/login':'signingIn','/api/register':'creatingAccount','/api/register/google':'creatingAccount','/api/setup':'creatingAccount'}[path] || 'processing');
   setBusy(submit, true, busyLabel);
   form.dataset.busy = 'true';
-  document.getElementById('language').disabled = true;
+  document.querySelectorAll('select[data-language]').forEach(s=>{s.disabled = true;});
   try {
     const result = await post(path, data, submit, busyLabel);
     // 2.46: the account must add (or confirm) an email before the website opens.
@@ -1136,7 +1142,7 @@ async function submitForm(event, path) {
   finally {
     if (submit.isConnected) setBusy(submit, false);
     form.dataset.busy = 'false';
-    const language = document.getElementById('language'); if (language) language.disabled = false;
+    document.querySelectorAll('select[data-language]').forEach(s=>{s.disabled = false;});
   }
 }
 // Phone photos are several MB; a logo never needs more than 512 px. Re-encoding keeps the upload small (well under
@@ -1238,10 +1244,10 @@ async function logout(button) {
   location.replace(isPrivate(route) ? '/' : location.pathname + location.search);
 }
 function bind() {
-  document.getElementById('language')?.addEventListener('change',event=>{captureDraft();setLanguage(event.target.value);render({transition:true});});
-  document.querySelectorAll('[data-appearance]').forEach(s=>s.addEventListener('change',event=>{
+  document.querySelectorAll('select[data-language]').forEach(s=>s.addEventListener('change',event=>{captureDraft();setLanguage(event.target.value);document.body.classList.remove('menu-open');render({transition:true});}));
+  document.querySelectorAll('select[data-appearance]').forEach(s=>s.addEventListener('change',event=>{
     window.metonAppearance?.set(event.target.value);
-    document.querySelectorAll('[data-appearance]').forEach(o=>{ if (o !== event.target) o.value = event.target.value; });
+    document.querySelectorAll('select[data-appearance]').forEach(o=>{ if (o !== event.target) o.value = event.target.value; });
   }));
   startAuthClock();
   bindNotifs();
@@ -1838,7 +1844,7 @@ async function loadRoute({transition=false, scroll=false, quiet=false, afterActi
     route = next;
     app.innerHTML=header()+`<main id="main" class="wrap empty-state"><h1>METON</h1><p role="alert">${t(error.code || 'serverError')}</p><button class="btn primary" id="retry">${t('retry')}</button></main>`+footer();
     document.getElementById('retry').addEventListener('click',()=>loadRoute());
-    document.getElementById('language').addEventListener('change',event=>{setLanguage(event.target.value);loadRoute();});
+    document.querySelectorAll('select[data-language]').forEach(s=>s.addEventListener('change',event=>{setLanguage(event.target.value);loadRoute();}));
   } finally {
     clearTimeout(slow); clearTimeout(veilTimer);
     if (token === navToken) {

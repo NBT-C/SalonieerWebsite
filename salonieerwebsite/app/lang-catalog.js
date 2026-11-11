@@ -4734,6 +4734,7 @@ Object.assign(window.SalonieerTranslations, String.raw`
 قائمة الأرقام غير صحيحة|The list of numbers is not valid|רשימת המספרים אינה תקינה
 يمكن إضافة 5 أرقام كحد أقصى|You can add up to 5 numbers|אפשר להוסיף עד 5 מספרים
 تلقائي|Automatic|אוטומטי
+حسب الجهاز|System|לפי המכשיר
 فاتح|Light|בהיר
 داكن|Dark|כהה
 الخطوة 1 من 2 · أدخل الرمز|Step 1 of 2 · Enter the code|שלב 1 מתוך 2 · הזינו את הקוד

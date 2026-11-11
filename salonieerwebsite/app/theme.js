@@ -110,13 +110,13 @@
     return theme;
   }
   window.SalonTheme = { DEFAULTS, SALONIEER_ACCENT, normalize, apply, ink, syncChrome };
-  // Light / Dark / System (owner, 2026-11-10). Remembered on this device ("meton:appearance"); System follows the
+  // Light / Dark / System (owner, 2026-11-10; Light by default since 2026-11-11). Remembered on this device ("meton:appearance"); System follows the
   // device and changes with it. The account's saved dark_mode is kept in step for Light / Dark.
   const KEY = "meton:appearance", media = window.matchMedia ? matchMedia("(prefers-color-scheme: dark)") : null;
   const Appearance = {
-    get() { try { const v = localStorage.getItem(KEY); return ["light", "dark", "system"].includes(v) ? v : "system"; } catch { return "system"; } },
+    get() { try { const v = localStorage.getItem(KEY); return ["light", "dark", "system"].includes(v) ? v : "light"; } catch { return "light"; } },
     isDark(pref = Appearance.get()) { return pref === "dark" || (pref === "system" && !!media?.matches); },
-    set(v) { try { localStorage.setItem(KEY, ["light", "dark"].includes(v) ? v : "system"); localStorage.setItem("aj_dark", Appearance.isDark() ? "1" : "0"); } catch {} },
+    set(v) { try { localStorage.setItem(KEY, ["dark", "system"].includes(v) ? v : "light"); localStorage.setItem("aj_dark", Appearance.isDark() ? "1" : "0"); } catch {} },
   };
   media?.addEventListener?.("change", () => { if (Appearance.get() === "system") window.Auth?.applyTheme?.(); });
   window.Appearance = Appearance;

@@ -77,7 +77,19 @@ html.admin-studio[data-theme="dark"],html.admin-studio:not([data-theme="light"])
   --brand:#9faaff;--brand-ink:#c3caff;--brand-soft:rgb(159 170 255 / .16);--brand-line:rgb(159 170 255 / .45);--on-brand:#101425;
   --star:#9faaff;--clay-brand-glow:rgb(159 170 255 / .3);
 }
-/* The sign-in / My businesses screens are the METON brand screen: Cobalt dark in both modes (the earlier layers paint
+/* 2026-11-11 (owner: Light is the default everywhere): in Light the sign-in / My businesses screens are light too. */
+html:not(#cobalt)[data-theme="light"] .platform-gate,html:not(#cobalt).clay[data-theme="light"] .platform-gate{
+  --gate-bg:#f5f7fe;--gate-card:#ffffff;--gate-panel:#eef1fc;--gate-field:#ffffff;
+  --gate-line:rgb(29 38 65 / .12);--gate-line-2:rgb(29 38 65 / .24);
+  --gate-ink:#1d2641;--gate-ink-2:#3b4566;--gate-muted:#566186;
+  --gate-gold:#3d50d9;--gate-gold-2:#2f3fbf;--gate-gold-soft:rgb(61 80 217 / .10);
+  --brand:#3d50d9;--brand-ink:#2f3fbf;--brand-soft:rgb(61 80 217 / .10);--brand-line:rgb(61 80 217 / .4);--on-brand:#ffffff;
+  --star:#3d50d9;--clay-brand-glow:rgb(61 80 217 / .25);
+  background:var(--gate-bg)!important;color:var(--gate-ink)}
+/* …with the ink logo (older layers always showed the white one on these screens) */
+html:not(#cobalt):not(#x)[data-theme="light"] img.salonieer-logo-light{display:block!important}
+html:not(#cobalt):not(#x)[data-theme="light"] img.salonieer-logo-dark{display:none!important}
+/* The sign-in / My businesses screens in Dark: Cobalt dark (the earlier layers paint
    them as a dark space before a business opens). Light / Dark / System applies to every screen inside the app. */
 .platform-gate::before{background:radial-gradient(120% 62% at 50% -14%,color-mix(in srgb,var(--brand) 14%,transparent),transparent 62%)!important}
 .platform-gate .platform-primary{background:var(--brand)!important;color:var(--on-brand)!important}

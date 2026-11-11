@@ -150,19 +150,41 @@ html[data-theme=dark] .brand .brand-logo-dark{display:block}
 html[data-theme=dark] .initial-loader img{content:url(/assets/brand/meton-wordmark-cream.svg)}
 html[data-theme=dark] .biz-foot-brand img{content:url(/assets/brand/meton-wordmark-cream.svg)}
 
-/* ---- Appearance switch (header + business pages) --------------------------------------------------------------- */
-.appearance-select{max-width:112px}
-.bar-appearance{display:flex}
-/* Phones: "Log out" lives in the menu (in Arabic and Hebrew it did not fit the bar). */
-.bar-logout{white-space:nowrap}
+/* ---- Header (2026-11-11): links · Try METON free · theme + language · Menu ------------------------------------- */
+.topbar .nav{gap:clamp(8px,1.4vw,18px)}
+.bar-links{gap:2px}
+.bar-links a{padding:10px 10px}
+.bar-prefs{display:flex;align-items:center;gap:8px}
+.topbar .language-select{min-height:40px;padding:6px 30px 6px 12px;border-width:1px;border-radius:10px;font-size:.84rem;font-weight:650;max-width:none;
+  background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23566186' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 11px center;
+  border-color:var(--color-border-strong);color:inherit}
+[dir=rtl] .topbar .language-select{padding:6px 12px 6px 30px;background-position:left 11px center}
+.topbar .language-select:hover{border-color:var(--cp-primary)}
+.language-select option{color:#1D2641;background:#fff}
+.topbar .menu-toggle{min-height:40px;border-width:1px;border-radius:10px;padding:6px 12px;border-color:var(--color-border-strong)}
+.topbar .menu-toggle .label-text{font-size:.84rem}
+.bar-try{white-space:nowrap}
+@media (max-width:1180px){.topbar .menu-toggle .label-text{display:none}}
+@media (max-width:1100px){.bar-links a[href="/support"]{display:none}}
+@media (max-width:960px){.bar-prefs{display:none}}
+@media (max-width:480px){.bar-try{display:none}}
+/* The open menu: both preferences, labelled */
+.menu-prefs{display:flex;flex-wrap:wrap;gap:12px}
+.pref-field{display:grid;gap:6px;font-size:.78rem;font-weight:650;letter-spacing:.02em;color:#C9CFEA}
+.pref-field .language-select{color:#F1F3FF;border:1px solid rgba(241,243,255,.4);border-radius:10px;min-height:42px;padding:6px 12px;max-width:none;background:transparent}
 .menu-logout{color:#F1F3FF;border-color:rgba(241,243,255,.5)}
-@media (min-width:561px){.menu-logout{display:none}}
-@media (max-width:560px){.bar-logout{display:none}}
-@media (max-width:720px){.bar-appearance{display:none}}
-.menu-appearance .language-select{color:#F1F3FF;border-color:rgba(241,243,255,.5)}
-.menu-appearance .language-select option{color:#1D2641;background:#fff}
 .biz-top{display:flex;gap:8px;justify-content:flex-end}
-
+.biz-top .language-select{border-radius:10px;border-width:1px}
+/* Sign-in / sign-up pages: the bar sits on one plain ground over both halves (no blur: a blurred bar would trap the
+   full-screen menu inside it), and its links, buttons and selects use the page's text colour. */
+body[data-scene=is-auth] .topbar{background:var(--talc);color:var(--color-text-primary);box-shadow:0 1px 0 var(--color-border)}
+body[data-scene=is-auth] .topbar .brand{color:inherit}
+html:not([data-theme=dark]) body[data-scene=is-auth] .topbar .brand-logo-light{display:block}
+html:not([data-theme=dark]) body[data-scene=is-auth] .topbar .brand-logo-dark{display:none}
+body.menu-open .topbar,body[data-scene=is-auth].menu-open .topbar{background:transparent;box-shadow:none;color:#F1F3FF;backdrop-filter:none;-webkit-backdrop-filter:none}
+html body.menu-open .topbar .brand-logo-light{display:none!important}
+html body.menu-open .topbar .brand-logo-dark{display:block!important}
+body.menu-open .topbar .language-select,body.menu-open .topbar .menu-toggle{border-color:rgba(241,243,255,.5)}
 /* ---- My Account: the bell ------------------------------------------------------------------------------------- */
 .account-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .account-head .page-heading{flex:1;min-width:0}
@@ -198,39 +220,63 @@ html[data-theme=dark] .biz-foot-brand img{content:url(/assets/brand/meton-wordma
 .webapp-card h2{font-family:var(--font-body);font-size:1.2rem;font-weight:700;margin:0 0 6px;letter-spacing:0}
 .webapp-card p{margin:0;color:var(--color-text-secondary);max-width:60ch}
 
-/* ---- Sign-in / sign-up: time left today -------------------------------------------------------------------------- */
-.auth-art{justify-content:center;background:#1A2136}
-/* The bar sits on one ground over both halves, so every link stays readable. */
-body[data-scene=is-auth] .topbar{background:color-mix(in srgb,var(--talc) 94%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--color-text-primary)}
-@media (min-width:901px){body[data-scene=is-auth] .topbar:not(.is-solid) .brand{color:inherit}}
-html:not([data-theme=dark]) body[data-scene=is-auth] .topbar .brand-logo-light{display:block}
-html:not([data-theme=dark]) body[data-scene=is-auth] .topbar .brand-logo-dark{display:none}
-body.menu-open[data-scene=is-auth] .topbar{background:transparent;color:#F1F3FF}
-html body.menu-open .topbar .brand-logo-light{display:none}
-html body.menu-open .topbar .brand-logo-dark{display:block}
+/* ---- Sign-in / sign-up: time left today (2026-11-11 refinement) ----------------------------------------------------
+   One quiet panel beside the form: a small title, three units (hours · minutes · seconds) and the quote. It follows
+   the mode: a soft cobalt panel in Light, deep navy in Dark. No motion: only the digits change, once a second. */
+.auth-art{--cd-bg:linear-gradient(165deg,#E8EBFC 0%,#F1F3FD 55%,#F5F7FE 100%);--cd-ink:#1D2641;--cd-muted:#566186;--cd-accent:#3D50D9;
+  --cd-tile:#FFFFFF;--cd-tile-line:#DDE2F3;--cd-tile-shadow:0 1px 2px rgba(29,38,65,.05),0 18px 36px -24px rgba(29,38,65,.35);
+  background:var(--cd-bg);color:var(--cd-ink);justify-content:center;align-items:center;padding:calc(var(--nav-h) + 32px) clamp(24px,4vw,64px) 48px}
+html[data-theme=dark] .auth-art{--cd-bg:linear-gradient(165deg,#1A2136 0%,#141A2E 100%);--cd-ink:#F1F3FF;--cd-muted:#9AA3C7;--cd-accent:#9FAAFF;
+  --cd-tile:rgba(241,243,255,.04);--cd-tile-line:rgba(241,243,255,.10);--cd-tile-shadow:none}
 .auth-art:before{content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(70% 55% at 85% 0%,rgba(159,170,255,.16),transparent 70%),radial-gradient(60% 50% at 0% 100%,rgba(61,80,217,.22),transparent 70%)}
-.auth-art h1{font-size:clamp(2.2rem,1rem + 3vw,4.2rem)}
-.auth-clock{position:relative;z-index:2;display:grid;gap:14px;margin:0;max-width:30rem}
-.auth-clock-kicker{margin:0;font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#B8C0FF}
-:lang(ar) .auth-clock-kicker,:lang(he) .auth-clock-kicker{letter-spacing:.02em;font-size:.95rem}
-.auth-art .auth-clock-time{margin:0;direction:ltr;unicode-bidi:isolate;display:flex;align-items:baseline;gap:.18em;justify-content:flex-start;
-  font-family:Hanken,"Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";font-weight:300;
-  font-size:clamp(3rem,1.6rem + 4.6vw,6.4rem);line-height:1;letter-spacing:-.02em;color:#F1F3FF}
-[dir=rtl] .auth-art .auth-clock-time{justify-content:flex-end}
-.auth-art .auth-clock-time i{font-style:normal;color:#9FAAFF;opacity:.75;font-weight:300}
-.auth-art .auth-clock-quote{margin:0;max-width:32ch;color:#C9CFEA;font-size:var(--fs-lead);line-height:1.55}
-.auth-art .auth-clock-quote:before{content:"";display:block;width:36px;height:2px;margin-bottom:16px;background:#9FAAFF;border-radius:2px}
-.auth-art .auth-clock-kicker{margin:0;font-size:.78rem;max-width:none}
-:lang(ar) .auth-art .auth-clock-kicker,:lang(he) .auth-art .auth-clock-kicker{font-size:.95rem}
+  background:radial-gradient(55% 40% at 90% 8%,color-mix(in srgb,var(--cd-accent) 14%,transparent),transparent 70%)}
+.auth-clock{position:relative;z-index:2;display:grid;gap:clamp(18px,3vh,28px);width:min(100%,440px);margin:0}
+.auth-art .auth-clock-kicker{display:flex;align-items:center;gap:10px;margin:0;max-width:none;font-size:.76rem;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--cd-muted)}
+.auth-art .auth-clock-kicker:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cd-accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--cd-accent) 18%,transparent)}
+:lang(ar) .auth-art .auth-clock-kicker,:lang(he) .auth-art .auth-clock-kicker{letter-spacing:.01em;font-size:.95rem;text-transform:none}
+.auth-clock-time{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:clamp(6px,1vw,12px);direction:ltr;unicode-bidi:isolate}
+.cd-unit{display:grid;justify-items:center;gap:8px;padding:clamp(14px,2.2vw,22px) 6px clamp(12px,1.8vw,18px);border-radius:18px;
+  background:var(--cd-tile);border:1px solid var(--cd-tile-line);box-shadow:var(--cd-tile-shadow)}
+.cd-unit b{font-family:Hanken,"Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums;font-feature-settings:"tnum";font-weight:600;
+  font-size:clamp(2.4rem,1.5rem + 2vw,3.6rem);line-height:1;letter-spacing:-.02em;color:var(--cd-ink)}
+.cd-unit small{font-size:.72rem;font-weight:650;letter-spacing:.12em;text-transform:uppercase;color:var(--cd-muted)}
+:lang(ar) .cd-unit small,:lang(he) .cd-unit small{letter-spacing:0;text-transform:none;font-size:.82rem}
+.cd-sep{font:600 clamp(1.6rem,1.2rem + 1vw,2.2rem)/1 Hanken,"Segoe UI",system-ui,sans-serif;color:var(--cd-accent);opacity:.55;transform:translateY(-12px)}
+.auth-art .auth-clock-quote{margin:0;padding-inline-start:16px;border-inline-start:3px solid var(--cd-accent);max-width:34ch}
+.auth-art .auth-clock-quote p{margin:0;color:var(--cd-ink);font-size:clamp(1.02rem,.95rem + .3vw,1.18rem);line-height:1.6;font-weight:500;text-wrap:pretty}
+:lang(ar) .auth-art .auth-clock-quote p{line-height:1.85}
 .auth-form{background:var(--talc)}
 .auth-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:20px;padding:clamp(22px,4vw,40px);box-shadow:0 30px 60px -44px rgba(16,20,37,.35)}
 .auth-card h2{font-size:clamp(1.8rem,1.2rem + 1.6vw,2.6rem)}
 @media (max-width:900px){
-  .auth-art{padding:calc(var(--nav-h) + 20px) var(--gutter) 24px;gap:18px}
-  .auth-clock{gap:8px}
-  .auth-art .auth-clock-time{font-size:clamp(2.2rem,10vw,3.2rem)}
-  .auth-art .auth-clock-quote{font-size:.95rem}
-  .auth-art .auth-clock-quote:before{margin-bottom:10px}
+  .auth-art{padding:calc(var(--nav-h) + 18px) var(--gutter) 22px;min-height:0}
+  .auth-clock{gap:14px;width:100%;max-width:460px;margin-inline:auto}
+  .cd-unit{padding:12px 4px 10px;border-radius:14px;gap:4px}
+  .cd-unit b{font-size:clamp(1.9rem,8vw,2.4rem)}
+  .cd-unit small{font-size:.66rem}
+  .cd-sep{font-size:1.4rem;transform:translateY(-8px)}
+  .auth-art .auth-clock-quote p{font-size:.95rem}
+  .auth-form{padding-top:22px}
   .auth-card{border-radius:16px}
 }
+
+/* ---- Home (2026-11-11): a calmer hero, and depth in Light ------------------------------------------------------- */
+.hm2-hero h1,.sc-hero.hm2-hero h1{font-size:clamp(2rem,1.15rem + 2.1vw,3.15rem);line-height:1.08;max-width:17ch;text-wrap:balance}
+:lang(ar) .hm2-hero h1,:lang(ar) .sc-hero.hm2-hero h1{font-size:clamp(1.75rem,1.05rem + 1.7vw,2.55rem);line-height:1.4;max-width:28ch}
+:lang(he) .hm2-hero h1,:lang(he) .sc-hero.hm2-hero h1{font-size:clamp(1.9rem,1.1rem + 1.9vw,2.85rem);line-height:1.15;max-width:18ch}
+.hm2-hero .sc-lead{margin-top:16px;max-width:46ch;font-size:clamp(1rem,.96rem + .2vw,1.1rem);line-height:1.65;color:var(--color-text-secondary);text-wrap:pretty}
+:lang(ar) .hm2-hero .sc-lead{line-height:1.9}
+.hm2-hero .hero-actions{margin-top:26px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px}
+.hm2-hero .hm-app{margin-top:22px}
+.hm2-hero .sc-kicker{font-size:.9rem}
+.sc-hero-grid{grid-template-columns:minmax(0,5.2fr) minmax(0,6.8fr)}
+@media (max-width:900px){.hm2-hero h1,.sc-hero.hm2-hero h1{max-width:none}}
+/* Light: soft cobalt light in the hero, cards that lift off the page, gently tinted alternate sections */
+html:not([data-theme=dark]) .hm2-hero{background:radial-gradient(48% 55% at 88% 18%,rgba(61,80,217,.11),transparent 70%),radial-gradient(40% 45% at 4% 0%,rgba(159,170,255,.20),transparent 70%),linear-gradient(180deg,#F5F7FE 0%,#EEF1FC 100%)}
+html:not([data-theme=dark]) :is(.hm2-sector,.hm-box,.hm-plans>*,.hm-steps>*,.sc-panel-shot,.hm-app,.hm-app-cols>*,.sc-help-box){
+  border-color:#DDE2F3;box-shadow:0 1px 2px rgba(29,38,65,.05),0 14px 32px -22px rgba(29,38,65,.28)}
+html:not([data-theme=dark]) .hm2-sector{transition:transform .2s var(--ease-out),box-shadow .2s var(--ease-out),border-color .2s}
+@media (hover:hover) and (pointer:fine){html:not([data-theme=dark]) .hm2-sector:hover{transform:translateY(-2px);border-color:var(--cp-primary-line,#B9C1F3);box-shadow:0 1px 2px rgba(29,38,65,.05),0 22px 40px -24px rgba(61,80,217,.38)}}
+html:not([data-theme=dark]) .hm-tint{background:linear-gradient(180deg,#EEF1FC,#F5F7FE)}
+html:not([data-theme=dark]) .hm2-sector-ico,html:not([data-theme=dark]) .hm-app-ico{background:#E8EBFC;color:#3D50D9}

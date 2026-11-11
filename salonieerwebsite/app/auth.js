@@ -219,7 +219,7 @@ const Auth = (() => {
     window.Platform?.syncCurrentBrand?.(App.settings || {});
     const caps = window.Platform?.current()?.capabilities || {};
     const settings = { ...SalonTheme.DEFAULTS, ...caps, ...(App.settings || {}) };
-    // Cobalt Pulse: Light / Dark / System on this device (theme.js Appearance; System by default).
+    // Cobalt Pulse: Light / Dark / System on this device (theme.js Appearance; Light by default).
     const dark = window.Appearance ? Appearance.isDark() : localStorage.getItem("aj_dark") === "1";
     // Record what was resolved, so the pre-paint script in index.html opens the
     // next launch on the same theme instead of flashing the other one.

@@ -88,7 +88,7 @@ const SettingsPages = (() => {
             <div class="sec-label">التفضيلات</div>
             <div class="list">
               <div class="lrow appearance-row" style="cursor:default"><div class="ic">${UI.icon("moon", 18)}</div><div class="t">${Lang.t("المظهر")}</div>
-                ${UI.seg("tg-appearance", [{ v: "system", l: Lang.t("تلقائي") }, { v: "light", l: Lang.t("فاتح") }, { v: "dark", l: Lang.t("داكن") }], window.Appearance ? Appearance.get() : (darkOn ? "dark" : "light"))}</div>
+                ${UI.seg("tg-appearance", [{ v: "light", l: Lang.t("فاتح") }, { v: "dark", l: Lang.t("داكن") }, { v: "system", l: Lang.t("حسب الجهاز") }], window.Appearance ? Appearance.get() : (darkOn ? "dark" : "light"))}</div>
               <div class="lrow device-push" id="device-push-row" style="cursor:default">
                 <div class="ic">${UI.icon("bell", 18)}</div>
                 <div class="t">الإشعارات<div class="tiny" id="device-push-hint">على هذا الجهاز فقط</div></div>

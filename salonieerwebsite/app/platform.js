@@ -215,7 +215,7 @@
     if (!d) throw new Error("بيانات العمل غير صحيحة");
     currentSalon = d;
     document.documentElement.dataset.experience = "salon";
-    SalonTheme.apply(d.capabilities || {});
+    SalonTheme.apply(d.capabilities || {}, window.Appearance ? { dark: Appearance.isDark() } : {});
     remember(d);
     localStorage.setItem(CURRENT, d.slug);
     if (window.Shop && Shop.set) Shop.set(d.slug);
@@ -375,8 +375,8 @@
       </div>
     </div>`;
     document.documentElement.dataset.experience = "launcher";
-    // 2.31: the platform screens carry the Salonieer identity on navy.
-    SalonTheme.apply({}, { dark: true });
+    // 2.48.1: the platform screens follow Light / Dark / System (Light by default, owner 2026-11-11).
+    SalonTheme.apply({}, { dark: window.Appearance ? Appearance.isDark() : false });
   }
 
   // 2.27: "My salons" (saved on this phone, or added by code / QR) and
